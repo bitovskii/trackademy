@@ -89,11 +89,6 @@ export default function OrganizationsPage() {
     return (
       <div className="space-y-6">
         <div className="bg-white shadow rounded-lg p-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Organizations Management</h1>
-          <p className="text-gray-600">Manage organization information and student assignments.</p>
-        </div>
-        
-        <div className="bg-white shadow rounded-lg p-6">
           <div className="animate-pulse">
             <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
             <div className="space-y-3">
@@ -110,11 +105,6 @@ export default function OrganizationsPage() {
   if (error) {
     return (
       <div className="space-y-6">
-        <div className="bg-white shadow rounded-lg p-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Organizations Management</h1>
-          <p className="text-gray-600">Manage organization information and student assignments.</p>
-        </div>
-        
         <div className="bg-white shadow rounded-lg p-6">
           <div className="text-center py-8">
             <div className="text-red-500 mb-4">

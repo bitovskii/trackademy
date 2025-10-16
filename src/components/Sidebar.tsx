@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BuildingOfficeIcon, Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import { BuildingOfficeIcon, Bars3Icon, XMarkIcon, HomeModernIcon } from '@heroicons/react/24/outline';
 import { useState } from 'react';
 
 const Sidebar: React.FC = () => {
@@ -10,7 +10,8 @@ const Sidebar: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navigation = [
-    { name: 'Organizations', href: '/organizations', icon: BuildingOfficeIcon },
+    { name: 'Организации', href: '/organizations', icon: BuildingOfficeIcon },
+    { name: 'Кабинеты', href: '/rooms', icon: HomeModernIcon },
   ];
 
   const isActive = (href: string) => {
@@ -41,7 +42,7 @@ const Sidebar: React.FC = () => {
         <button 
           className="lg:hidden fixed inset-0 z-40 bg-gray-600 bg-opacity-75 border-none p-0 m-0 cursor-default" 
           onClick={() => setIsMobileMenuOpen(false)}
-          aria-label="Close menu"
+          aria-label="Закрыть меню"
         />
       )}
 
@@ -90,7 +91,7 @@ const Sidebar: React.FC = () => {
         {/* Sign In Button at Bottom */}
         <div className="flex-shrink-0 border-t border-gray-200 p-4">
           <button className="w-full bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors">
-            Sign In
+            Войти
           </button>
         </div>
       </div>

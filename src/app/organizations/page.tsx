@@ -29,7 +29,7 @@ export default function OrganizationsPage() {
       const data = await ApiService.getOrganizations();
       setOrganizations(data);
     } catch (err) {
-      setError('Failed to load organizations. Please try again.');
+      setError('Не удалось загрузить организации. Попробуйте еще раз.');
       console.error('Error loading organizations:', err);
     } finally {
       setLoading(false);
@@ -127,7 +127,7 @@ export default function OrganizationsPage() {
               onClick={loadOrganizations}
               className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
             >
-              Try Again
+              Попробовать снова
             </button>
           </div>
         </div>
@@ -137,11 +137,6 @@ export default function OrganizationsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white shadow rounded-lg p-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">Organizations Management</h1>
-        <p className="text-gray-600">Manage organization information and student assignments.</p>
-      </div>
-      
       <div className="bg-white shadow rounded-lg overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200 flex justify-end items-center">
           <button
@@ -149,7 +144,7 @@ export default function OrganizationsPage() {
             className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors flex items-center space-x-2"
           >
             <PlusIcon className="h-4 w-4" />
-            <span>Add</span>
+            <span>Добавить</span>
           </button>
         </div>
         
@@ -160,7 +155,7 @@ export default function OrganizationsPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
             </div>
-            <p className="text-gray-500">No organizations found.</p>
+            <p className="text-gray-500">Организации не найдены.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -168,16 +163,16 @@ export default function OrganizationsPage() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Organization Name
+                    Название организации
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Phone
+                    Телефон
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Address
+                    Адрес
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
+                    Действия
                   </th>
                 </tr>
               </thead>
@@ -198,14 +193,14 @@ export default function OrganizationsPage() {
                         <button
                           onClick={() => handleEdit(org.id)}
                           className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50 transition-colors"
-                          title="Edit organization"
+                          title="Редактировать организацию"
                         >
                           <PencilIcon className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(org.id)}
                           className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 transition-colors"
-                          title="Delete organization"
+                          title="Удалить организацию"
                         >
                           <TrashIcon className="h-4 w-4" />
                         </button>

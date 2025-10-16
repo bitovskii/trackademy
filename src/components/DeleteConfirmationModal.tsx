@@ -30,7 +30,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
       await onConfirm(organization.id);
       onClose();
     } catch (err) {
-      setError('Failed to delete organization. Please try again.');
+      setError('Не удалось удалить организацию. Попробуйте еще раз.');
       console.error('Error deleting organization:', err);
     } finally {
       setIsDeleting(false);
@@ -51,7 +51,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
           <div className="flex items-center">
             <ExclamationTriangleIcon className="h-6 w-6 text-red-600 mr-2" />
             <h3 className="text-lg font-medium text-gray-900">
-              Delete Organization
+              Удалить организацию
             </h3>
           </div>
           <button
@@ -70,14 +70,14 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
 
         <div className="mb-6">
           <p className="text-sm text-gray-600 mb-4">
-            Are you sure you want to delete the following organization? This action cannot be undone.
+            Вы уверены, что хотите удалить следующую организацию? Это действие нельзя отменить.
           </p>
           
           <div className="bg-gray-50 p-4 rounded-md">
             <div className="text-sm">
               <div className="font-medium text-gray-900 mb-1">{organization.name}</div>
-              <div className="text-gray-600 mb-1">Phone: {organization.phone}</div>
-              <div className="text-gray-600">Address: {organization.address}</div>
+              <div className="text-gray-600 mb-1">Телефон: {organization.phone}</div>
+              <div className="text-gray-600">Адрес: {organization.address}</div>
             </div>
           </div>
         </div>
@@ -89,7 +89,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
             disabled={isDeleting}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Cancel
+            Отмена
           </button>
           <button
             type="button"
@@ -97,7 +97,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
             disabled={isDeleting}
             className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isDeleting ? 'Deleting...' : 'Delete Organization'}
+            {isDeleting ? 'Удаление...' : 'Удалить организацию'}
           </button>
         </div>
       </div>

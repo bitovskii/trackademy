@@ -41,7 +41,7 @@ const CreateOrganizationModal: React.FC<CreateOrganizationModalProps> = ({
       setFormData({ name: '', phone: '+7', address: '' }); // Reset form
       onClose();
     } catch (err) {
-      setError('Failed to create organization. Please try again.');
+      setError('Не удалось создать организацию. Попробуйте еще раз.');
       console.error('Error creating organization:', err);
     } finally {
       setIsLoading(false);
@@ -101,7 +101,7 @@ const CreateOrganizationModal: React.FC<CreateOrganizationModalProps> = ({
       <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-medium text-gray-900">
-            Create New Organization
+            Создать новую организацию
           </h3>
           <button
             onClick={handleClose}
@@ -120,7 +120,7 @@ const CreateOrganizationModal: React.FC<CreateOrganizationModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-              Organization Name
+              Название организации
             </label>
             <input
               type="text"
@@ -135,7 +135,7 @@ const CreateOrganizationModal: React.FC<CreateOrganizationModalProps> = ({
 
           <div>
             <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-              Phone
+              Телефон
             </label>
             <input
               type="tel"
@@ -152,7 +152,7 @@ const CreateOrganizationModal: React.FC<CreateOrganizationModalProps> = ({
 
           <div>
             <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-              Address
+              Адрес
             </label>
             <textarea
               id="address"
@@ -171,14 +171,14 @@ const CreateOrganizationModal: React.FC<CreateOrganizationModalProps> = ({
               onClick={handleClose}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-              Cancel
+              Отмена
             </button>
             <button
               type="submit"
               disabled={isLoading}
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Creating...' : 'Create Organization'}
+              {isLoading ? 'Создание...' : 'Создать организацию'}
             </button>
           </div>
         </form>

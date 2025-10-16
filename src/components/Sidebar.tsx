@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BuildingOfficeIcon, HomeModernIcon, HomeIcon, UserCircleIcon } from '@heroicons/react/24/outline';
-import { BuildingOfficeIcon as BuildingOfficeIconSolid, HomeModernIcon as HomeModernIconSolid, HomeIcon as HomeIconSolid, UserCircleIcon as UserCircleIconSolid } from '@heroicons/react/24/solid';
+import { BuildingOfficeIcon, HomeModernIcon, HomeIcon, UserCircleIcon, AcademicCapIcon } from '@heroicons/react/24/outline';
+import { BuildingOfficeIcon as BuildingOfficeIconSolid, HomeModernIcon as HomeModernIconSolid, HomeIcon as HomeIconSolid, UserCircleIcon as UserCircleIconSolid, AcademicCapIcon as AcademicCapIconSolid } from '@heroicons/react/24/solid';
 
 const Sidebar: React.FC = () => {
   const pathname = usePathname();
@@ -11,6 +11,7 @@ const Sidebar: React.FC = () => {
   const navigation = [
     { name: 'Главная', href: '/', icon: HomeIcon, activeIcon: HomeIconSolid },
     { name: 'Организации', href: '/organizations', icon: BuildingOfficeIcon, activeIcon: BuildingOfficeIconSolid },
+    { name: 'Студенты', href: '/students', icon: AcademicCapIcon, activeIcon: AcademicCapIconSolid },
     { name: 'Кабинеты', href: '/rooms', icon: HomeModernIcon, activeIcon: HomeModernIconSolid },
     { name: 'Профиль', href: '/profile', icon: UserCircleIcon, activeIcon: UserCircleIconSolid },
   ];

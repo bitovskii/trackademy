@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Organization, OrganizationFormData } from '../../types/Organization';
 import { ApiService } from '../../services/ApiService';
-import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { PhoneIcon, MapPinIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+
 import EditOrganizationModal from '../../components/EditOrganizationModal';
 import CreateOrganizationModal from '../../components/CreateOrganizationModal';
 import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
@@ -147,57 +148,96 @@ export default function OrganizationsPage() {
             <p className="text-gray-500">Организации не найдены.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto bg-white" style={{ minHeight: '400px' }}>
-            <table className="w-full bg-white" style={{ minWidth: '600px' }}>
-              <thead className="bg-gray-50 sticky top-0">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ minWidth: '180px' }}>
-                    Организация
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ minWidth: '140px' }}>
-                    Телефон
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ minWidth: '200px' }}>
-                    Адрес
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ minWidth: '80px' }}>
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {organizations.map((org) => (
-                  <tr key={org.id} className="hover:bg-gray-50 transition-colors bg-white">
-                    <td className="px-4 py-4 whitespace-nowrap bg-white">
-                      <div className="text-sm font-medium text-gray-900">{org.name}</div>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap bg-white">
-                      <div className="text-sm text-gray-900">{org.phone}</div>
-                    </td>
-                    <td className="px-4 py-4 bg-white">
-                      <div className="text-sm text-gray-900">{org.address}</div>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium bg-white">
-                      <div className="flex justify-end space-x-2">
-                        <button
-                          onClick={() => handleEdit(org.id)}
-                          className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50 transition-colors"
-                          title="Редактировать организацию"
-                        >
-                          <PencilIcon className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(org.id)}
-                          className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 transition-colors"
-                          title="Удалить организацию"
-                        >
-                          <TrashIcon className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
+          <div>
+            {/* Mobile Card View */}
+            <div className="block md:hidden">
+              {organizations.map((org) => (
+                <div key={org.id} className="p-4 border-b border-gray-200 last:border-b-0">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-medium text-gray-900">{org.name}</h3>
+                  </div>
+                  <div className="space-y-1 text-sm text-gray-600">
+                    <div className="flex items-center gap-2">
+                      <PhoneIcon className="h-4 w-4 text-gray-400" />
+                      <span className="font-medium">{org.phone}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPinIcon className="h-4 w-4 text-gray-400" />
+                      <span className="font-medium">{org.address}</span>
+                    </div>
+                  </div>
+                  <div className="flex space-x-2 mt-3 pt-3 border-t border-gray-100">
+                    <button
+                      onClick={() => handleEdit(org.id)}
+                      className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded"
+                    >
+                      Редактировать
+                    </button>
+                    <button
+                      onClick={() => handleDelete(org.id)}
+                      className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded"
+                    >
+                      Удалить
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Организация
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Телефон
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Адрес
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Действия
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {organizations.map((org) => (
+                    <tr key={org.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{org.name}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{org.phone}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-900">{org.address}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex justify-end space-x-2">
+                          <button
+                            onClick={() => handleEdit(org.id)}
+                            className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50 transition-colors"
+                            title="Редактировать организацию"
+                          >
+                            <PencilIcon className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(org.id)}
+                            className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 transition-colors"
+                            title="Удалить организацию"
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

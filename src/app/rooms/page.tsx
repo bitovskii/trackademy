@@ -1,19 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-
 export default function RoomsPage() {
-  const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
-
-  // Mock data for rooms
-  const rooms = [
-    { id: '101', name: 'Кабинет 101', capacity: 30, type: 'Лекционный зал', equipment: 'Проектор, доска, микрофон' },
-    { id: '102', name: 'Кабинет 102', capacity: 20, type: 'Компьютерный класс', equipment: '20 компьютеров, проектор' },
-    { id: '103', name: 'Кабинет 103', capacity: 15, type: 'Семинарская комната', equipment: 'Доска, столы для групповой работы' },
-    { id: '201', name: 'Кабинет 201', capacity: 25, type: 'Лаборатория', equipment: 'Лабораторное оборудование, вытяжка' },
-    { id: '202', name: 'Кабинет 202', capacity: 40, type: 'Актовый зал', equipment: 'Сцена, звуковая система, проектор' },
-  ];
-
   return (
     <div className="space-y-6">
       <div className="bg-white shadow rounded-lg overflow-hidden">
@@ -25,98 +12,20 @@ export default function RoomsPage() {
         </div>
         
         <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {rooms.map((room) => (
-              <div 
-                key={room.id}
-                className={`border rounded-lg p-4 cursor-pointer transition-all hover:shadow-md ${
-                  selectedRoom === room.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
-                }`}
-                onClick={() => setSelectedRoom(selectedRoom === room.id ? null : room.id)}
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-semibold text-gray-900">{room.name}</h3>
-                  <span className="text-sm text-gray-500">#{room.id}</span>
-                </div>
-                
-                <div className="space-y-1 text-sm text-gray-600">
-                  <div className="flex justify-between">
-                    <span>Тип:</span>
-                    <span className="font-medium">{room.type}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Вместимость:</span>
-                    <span className="font-medium">{room.capacity} чел.</span>
-                  </div>
-                </div>
-
-                {selectedRoom === room.id && (
-                  <div className="mt-3 pt-3 border-t border-gray-200">
-                    <p className="text-sm text-gray-600">
-                      <span className="font-medium">Оборудование:</span><br />
-                      {room.equipment}
-                    </p>
-                    <div className="flex space-x-2 mt-3">
-                      <button className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                        Редактировать
-                      </button>
-                      <button className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">
-                        Удалить
-                      </button>
-                      <button className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
-                        Расписание
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Statistics section */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white shadow rounded-lg p-6">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-blue-600">{rooms.length}</div>
-            <div className="text-sm text-gray-600">Всего кабинетов</div>
-          </div>
-        </div>
-        
-        <div className="bg-white shadow rounded-lg p-6">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-green-600">
-              {rooms.reduce((sum, room) => sum + room.capacity, 0)}
+          <div className="text-center py-12">
+            <div className="text-gray-400 mb-4">
+              <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
             </div>
-            <div className="text-sm text-gray-600">Общая вместимость</div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Управление кабинетами</h3>
+            <p className="text-gray-500 mb-4">
+              Здесь будет реализован функционал управления кабинетами и аудиториями
+            </p>
+            <p className="text-sm text-gray-400">
+              Включая добавление, редактирование, удаление и расписание занятий
+            </p>
           </div>
-        </div>
-        
-        <div className="bg-white shadow rounded-lg p-6">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-purple-600">3</div>
-            <div className="text-sm text-gray-600">Типы кабинетов</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Quick actions */}
-      <div className="bg-white shadow rounded-lg p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Быстрые действия</h2>
-        <div className="flex flex-wrap gap-3">
-          <button className="bg-blue-100 text-blue-700 px-4 py-2 rounded-md text-sm hover:bg-blue-200 transition-colors">
-            Проверить расписание
-          </button>
-          <button className="bg-yellow-100 text-yellow-700 px-4 py-2 rounded-md text-sm hover:bg-yellow-200 transition-colors">
-            Техническое обслуживание
-          </button>
-          <button className="bg-purple-100 text-purple-700 px-4 py-2 rounded-md text-sm hover:bg-purple-200 transition-colors">
-            Бронирование
-          </button>
-          <button className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md text-sm hover:bg-gray-200 transition-colors">
-            Отчеты
-          </button>
         </div>
       </div>
     </div>

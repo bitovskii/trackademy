@@ -2,16 +2,17 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BuildingOfficeIcon, Bars3Icon, XMarkIcon, HomeModernIcon } from '@heroicons/react/24/outline';
-import { useState } from 'react';
+import { BuildingOfficeIcon, HomeModernIcon, HomeIcon, UserCircleIcon } from '@heroicons/react/24/outline';
+import { BuildingOfficeIcon as BuildingOfficeIconSolid, HomeModernIcon as HomeModernIconSolid, HomeIcon as HomeIconSolid, UserCircleIcon as UserCircleIconSolid } from '@heroicons/react/24/solid';
 
 const Sidebar: React.FC = () => {
   const pathname = usePathname();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navigation = [
-    { name: 'Организации', href: '/organizations', icon: BuildingOfficeIcon },
-    { name: 'Кабинеты', href: '/rooms', icon: HomeModernIcon },
+    { name: 'Главная', href: '/', icon: HomeIcon, activeIcon: HomeIconSolid },
+    { name: 'Организации', href: '/organizations', icon: BuildingOfficeIcon, activeIcon: BuildingOfficeIconSolid },
+    { name: 'Кабинеты', href: '/rooms', icon: HomeModernIcon, activeIcon: HomeModernIconSolid },
+    { name: 'Профиль', href: '/profile', icon: UserCircleIcon, activeIcon: UserCircleIconSolid },
   ];
 
   const isActive = (href: string) => {
@@ -23,35 +24,37 @@ const Sidebar: React.FC = () => {
 
   return (
     <>
-      {/* Mobile menu button */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
-        <button
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 bg-white shadow-md"
-        >
-          {isMobileMenuOpen ? (
-            <XMarkIcon className="h-6 w-6" />
-          ) : (
-            <Bars3Icon className="h-6 w-6" />
-          )}
-        </button>
+      {/* Instagram-style Bottom Navigation Bar - Mobile Only */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg">
+        <div className="flex items-center justify-around py-2">
+          {navigation.map((item) => {
+            const active = isActive(item.href);
+            const IconComponent = active ? item.activeIcon : item.icon;
+            
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className="flex flex-col items-center py-2 px-3 transition-colors"
+              >
+                <IconComponent
+                  className={`h-6 w-6 ${
+                    active ? 'text-blue-600' : 'text-gray-400'
+                  }`}
+                />
+                <span className={`text-xs mt-1 ${
+                  active ? 'text-blue-600 font-medium' : 'text-gray-400'
+                }`}>
+                  {item.name}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Mobile menu overlay */}
-      {isMobileMenuOpen && (
-        <button 
-          className="lg:hidden fixed inset-0 z-40 bg-gray-600 bg-opacity-75 border-none p-0 m-0 cursor-default" 
-          onClick={() => setIsMobileMenuOpen(false)}
-          aria-label="Закрыть меню"
-        />
-      )}
-
-      {/* Sidebar */}
-      <div className={`
-        fixed left-0 top-0 h-screen w-64 bg-white shadow-lg border-r border-gray-200 flex flex-col transition-transform duration-300 ease-in-out z-40
-        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
-        lg:translate-x-0
-      `}>
+      {/* Desktop Sidebar */}
+      <div className="hidden lg:flex lg:fixed lg:left-0 lg:top-0 lg:h-screen lg:w-64 lg:bg-white lg:shadow-lg lg:border-r lg:border-gray-200 lg:flex-col">
         {/* Logo */}
         <div className="flex items-center justify-center h-16 px-4 border-b border-gray-200">
           <span className="text-xl font-bold text-blue-600">TrackAcademy</span>
@@ -61,12 +64,11 @@ const Sidebar: React.FC = () => {
         <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
           <nav className="mt-5 flex-1 px-2 space-y-1">
             {navigation.map((item) => {
-              const Icon = item.icon;
+              const IconComponent = item.icon;
               return (
                 <Link
                   key={item.name}
                   href={item.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
                   className={`
                     group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors
                     ${isActive(item.href)
@@ -75,7 +77,7 @@ const Sidebar: React.FC = () => {
                     }
                   `}
                 >
-                  <Icon
+                  <IconComponent
                     className={`
                       mr-3 flex-shrink-0 h-6 w-6 transition-colors
                       ${isActive(item.href) ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-500'}

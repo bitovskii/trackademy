@@ -24,3 +24,27 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Hide Next.js development overlay and indicators */
+#__next-build-watcher,
+.__next-dev-overlay,
+.__next-dev-overlay-drag-handle,
+[data-nextjs-scroll-focus-boundary],
+.__next,
+.__next div[id*="__next"],
+div[class*="__next"]:not([class*="__next-error"]) {
+  display: none !important;
+}
+
+/* Hide build indicator */
+#__next-build-watcher {
+  display: none !important;
+}
+
+/* Hide development menu button */
+button[aria-label*="Next.js"],
+button[title*="Next.js"],
+div[class*="next-dev"],
+div[id*="next-dev"] {
+  display: none !important;
+}

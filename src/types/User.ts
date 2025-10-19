@@ -1,19 +1,23 @@
 export interface User {
-  id: number;
-  firstName: string;
-  lastName: string;
+  id: string;
+  login: string;
+  name: string;
   email: string;
   phone: string;
-  organizationId?: number;
+  parentPhone: string;
+  birthday: string;
+  groups: string[];
+  role: number;
+  organizationId?: string;
   organizationName?: string;
-  dateJoined: string;
-  isActive: boolean;
 }
 
 export interface UserFormData {
-  firstName: string;
-  lastName: string;
+  login: string;
+  name: string;
   email: string;
   phone: string;
-  organizationId?: number;
+  parentPhone?: string;
+  birthday?: string;
+  organizationId?: string;
 }

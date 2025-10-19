@@ -3,38 +3,39 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
-import { ApiService } from '../../services/ApiService';
-import { UserIcon, PencilIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
-import { User, UserFormData } from '../../types/User';
-import EditUserModal from '../../components/EditUserModal';
-import DeleteUserConfirmationModal from '../../components/DeleteUserConfirmationModal';
+import { BookOpenIcon, PencilIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { Subject, SubjectFormData } from '../../types/Subject';
+import CreateSubjectModal from '../../components/CreateSubjectModal';
+import EditSubjectModal from '../../components/EditSubjectModal';
+import DeleteSubjectConfirmationModal from '../../components/DeleteSubjectConfirmationModal';
 import Link from 'next/link';
 
-interface UsersResponse {
-  items: User[];
+interface SubjectsResponse {
+  items: Subject[];
   totalCount: number;
   pageNumber: number;
   pageSize: number;
   totalPages: number;
 }
 
-export default function StudentsPage() {
+export default function SubjectsPage() {
   const { isAuthenticated, user } = useAuth();
-  const [students, setStudents] = useState<User[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [deletingUser, setDeletingUser] = useState<User | null>(null);
+  const [deletingSubject, setDeletingSubject] = useState<Subject | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const pageSize = 10;
 
   useEffect(() => {
     if (isAuthenticated) {
-      loadStudents();
+      loadSubjects();
     }
   }, [currentPage, isAuthenticated]);
 
@@ -50,7 +51,7 @@ export default function StudentsPage() {
           </div>
           <h3 className="mt-2 text-sm font-medium text-gray-900">Требуется авторизация</h3>
           <p className="mt-1 text-sm text-gray-500">
-            Войдите в систему для управления пользователями
+            Войдите в систему для управления предметами
           </p>
           <div className="mt-6">
             <Link
@@ -65,7 +66,7 @@ export default function StudentsPage() {
     );
   }
 
-  const loadStudents = async () => {
+  const loadSubjects = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -80,20 +81,17 @@ export default function StudentsPage() {
       const requestBody = {
         pageNumber: currentPage,
         pageSize: pageSize,
-        search: '',
-        groupIds: [],
-        roleIds: [], // Empty array will get all roles
         organizationId: organizationId
       };
 
-      const data = await AuthenticatedApiService.post<UsersResponse>('/User/get-users', requestBody);
+      const data = await AuthenticatedApiService.post<SubjectsResponse>('/Subject/GetAllSubjects', requestBody);
       
-      setStudents(data.items);
+      setSubjects(data.items);
       setTotalPages(data.totalPages);
       setTotalCount(data.totalCount);
     } catch (error) {
-      console.error('Failed to load students:', error);
-      setError('Не удалось загрузить список пользователей');
+      console.error('Failed to load subjects:', error);
+      setError('Не удалось загрузить список предметов');
     } finally {
       setLoading(false);
     }
@@ -103,88 +101,79 @@ export default function StudentsPage() {
     setCurrentPage(page);
   };
 
-  const getRoleText = (role: number) => {
-    switch (role) {
-      case 1:
-        return 'Администратор';
-      case 2:
-        return 'Преподаватель';
-      case 3:
-        return 'Студент';
-      default:
-        return 'Неизвестная роль';
+  const handleCreate = () => {
+    setIsCreateModalOpen(true);
+  };
+
+  const handleSaveCreate = async (formData: SubjectFormData) => {
+    try {
+      const organizationId = user?.organizationId || localStorage.getItem('userOrganizationId');
+      
+      if (!organizationId) {
+        throw new Error('Не удается определить организацию пользователя');
+      }
+
+      const dataToSend = {
+        ...formData,
+        organizationId: organizationId,
+      };
+
+      await AuthenticatedApiService.post('/Subject/create', dataToSend);
+      await loadSubjects(); // Reload the list to show new data
+    } catch (error) {
+      console.error('Error creating subject:', error);
+      throw error; // Re-throw to let the modal handle the error display
     }
   };
 
-  const getRoleColor = (role: number) => {
-    switch (role) {
-      case 1:
-        return 'bg-red-100 text-red-800';
-      case 2:
-        return 'bg-blue-100 text-blue-800';
-      case 3:
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
+  const handleCloseCreateModal = () => {
+    setIsCreateModalOpen(false);
   };
 
   const handleEdit = (id: string) => {
-    const student = students.find(s => s.id === id);
-    if (student) {
-      setEditingUser(student);
+    const subject = subjects.find(s => s.id === id);
+    if (subject) {
+      setEditingSubject(subject);
       setIsEditModalOpen(true);
     }
   };
 
-  const handleSaveEdit = async (id: string, formData: UserFormData) => {
+  const handleSaveEdit = async (id: string, formData: SubjectFormData) => {
     try {
-      const result = await ApiService.updateUser(id, formData);
-      
-      // Check if the update was successful (handle boolean response)
-      if (result === false) {
-        throw new Error('Не удалось обновить пользователя. Попробуйте еще раз.');
-      }
-      
-      await loadStudents(); // Reload the list to show updated data
+      await AuthenticatedApiService.put(`/Subject/${id}`, formData);
+      await loadSubjects(); // Reload the list to show updated data
     } catch (error) {
-      console.error('Error updating user:', error);
+      console.error('Error updating subject:', error);
       throw error; // Re-throw to let the modal handle the error display
     }
   };
 
   const handleCloseEditModal = () => {
     setIsEditModalOpen(false);
-    setEditingUser(null);
+    setEditingSubject(null);
   };
 
   const handleDelete = (id: string) => {
-    const student = students.find(s => s.id === id);
-    if (student) {
-      setDeletingUser(student);
+    const subject = subjects.find(s => s.id === id);
+    if (subject) {
+      setDeletingSubject(subject);
       setIsDeleteModalOpen(true);
     }
   };
 
   const handleConfirmDelete = async (id: string) => {
     try {
-      const result = await ApiService.deleteUser(id);
-      
-      // Check if the deletion was successful
-      if (result === false) {
-        throw new Error('Не удалось удалить пользователя. Попробуйте еще раз.');
-      }
-      
-      await loadStudents(); // Reload the list to show updated data
+      await AuthenticatedApiService.delete(`/Subject/${id}`);
+      await loadSubjects(); // Reload the list to show updated data
     } catch (error) {
-      console.error('Error deleting user:', error);
+      console.error('Error deleting subject:', error);
       throw error; // Re-throw to let the modal handle the error display
     }
   };
 
   const handleCloseDeleteModal = () => {
     setIsDeleteModalOpen(false);
-    setDeletingUser(null);
+    setDeletingSubject(null);
   };
 
   const renderPagination = () => {
@@ -270,8 +259,8 @@ export default function StudentsPage() {
     return (
       <div className="min-h-96 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-sm text-gray-500">Загрузка пользователей...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="mt-4 text-sm text-gray-500">Загрузка предметов...</p>
         </div>
       </div>
     );
@@ -285,7 +274,7 @@ export default function StudentsPage() {
             <p className="font-medium">Ошибка загрузки</p>
             <p className="text-sm mt-1">{error}</p>
             <button
-              onClick={loadStudents}
+              onClick={loadSubjects}
               className="mt-3 px-4 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700"
             >
               Попробовать снова
@@ -301,12 +290,13 @@ export default function StudentsPage() {
       <div className="bg-white shadow rounded-lg overflow-hidden">
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-          <h1 className="text-xl font-semibold text-gray-900">Пользователи</h1>
+          <h1 className="text-xl font-semibold text-gray-900">Предметы</h1>
           <button 
-            className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors flex items-center"
+            onClick={handleCreate}
+            className="bg-purple-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-purple-700 transition-colors flex items-center"
           >
             <PlusIcon className="h-4 w-4 mr-2" />
-            Добавить пользователя
+            Добавить предмет
           </button>
         </div>
 
@@ -319,19 +309,10 @@ export default function StudentsPage() {
                   №
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Логин
+                  Название предмета
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Имя
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Телефон
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Роль
+                  Описание
                 </th>
                 <th className="relative px-6 py-3">
                   <span className="sr-only">Действия</span>
@@ -339,40 +320,32 @@ export default function StudentsPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {students.map((student, index) => (
-                <tr key={student.id} className="hover:bg-gray-50">
+              {subjects.map((subject, index) => (
+                <tr key={subject.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-500">{(currentPage - 1) * pageSize + index + 1}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{student.login}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
-                      {student.name}
+                    <div className="flex items-center">
+                      <BookOpenIcon className="h-5 w-5 text-gray-400 mr-3" />
+                      <div className="text-sm font-medium text-gray-900">{subject.name}</div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{student.email}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{student.phone}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleColor(student.role)}`}>
-                      {getRoleText(student.role)}
-                    </span>
+                  <td className="px-6 py-4">
+                    <div className="text-sm text-gray-900 max-w-xs truncate" title={subject.description}>
+                      {subject.description}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex justify-end space-x-2">
                       <button 
-                        onClick={() => handleEdit(student.id)}
+                        onClick={() => handleEdit(subject.id)}
                         className="text-blue-600 hover:text-blue-900 p-1"
                       >
                         <PencilIcon className="h-4 w-4" />
                       </button>
                       <button 
-                        onClick={() => handleDelete(student.id)}
+                        onClick={() => handleDelete(subject.id)}
                         className="text-red-600 hover:text-red-900 p-1"
                       >
                         <TrashIcon className="h-4 w-4" />
@@ -388,58 +361,56 @@ export default function StudentsPage() {
         {/* Mobile Cards */}
         <div className="md:hidden">
           <div className="space-y-4 p-4">
-            {students.map((student, index) => (
-              <div key={student.id} className="bg-white border border-gray-200 rounded-lg p-4">
+            {subjects.map((subject, index) => (
+              <div key={subject.id} className="bg-white border border-gray-200 rounded-lg p-4">
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex items-center gap-3">
                     <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">#{(currentPage - 1) * pageSize + index + 1}</span>
-                    <h3 className="text-sm font-medium text-gray-900">
-                      {student.name}
-                    </h3>
+                    <div className="flex items-center">
+                      <BookOpenIcon className="h-5 w-5 text-gray-400 mr-2" />
+                      <h3 className="text-sm font-medium text-gray-900">{subject.name}</h3>
+                    </div>
                   </div>
                   <div className="flex space-x-2">
                     <button 
-                      onClick={() => handleEdit(student.id)}
+                      onClick={() => handleEdit(subject.id)}
                       className="text-blue-600 hover:text-blue-900 p-1"
                     >
                       <PencilIcon className="h-4 w-4" />
                     </button>
                     <button 
-                      onClick={() => handleDelete(student.id)}
+                      onClick={() => handleDelete(subject.id)}
                       className="text-red-600 hover:text-red-900 p-1"
                     >
                       <TrashIcon className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div>Логин: <span className="font-medium">{student.login}</span></div>
-                  <div>Email: {student.email}</div>
-                  <div>Телефон: {student.phone}</div>
-                  <div className="flex items-center gap-2">
-                    <span>Роль:</span>
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleColor(student.role)}`}>
-                      {getRoleText(student.role)}
-                    </span>
+                {subject.description && (
+                  <div className="mt-2 text-sm text-gray-600">
+                    {subject.description}
                   </div>
-                </div>
+                )}
               </div>
             ))}
           </div>
         </div>
 
         {/* Empty State */}
-        {students.length === 0 && !loading && (
+        {subjects.length === 0 && !loading && (
           <div className="text-center py-12">
-            <UserIcon className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">Нет пользователей</h3>
+            <BookOpenIcon className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">Нет предметов</h3>
             <p className="mt-1 text-sm text-gray-500">
-              Начните с добавления первого пользователя
+              Начните с добавления первого предмета
             </p>
             <div className="mt-6">
-              <button className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+              <button 
+                onClick={handleCreate}
+                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700"
+              >
                 <PlusIcon className="h-4 w-4 mr-2" />
-                Добавить пользователя
+                Добавить предмет
               </button>
             </div>
           </div>
@@ -449,18 +420,25 @@ export default function StudentsPage() {
         {renderPagination()}
       </div>
 
-      {/* Edit User Modal */}
-      <EditUserModal
+      {/* Create Subject Modal */}
+      <CreateSubjectModal
+        isOpen={isCreateModalOpen}
+        onClose={handleCloseCreateModal}
+        onSave={handleSaveCreate}
+      />
+
+      {/* Edit Subject Modal */}
+      <EditSubjectModal
         isOpen={isEditModalOpen}
-        user={editingUser}
+        subject={editingSubject}
         onClose={handleCloseEditModal}
         onSave={handleSaveEdit}
       />
 
-      {/* Delete User Confirmation Modal */}
-      <DeleteUserConfirmationModal
+      {/* Delete Subject Confirmation Modal */}
+      <DeleteSubjectConfirmationModal
         isOpen={isDeleteModalOpen}
-        user={deletingUser}
+        subject={deletingSubject}
         onClose={handleCloseDeleteModal}
         onConfirm={handleConfirmDelete}
       />

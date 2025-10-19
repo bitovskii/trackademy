@@ -2,19 +2,30 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BuildingOfficeIcon, HomeModernIcon, HomeIcon, UserCircleIcon, AcademicCapIcon } from '@heroicons/react/24/outline';
-import { BuildingOfficeIcon as BuildingOfficeIconSolid, HomeModernIcon as HomeModernIconSolid, HomeIcon as HomeIconSolid, UserCircleIcon as UserCircleIconSolid, AcademicCapIcon as AcademicCapIconSolid } from '@heroicons/react/24/solid';
+import { BuildingOfficeIcon, HomeModernIcon, HomeIcon, UserCircleIcon, AcademicCapIcon, BookOpenIcon } from '@heroicons/react/24/outline';
+import { BuildingOfficeIcon as BuildingOfficeIconSolid, HomeModernIcon as HomeModernIconSolid, HomeIcon as HomeIconSolid, UserCircleIcon as UserCircleIconSolid, AcademicCapIcon as AcademicCapIconSolid, BookOpenIcon as BookOpenIconSolid } from '@heroicons/react/24/solid';
+import { useAuth } from '../contexts/AuthContext';
+import { useState } from 'react';
+import RegisterModal from './RegisterModal';
 
 const Sidebar: React.FC = () => {
   const pathname = usePathname();
+  const { isAuthenticated, logout } = useAuth();
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
 
-  const navigation = [
+  const allNavigation = [
     { name: 'Главная', href: '/', icon: HomeIcon, activeIcon: HomeIconSolid },
-    { name: 'Организации', href: '/organizations', icon: BuildingOfficeIcon, activeIcon: BuildingOfficeIconSolid },
-    { name: 'Студенты', href: '/students', icon: AcademicCapIcon, activeIcon: AcademicCapIconSolid },
-    { name: 'Кабинеты', href: '/rooms', icon: HomeModernIcon, activeIcon: HomeModernIconSolid },
-    { name: 'Профиль', href: '/profile', icon: UserCircleIcon, activeIcon: UserCircleIconSolid },
+    { name: 'Организации', href: '/organizations', icon: BuildingOfficeIcon, activeIcon: BuildingOfficeIconSolid, requireAuth: true },
+    { name: 'Студенты', href: '/students', icon: AcademicCapIcon, activeIcon: AcademicCapIconSolid, requireAuth: true },
+    { name: 'Кабинеты', href: '/rooms', icon: HomeModernIcon, activeIcon: HomeModernIconSolid, requireAuth: true },
+    { name: 'Предметы', href: '/subjects', icon: BookOpenIcon, activeIcon: BookOpenIconSolid, requireAuth: true },
+    { name: 'Профиль', href: '/profile', icon: UserCircleIcon, activeIcon: UserCircleIconSolid, requireAuth: true },
   ];
+
+  // Filter navigation based on authentication status
+  const navigation = isAuthenticated 
+    ? allNavigation 
+    : allNavigation.filter(item => !item.requireAuth);
 
   const isActive = (href: string) => {
     if (href === '/') {
@@ -91,13 +102,39 @@ const Sidebar: React.FC = () => {
           </nav>
         </div>
 
-        {/* Sign In Button at Bottom */}
+        {/* Sign In/Register Buttons or User Menu at Bottom */}
         <div className="flex-shrink-0 border-t border-gray-200 p-4">
-          <button className="w-full bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors">
-            Войти
-          </button>
+          {isAuthenticated ? (
+            <button 
+              onClick={logout}
+              className="w-full bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 transition-colors"
+            >
+              Выйти
+            </button>
+          ) : (
+            <div className="space-y-2">
+              <Link 
+                href="/login"
+                className="w-full bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors block text-center"
+              >
+                Войти
+              </Link>
+              <button 
+                onClick={() => setShowRegisterModal(true)}
+                className="w-full bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700 transition-colors"
+              >
+                Регистрация
+              </button>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Register Modal */}
+      <RegisterModal 
+        isOpen={showRegisterModal} 
+        onClose={() => setShowRegisterModal(false)} 
+      />
     </>
   );
 };

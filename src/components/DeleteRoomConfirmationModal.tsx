@@ -70,7 +70,7 @@ const DeleteRoomConfirmationModal: React.FC<DeleteRoomConfirmationModalProps> = 
 
         <div className="mb-6">
           <p className="text-sm text-gray-600">
-            Вы уверены, что хотите удалить кабинет <strong>"{room.name}"</strong>?
+            Вы уверены, что хотите удалить кабинет <strong>&ldquo;{room.name}&rdquo;</strong>?
           </p>
           <p className="text-sm text-gray-600 mt-2">
             Это действие нельзя отменить.

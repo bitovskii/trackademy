@@ -70,7 +70,7 @@ const DeleteSubjectConfirmationModal: React.FC<DeleteSubjectConfirmationModalPro
 
         <div className="mb-6">
           <p className="text-sm text-gray-600">
-            Вы уверены, что хотите удалить предмет <strong>"{subject.name}"</strong>?
+            Вы уверены, что хотите удалить предмет <strong>&ldquo;{subject.name}&rdquo;</strong>?
           </p>
           <p className="text-sm text-gray-600 mt-2">
             Это действие нельзя отменить.

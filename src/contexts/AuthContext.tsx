@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode, useState, useEffect, useMemo } from 'react';
+import { createContext, useContext, ReactNode, useState, useEffect, useMemo, useCallback } from 'react';
 
 interface User {
   id: string; // Changed to string since API returns GUID
@@ -112,9 +112,9 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     }
   }, []);
 
-  const loginWithCredentials = async (userLogin: string, password: string, organizationId?: string) => {
+  const loginWithCredentials = useCallback(async (userLogin: string, password: string, organizationId?: string) => {
     try {
-      const loginPayload: any = { login: userLogin, password };
+      const loginPayload: { login: string; password: string; organizationId?: string } = { login: userLogin, password };
       if (organizationId) {
         loginPayload.organizationId = organizationId;
       }
@@ -157,7 +157,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       console.error('Login error:', error);
       throw error;
     }
-  };
+  }, [login]);
 
   const getAuthToken = () => {
     return localStorage.getItem('authToken');
@@ -171,7 +171,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     register,
     loginWithCredentials,
     getAuthToken
-  }), [user]);
+  }), [user, login, logout, register, loginWithCredentials, getAuthToken]);
 
   return (
     <AuthContext.Provider value={contextValue}>

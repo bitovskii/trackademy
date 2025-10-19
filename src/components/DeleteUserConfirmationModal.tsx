@@ -70,7 +70,7 @@ const DeleteUserConfirmationModal: React.FC<DeleteUserConfirmationModalProps> = 
 
         <div className="mb-6">
           <p className="text-sm text-gray-600">
-            Вы уверены, что хотите удалить пользователя <strong>"{user.name}"</strong> (логин: <strong>{user.login}</strong>)?
+            Вы уверены, что хотите удалить пользователя <strong>&ldquo;{user.name}&rdquo;</strong> (логин: <strong>{user.login}</strong>)?
           </p>
           <p className="text-sm text-gray-600 mt-2">
             Это действие нельзя отменить.

@@ -45,7 +45,19 @@ export class AuthenticatedApiService {
           globalThis.location.href = '/login';
           throw new Error('Authentication expired');
         }
-        throw new Error(`HTTP error! status: ${response.status}`);
+        
+        // Try to get error details from response
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.text();
+          if (errorData) {
+            errorMessage += ` - ${errorData}`;
+          }
+        } catch (e) {
+          // Ignore error parsing errors
+        }
+        
+        throw new Error(errorMessage);
       }
       
       const contentLength = response.headers.get('content-length');

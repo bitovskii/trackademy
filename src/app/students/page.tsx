@@ -38,9 +38,15 @@ export default function StudentsPage() {
       setError(null);
       
       const organizationId = user?.organizationId || localStorage.getItem('userOrganizationId');
+      const authToken = localStorage.getItem('authToken');
       
       if (!organizationId) {
         setError('Не удается определить организацию пользователя');
+        return;
+      }
+
+      if (!authToken) {
+        setError('Требуется авторизация');
         return;
       }
 
@@ -52,15 +58,20 @@ export default function StudentsPage() {
         roleIds: [], // Empty array will get all roles
         organizationId: organizationId
       };
-
+      
       const data = await AuthenticatedApiService.post<UsersResponse>('/User/get-users', requestBody);
       
       setStudents(data.items);
       setTotalPages(data.totalPages);
       setTotalCount(data.totalCount);
+      
     } catch (error) {
       console.error('Failed to load students:', error);
-      setError('Не удалось загрузить список пользователей');
+      if (error instanceof Error) {
+        setError(`Ошибка загрузки: ${error.message}`);
+      } else {
+        setError('Не удалось загрузить список пользователей');
+      }
     } finally {
       setLoading(false);
     }
@@ -76,24 +87,25 @@ export default function StudentsPage() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-96 flex items-center justify-center">
-        <div className="text-center">
-          <div className="mx-auto h-12 w-12 text-gray-400">
-            <svg className="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="text-center card glass-card max-w-md mx-auto">
+          <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-2xl mb-6"
+               style={{ background: 'var(--gradient-cool)' }}>
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
           </div>
-          <h3 className="mt-2 text-sm font-medium text-gray-900">Требуется авторизация</h3>
-          <p className="mt-1 text-sm text-gray-500">
+          <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>
+            Требуется авторизация
+          </h3>
+          <p className="mb-6" style={{ color: 'var(--muted-foreground)' }}>
             Войдите в систему для управления пользователями
           </p>
-          <div className="mt-6">
-            <Link
-              href="/login"
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              Войти в систему
-            </Link>
-          </div>
+          <Link
+            href="/login"
+            className="btn-primary hover-lift inline-flex items-center"
+          >
+            Войти в систему
+          </Link>
         </div>
       </div>
     );
@@ -119,13 +131,13 @@ export default function StudentsPage() {
   const getRoleColor = (role: number) => {
     switch (role) {
       case 1:
-        return 'bg-red-100 text-red-800';
+        return 'from-red-500 to-pink-500';
       case 2:
-        return 'bg-blue-100 text-blue-800';
+        return 'from-blue-500 to-purple-500';
       case 3:
-        return 'bg-green-100 text-green-800';
+        return 'from-green-500 to-teal-500';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'from-gray-500 to-slate-500';
     }
   };
 
@@ -269,9 +281,10 @@ export default function StudentsPage() {
   if (loading) {
     return (
       <div className="min-h-96 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-sm text-gray-500">Загрузка пользователей...</p>
+        <div className="text-center card glass-card max-w-md mx-auto">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-4 mx-auto mb-4"
+               style={{ borderColor: 'var(--primary)' }}></div>
+          <p style={{ color: 'var(--muted-foreground)' }}>Загрузка пользователей...</p>
         </div>
       </div>
     );
@@ -280,13 +293,18 @@ export default function StudentsPage() {
   if (error) {
     return (
       <div className="min-h-96 flex items-center justify-center">
-        <div className="text-center">
-          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">
-            <p className="font-medium">Ошибка загрузки</p>
-            <p className="text-sm mt-1">{error}</p>
+        <div className="text-center card max-w-md mx-auto">
+          <div className="p-6 rounded-lg border"
+               style={{ 
+                 background: 'rgba(239, 68, 68, 0.1)',
+                 borderColor: 'var(--secondary)',
+                 color: 'var(--secondary)'
+               }}>
+            <p className="font-medium mb-2">Ошибка загрузки</p>
+            <p className="text-sm mb-4">{error}</p>
             <button
               onClick={loadStudents}
-              className="mt-3 px-4 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700"
+              className="btn-primary hover-lift"
             >
               Попробовать снова
             </button>

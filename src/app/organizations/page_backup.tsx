@@ -1,4 +1,4 @@
-п»ї'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { Organization, OrganizationFormData } from '../../types/Organization';
@@ -39,16 +39,16 @@ function OrganizationsPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
           </div>
-          <h3 className="mt-2 text-sm font-medium text-gray-900 ">пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ</h3>
+          <h3 className="mt-2 text-sm font-medium text-gray-900 ">Требуется авторизация</h3>
           <p className="mt-1 text-sm text-gray-500 ">
-            пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+            Войдите в систему для управления организациями
           </p>
           <div className="mt-6">
             <Link
               href="/login"
               className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-              пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+              Войти в систему
             </Link>
           </div>
         </div>
@@ -63,7 +63,7 @@ function OrganizationsPage() {
       const data = await ApiService.getOrganizations();
       setOrganizations(data);
     } catch (err) {
-      setError('пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ. пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅ.');
+      setError('Не удалось загрузить организации. Попробуйте еще раз.');
       console.error('Error loading organizations:', err);
     } finally {
       setLoading(false);
@@ -151,7 +151,7 @@ function OrganizationsPage() {
               onClick={loadOrganizations}
               className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
             >
-              пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+              Попробовать снова
             </button>
           </div>
         </div>
@@ -167,7 +167,7 @@ function OrganizationsPage() {
             onClick={handleCreate}
             className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
           >
-            <span>пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ</span>
+            <span>Добавить</span>
           </button>
         </div>
         
@@ -178,7 +178,7 @@ function OrganizationsPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
             </div>
-            <p className="text-gray-500 ">пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ.</p>
+            <p className="text-gray-500 ">Организации не найдены.</p>
           </div>
         ) : (
           <div>
@@ -207,13 +207,13 @@ function OrganizationsPage() {
                       onClick={() => handleEdit(org.id)}
                       className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded"
                     >
-                      пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+                      Редактировать
                     </button>
                     <button
                       onClick={() => handleDelete(org.id)}
                       className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded"
                     >
-                      пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+                      Удалить
                     </button>
                   </div>
                 </div>
@@ -226,19 +226,19 @@ function OrganizationsPage() {
                 <thead className="bg-white-header">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                      пїЅ
+                      №
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                      пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+                      Организация
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                      пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+                      Телефон
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                      пїЅпїЅпїЅпїЅпїЅ
+                      Адрес
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">
-                      пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+                      Действия
                     </th>
                   </tr>
                 </thead>
@@ -262,14 +262,14 @@ function OrganizationsPage() {
                           <button
                             onClick={() => handleEdit(org.id)}
                             className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50 transition-colors"
-                            title="пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ"
+                            title="Редактировать организацию"
                           >
                             <PencilIcon className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => handleDelete(org.id)}
                             className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 transition-colors"
-                            title="пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ"
+                            title="Удалить организацию"
                           >
                             <TrashIcon className="h-4 w-4" />
                           </button>

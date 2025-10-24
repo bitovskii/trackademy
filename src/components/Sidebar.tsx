@@ -2,12 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BuildingOfficeIcon, HomeModernIcon, HomeIcon, UserCircleIcon, AcademicCapIcon, BookOpenIcon, ArrowRightEndOnRectangleIcon, UserPlusIcon } from '@heroicons/react/24/outline';
-import { BuildingOfficeIcon as BuildingOfficeIconSolid, HomeModernIcon as HomeModernIconSolid, HomeIcon as HomeIconSolid, UserCircleIcon as UserCircleIconSolid, AcademicCapIcon as AcademicCapIconSolid, BookOpenIcon as BookOpenIconSolid } from '@heroicons/react/24/solid';
+import { BuildingOfficeIcon, HomeModernIcon, HomeIcon, UserCircleIcon, AcademicCapIcon, BookOpenIcon, ArrowRightEndOnRectangleIcon, UserPlusIcon, CogIcon } from '@heroicons/react/24/outline';
+import { BuildingOfficeIcon as BuildingOfficeIconSolid, HomeModernIcon as HomeModernIconSolid, HomeIcon as HomeIconSolid, UserCircleIcon as UserCircleIconSolid, AcademicCapIcon as AcademicCapIconSolid, BookOpenIcon as BookOpenIconSolid, CogIcon as CogIconSolid } from '@heroicons/react/24/solid';
 import { useAuth } from '../contexts/AuthContext';
 import { useState } from 'react';
 import RegisterModal from './RegisterModal';
-import ThemeToggle from './ThemeToggle';
+import { isOwner } from '../types/Role';
 
 const Sidebar: React.FC = () => {
   const pathname = usePathname();
@@ -15,18 +15,29 @@ const Sidebar: React.FC = () => {
   const [showRegisterModal, setShowRegisterModal] = useState(false);
 
   const allNavigation = [
-    { name: 'Главная', href: '/', icon: HomeIcon, activeIcon: HomeIconSolid },
-    { name: 'Организации', href: '/organizations', icon: BuildingOfficeIcon, activeIcon: BuildingOfficeIconSolid, requireAuth: true },
-    { name: 'Студенты', href: '/students', icon: AcademicCapIcon, activeIcon: AcademicCapIconSolid, requireAuth: true },
-    { name: 'Кабинеты', href: '/rooms', icon: HomeModernIcon, activeIcon: HomeModernIconSolid, requireAuth: true },
-    { name: 'Предметы', href: '/subjects', icon: BookOpenIcon, activeIcon: BookOpenIconSolid, requireAuth: true },
-    { name: 'Профиль', href: '/profile', icon: UserCircleIcon, activeIcon: UserCircleIconSolid, requireAuth: true },
+    { name: 'Главная', href: '/', icon: HomeIcon, activeIcon: HomeIconSolid, requireAuth: false, requireOwner: false },
+    { name: 'Организации', href: '/organizations', icon: BuildingOfficeIcon, activeIcon: BuildingOfficeIconSolid, requireAuth: true, requireOwner: true },
+    { name: 'Студенты', href: '/students', icon: AcademicCapIcon, activeIcon: AcademicCapIconSolid, requireAuth: true, requireOwner: false },
+    { name: 'Кабинеты', href: '/rooms', icon: HomeModernIcon, activeIcon: HomeModernIconSolid, requireAuth: true, requireOwner: false },
+    { name: 'Предметы', href: '/subjects', icon: BookOpenIcon, activeIcon: BookOpenIconSolid, requireAuth: true, requireOwner: false },
+    { name: 'Профиль', href: '/profile', icon: UserCircleIcon, activeIcon: UserCircleIconSolid, requireAuth: true, requireOwner: false },
   ];
 
-  // Filter navigation based on authentication status
-  const navigation = isAuthenticated 
-    ? allNavigation 
-    : allNavigation.filter(item => !item.requireAuth);
+  // Filter navigation based on authentication status and role
+  let navigation = allNavigation;
+  
+  if (!isAuthenticated) {
+    navigation = allNavigation.filter(item => !item.requireAuth);
+  } else {
+    // If authenticated, filter by owner role
+    navigation = allNavigation.filter(item => {
+      if (!item.requireAuth) return true; // Public items always visible
+      if (item.requireOwner && user) {
+        return isOwner(user.role);
+      }
+      return true; // Other auth-required items visible to all authenticated users
+    });
+  }
 
   const isActive = (href: string) => {
     if (href === '/') {
@@ -38,8 +49,7 @@ const Sidebar: React.FC = () => {
   return (
     <>
       {/* Modern Bottom Navigation Bar - Mobile Only */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 glass-card border-t" 
-           style={{ borderColor: 'var(--border)' }}>
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg">
         <div className="flex items-center justify-around py-2">
           {navigation.slice(0, 5).map((item) => {
             const active = isActive(item.href);
@@ -49,23 +59,18 @@ const Sidebar: React.FC = () => {
               <Link
                 key={item.name}
                 href={item.href}
-                className="flex flex-col items-center py-2 px-3 transition-all duration-300 hover-lift"
+                className="flex flex-col items-center py-2 px-3 transition-all duration-300"
               >
                 <div className={`p-2 rounded-xl transition-all duration-300 ${
                   active 
-                    ? 'shadow-lg' 
-                    : 'opacity-70'
-                }`}
-                style={{ 
-                  background: active ? 'var(--gradient-warm)' : 'transparent',
-                  color: active ? 'white' : 'var(--muted-foreground)'
-                }}>
+                    ? 'bg-blue-500 text-white shadow-lg' 
+                    : 'text-gray-500'
+                }`}>
                   <IconComponent className="h-5 w-5" />
                 </div>
                 <span className={`text-xs mt-1 transition-colors duration-300 ${
-                  active ? 'font-medium' : ''
-                }`}
-                style={{ color: active ? 'var(--primary)' : 'var(--muted-foreground)' }}>
+                  active ? 'text-blue-600 font-medium' : 'text-gray-500'
+                }`}>
                   {item.name}
                 </span>
               </Link>
@@ -75,41 +80,32 @@ const Sidebar: React.FC = () => {
       </div>
 
       {/* Modern Desktop Sidebar */}
-      <div className="hidden lg:flex lg:fixed lg:left-0 lg:top-0 lg:h-screen lg:w-64 lg:flex-col transition-all duration-300"
-           style={{ 
-             background: 'var(--card)',
-             borderRight: '1px solid var(--border)',
-             boxShadow: 'var(--shadow-lg)'
-           }}>
+      <div className="hidden lg:flex lg:fixed lg:left-0 lg:top-0 lg:h-screen lg:w-64 lg:flex-col transition-all duration-300 bg-white border-r border-gray-200 shadow-lg">
         
         {/* Logo Section */}
-        <div className="flex items-center justify-between h-16 px-6"
-             style={{ borderBottom: '1px solid var(--border)' }}>
+        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-                 style={{ background: 'var(--gradient-cool)' }}>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600">
               <AcademicCapIcon className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold gradient-text">TrackAcademy</span>
+            <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">TrackAcademy</span>
           </div>
         </div>
         
         {/* User Info Section */}
         {isAuthenticated && user && (
-          <div className="px-6 py-4"
-               style={{ borderBottom: '1px solid var(--border)' }}>
+          <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-full flex items-center justify-center"
-                   style={{ background: 'var(--gradient-cool)' }}>
+              <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600">
                 <span className="text-white font-medium">
                   {user.fullName?.charAt(0)?.toUpperCase() || 'U'}
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate" style={{ color: 'var(--foreground)' }}>
+                <p className="text-sm font-medium text-gray-900 truncate">
                   {user.fullName}
                 </p>
-                <p className="text-xs truncate" style={{ color: 'var(--muted-foreground)' }}>
+                <p className="text-xs text-gray-500 truncate">
                   {user.role}
                 </p>
               </div>
@@ -129,19 +125,17 @@ const Sidebar: React.FC = () => {
                   key={item.name}
                   href={item.href}
                   className={`
-                    group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-300 hover-lift
-                    ${active ? 'shadow-md' : ''}
+                    group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-300
+                    ${active 
+                      ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md' 
+                      : 'text-gray-700 hover:bg-gray-100'
+                    }
                   `}
-                  style={{
-                    background: active ? 'var(--gradient-cool)' : 'transparent',
-                    color: active ? 'white' : 'var(--foreground)'
-                  }}
                 >
                   <IconComponent
                     className={`mr-3 flex-shrink-0 h-5 w-5 transition-all duration-300 ${
-                      active ? 'text-white' : ''
+                      active ? 'text-white' : 'text-gray-500'
                     }`}
-                    style={{ color: active ? 'white' : 'var(--muted-foreground)' }}
                   />
                   {item.name}
                   {active && (
@@ -153,27 +147,12 @@ const Sidebar: React.FC = () => {
           </nav>
         </div>
 
-        {/* Theme Toggle & Auth Section */}
-        <div className="px-4 py-4 space-y-4"
-             style={{ borderTop: '1px solid var(--border)' }}>
-          
-          {/* Theme Toggle */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>
-              Тема
-            </span>
-            <ThemeToggle />
-          </div>
-
-          {/* Auth Buttons */}
+        {/* Auth Section */}
+        <div className="px-4 py-4 border-t border-gray-200">
           {isAuthenticated ? (
             <button 
               onClick={logout}
-              className="w-full flex items-center justify-center px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 hover-lift"
-              style={{ 
-                background: 'var(--secondary)',
-                color: 'white'
-              }}
+              className="w-full flex items-center justify-center px-4 py-3 rounded-xl text-sm font-medium bg-red-500 text-white transition-all duration-300 hover:bg-red-600"
             >
               <ArrowRightEndOnRectangleIcon className="h-5 w-5 mr-2" />
               Выйти
@@ -182,18 +161,14 @@ const Sidebar: React.FC = () => {
             <div className="space-y-2">
               <Link 
                 href="/login"
-                className="w-full flex items-center justify-center px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 hover-lift"
-                style={{ 
-                  background: 'var(--gradient-cool)',
-                  color: 'white'
-                }}
+                className="w-full flex items-center justify-center px-4 py-3 rounded-xl text-sm font-medium bg-gradient-to-r from-blue-500 to-purple-600 text-white transition-all duration-300 hover:shadow-lg"
               >
                 <ArrowRightEndOnRectangleIcon className="h-5 w-5 mr-2" />
                 Войти
               </Link>
               <button 
                 onClick={() => setShowRegisterModal(true)}
-                className="w-full flex items-center justify-center px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 hover-lift btn-secondary"
+                className="w-full flex items-center justify-center px-4 py-3 rounded-xl text-sm font-medium bg-gray-100 text-gray-700 transition-all duration-300 hover:bg-gray-200"
               >
                 <UserPlusIcon className="h-5 w-5 mr-2" />
                 Регистрация

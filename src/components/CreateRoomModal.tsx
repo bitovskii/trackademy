@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { RoomFormData } from '../types/Room';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, HomeIcon } from '@heroicons/react/24/outline';
 
 interface CreateRoomModalProps {
   isOpen: boolean;
@@ -71,77 +71,106 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-medium text-gray-900">
-            Создать новый кабинет
-          </h3>
-          <button
-            onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <XMarkIcon className="h-6 w-6" />
-          </button>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[70vh] overflow-hidden">
+        {/* Header with gradient */}
+        <div className="relative bg-gradient-to-r from-primary to-secondary p-2 text-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className="w-6 h-6 bg-white/20 rounded-lg flex items-center justify-center">
+                <HomeIcon className="w-3 h-3" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold">Добавить кабинет</h2>
+                <p className="text-white/80 text-xs">Создайте новый кабинет в системе</p>
+              </div>
+            </div>
+            <button
+              onClick={handleClose}
+              className="w-5 h-5 bg-white/20 hover:bg-white/30 rounded-lg flex items-center justify-center transition-colors"
+            >
+              <XMarkIcon className="w-3 h-3" />
+            </button>
+          </div>
         </div>
 
-        {error && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-            {error}
-          </div>
-        )}
+        {/* Form Content */}
+        <div className="p-2 max-h-[calc(70vh-60px)] overflow-y-auto">
+          <form onSubmit={handleSubmit} className="space-y-2">
+            {error && (
+              <div className="mb-2 p-2 bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-400 rounded text-xs">
+                {error}
+              </div>
+            )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-              Название кабинета
-            </label>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              required
-              placeholder="Например: Аудитория 101"
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
-            />
-          </div>
+            {/* Room Information */}
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-600 pb-1">
+                Информация о кабинете
+              </h3>
+              
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Название кабинета *
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-2 py-1.5 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:ring-0 focus:border-primary transition-colors dark:bg-gray-700 dark:text-white text-sm"
+                  placeholder="Например: Аудитория 101"
+                />
+              </div>
 
-          <div>
-            <label htmlFor="capacity" className="block text-sm font-medium text-gray-700">
-              Вместимость (количество мест)
-            </label>
-            <input
-              type="number"
-              id="capacity"
-              name="capacity"
-              value={formData.capacity}
-              onChange={handleChange}
-              min="1"
-              max="1000"
-              required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
-            />
-          </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Вместимость (количество мест) *
+                </label>
+                <input
+                  type="number"
+                  name="capacity"
+                  value={formData.capacity}
+                  onChange={handleChange}
+                  min="1"
+                  max="1000"
+                  required
+                  className="w-full px-2 py-1.5 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:ring-0 focus:border-primary transition-colors dark:bg-gray-700 dark:text-white text-sm"
+                  placeholder="30"
+                />
+              </div>
+            </div>
 
-          <div className="flex justify-end space-x-3">
-            <button
-              type="button"
-              onClick={handleClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-            >
-              Отмена
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? 'Создание...' : 'Создать кабинет'}
-            </button>
-          </div>
-        </form>
+            {/* Form Buttons */}
+            <div className="pt-2 border-t border-gray-200 dark:border-gray-600 flex space-x-2">
+              <button
+                type="button"
+                onClick={handleClose}
+                className="flex-1 px-3 py-1.5 border-2 border-gray-300 dark:border-gray-500 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors font-medium text-xs"
+              >
+                Отмена
+              </button>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="flex-1 px-3 py-1.5 bg-gradient-to-r from-primary to-secondary text-white rounded-lg hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium flex items-center justify-center space-x-1 text-xs"
+              >
+                {isLoading ? (
+                  <>
+                    <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <span>Создание...</span>
+                  </>
+                ) : (
+                  <>
+                    <HomeIcon className="w-3 h-3" />
+                    <span>Создать кабинет</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

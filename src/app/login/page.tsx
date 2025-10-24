@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { EyeIcon, EyeSlashIcon, AcademicCapIcon, BuildingOfficeIcon, UserGroupIcon } from '@heroicons/react/24/outline';
-import ThemeToggle from '../../components/ThemeToggle';
 import Link from 'next/link';
 
 interface Organization {
@@ -81,14 +80,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden"
-         style={{ background: 'var(--background)' }}>
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden bg-gray-50">
       
-      {/* Theme Toggle */}
-      <div className="absolute top-6 right-6 z-50">
-        <ThemeToggle />
-      </div>
-
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-10 -right-10 w-64 h-64 rounded-full opacity-10 animate-float" 

@@ -7,11 +7,12 @@ interface User {
   email: string;
   role: string; // Changed to string since API returns role names like "Administrator"
   organizationId?: string;
-  organizationNames?: string; // Add organization name from API
+  organizationNames?: string | string[]; // Can be string or array
 }
 
 interface AuthContextType {
   user: User | null;
+  token: string | null;
   isAuthenticated: boolean;
   login: (user: User) => void;
   logout: () => void;
@@ -34,6 +35,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
 
   const login = (userData: User) => {
     setUser(userData);
@@ -42,6 +44,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
 
   const logout = () => {
     setUser(null);
+    setToken(null);
     localStorage.removeItem('user');
     localStorage.removeItem('authToken'); // Also remove the JWT token
     localStorage.removeItem('userLogin'); // Clear saved login
@@ -107,8 +110,14 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   // Check for stored user on component mount
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
+    const storedToken = localStorage.getItem('authToken');
+    
     if (storedUser) {
       setUser(JSON.parse(storedUser));
+    }
+    
+    if (storedToken) {
+      setToken(storedToken);
     }
   }, []);
 
@@ -134,7 +143,6 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       }
 
       const result = await response.json();
-      console.log('Login API response:', result);
       
       // Extract user data from the API response structure
       const userData: User = {
@@ -150,6 +158,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       // Store the JWT token separately
       if (result.token) {
         localStorage.setItem('authToken', result.token);
+        setToken(result.token);
       }
 
       login(userData);
@@ -165,13 +174,14 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
 
   const contextValue = useMemo(() => ({
     user,
+    token,
     isAuthenticated: !!user,
     login,
     logout,
     register,
     loginWithCredentials,
     getAuthToken
-  }), [user, login, logout, register, loginWithCredentials, getAuthToken]);
+  }), [user, token, login, logout, register, loginWithCredentials, getAuthToken]);
 
   return (
     <AuthContext.Provider value={contextValue}>

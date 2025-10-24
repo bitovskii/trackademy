@@ -8,6 +8,8 @@ import { UserIcon, PencilIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/o
 import { User, UserFormData } from '../../types/User';
 import EditUserModal from '../../components/EditUserModal';
 import DeleteUserConfirmationModal from '../../components/DeleteUserConfirmationModal';
+import CreateUserModal, { CreateUserData } from '../../components/CreateUserModal';
+import { canManageUsers } from '../../types/Role';
 import Link from 'next/link';
 
 interface UsersResponse {
@@ -30,6 +32,7 @@ export default function StudentsPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [deletingUser, setDeletingUser] = useState<User | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const pageSize = 10;
 
   const loadStudents = useCallback(async () => {
@@ -118,11 +121,13 @@ export default function StudentsPage() {
   const getRoleText = (role: number) => {
     switch (role) {
       case 1:
-        return 'Администратор';
-      case 2:
-        return 'Преподаватель';
-      case 3:
         return 'Студент';
+      case 2:
+        return 'Администратор';
+      case 3:
+        return 'Преподаватель';
+      case 4:
+        return 'Владелец системы';
       default:
         return 'Неизвестная роль';
     }
@@ -131,13 +136,15 @@ export default function StudentsPage() {
   const getRoleColor = (role: number) => {
     switch (role) {
       case 1:
-        return 'from-red-500 to-pink-500';
+        return 'bg-gradient-to-r from-green-500 to-teal-500 text-white'; // Студент
       case 2:
-        return 'from-blue-500 to-purple-500';
+        return 'bg-gradient-to-r from-red-500 to-pink-500 text-white'; // Администратор
       case 3:
-        return 'from-green-500 to-teal-500';
+        return 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'; // Преподаватель
+      case 4:
+        return 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white'; // Владелец системы
       default:
-        return 'from-gray-500 to-slate-500';
+        return 'bg-gradient-to-r from-gray-500 to-slate-500 text-white';
     }
   };
 
@@ -197,6 +204,36 @@ export default function StudentsPage() {
   const handleCloseDeleteModal = () => {
     setIsDeleteModalOpen(false);
     setDeletingUser(null);
+  };
+
+  // Create user handlers
+  const handleCreateUser = async (userData: CreateUserData) => {
+    try {
+      const response = await fetch('https://trackademy.onrender.com/api/User/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+        },
+        body: JSON.stringify(userData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Не удалось создать пользователя');
+      }
+
+      // Reload the students list to show the new user
+      await loadStudents();
+      setIsCreateModalOpen(false);
+    } catch (error) {
+      console.error('Error creating user:', error);
+      throw error; // Re-throw to let the modal handle the error display
+    }
+  };
+
+  const handleCloseCreateModal = () => {
+    setIsCreateModalOpen(false);
   };
 
   const renderPagination = () => {
@@ -320,35 +357,38 @@ export default function StudentsPage() {
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
           <h1 className="text-xl font-semibold text-gray-900">Пользователи</h1>
-          <button 
-            className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors flex items-center"
-          >
-            <PlusIcon className="h-4 w-4 mr-2" />
-            Добавить пользователя
-          </button>
+          {user && canManageUsers(user.role) && (
+            <button 
+              onClick={() => setIsCreateModalOpen(true)}
+              className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors flex items-center"
+            >
+              <PlusIcon className="h-4 w-4 mr-2" />
+              Добавить пользователя
+            </button>
+          )}
         </div>
 
         {/* Desktop Table */}
         <div className="hidden md:block">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-gray-200 ">
+            <thead className="bg-white-header">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   №
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Логин
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Имя
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Email
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Телефон
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Роль
                 </th>
                 <th className="relative px-6 py-3">
@@ -356,9 +396,9 @@ export default function StudentsPage() {
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white divide-y divide-gray-200 ">
               {students.map((student, index) => (
-                <tr key={student.id} className="hover:bg-gray-50">
+                <tr key={student.id} className="bg-white-row">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-500">{(currentPage - 1) * pageSize + index + 1}</div>
                   </td>
@@ -431,7 +471,7 @@ export default function StudentsPage() {
                   </div>
                 </div>
                 <div className="space-y-2 text-sm text-gray-600">
-                  <div>Логин: <span className="font-medium">{student.login}</span></div>
+                  <div>Логин: <span className="font-medium text-gray-900">{student.login}</span></div>
                   <div>Email: {student.email}</div>
                   <div>Телефон: {student.phone}</div>
                   <div className="flex items-center gap-2">
@@ -449,13 +489,13 @@ export default function StudentsPage() {
         {/* Empty State */}
         {students.length === 0 && !loading && (
           <div className="text-center py-12">
-            <UserIcon className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">Нет пользователей</h3>
-            <p className="mt-1 text-sm text-gray-500">
+            <UserIcon className="mx-auto h-12 w-12 text-gray-400 " />
+            <h3 className="mt-2 text-sm font-medium text-gray-900 ">Нет пользователей</h3>
+            <p className="mt-1 text-sm text-gray-500 ">
               Начните с добавления первого пользователя
             </p>
             <div className="mt-6">
-              <button className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+              <button className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 ">
                 <PlusIcon className="h-4 w-4 mr-2" />
                 Добавить пользователя
               </button>
@@ -473,6 +513,13 @@ export default function StudentsPage() {
         user={editingUser}
         onClose={handleCloseEditModal}
         onSave={handleSaveEdit}
+      />
+
+      {/* Create User Modal */}
+      <CreateUserModal
+        isOpen={isCreateModalOpen}
+        onClose={handleCloseCreateModal}
+        onSave={handleCreateUser}
       />
 
       {/* Delete User Confirmation Modal */}

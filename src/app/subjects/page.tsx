@@ -7,7 +7,7 @@ import { BookOpenIcon, PencilIcon, TrashIcon, PlusIcon } from '@heroicons/react/
 import { Subject, SubjectFormData } from '../../types/Subject';
 import CreateSubjectModal from '../../components/CreateSubjectModal';
 import EditSubjectModal from '../../components/EditSubjectModal';
-import DeleteSubjectConfirmationModal from '../../components/DeleteSubjectConfirmationModal';
+import { DeleteConfirmationModal } from '../../components/ui/DeleteConfirmationModal';
 import Link from 'next/link';
 
 interface SubjectsResponse {
@@ -21,11 +21,11 @@ interface SubjectsResponse {
 export default function SubjectsPage() {
   const { isAuthenticated, user } = useAuth();
   const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
+  const [tableLoading, setTableLoading] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -33,9 +33,11 @@ export default function SubjectsPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const pageSize = 10;
 
-  const loadSubjects = useCallback(async () => {
+  const loadSubjects = useCallback(async (page: number = currentPage, isTableOnly: boolean = true) => {
     try {
-      setLoading(true);
+      if (isTableOnly) {
+        setTableLoading(true);
+      }
       setError(null);
       
       const organizationId = user?.organizationId || localStorage.getItem('userOrganizationId');
@@ -46,7 +48,7 @@ export default function SubjectsPage() {
       }
 
       const requestBody = {
-        pageNumber: currentPage,
+        pageNumber: page,
         pageSize: pageSize,
         organizationId: organizationId
       };
@@ -56,19 +58,27 @@ export default function SubjectsPage() {
       setSubjects(data.items);
       setTotalPages(data.totalPages);
       setTotalCount(data.totalCount);
+      setCurrentPage(page);
     } catch (error) {
       console.error('Failed to load subjects:', error);
       setError('Не удалось загрузить список предметов');
     } finally {
-      setLoading(false);
+      if (isTableOnly) {
+        setTableLoading(false);
+      }
     }
   }, [currentPage, user?.organizationId]);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      loadSubjects();
+    if (isAuthenticated && !subjects.length) {
+      loadSubjects(currentPage, true);
     }
-  }, [currentPage, isAuthenticated, loadSubjects]);
+  }, [isAuthenticated, subjects.length]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    loadSubjects(page, true);
+  };
 
   // Check authentication after all hooks are called
   if (!isAuthenticated) {
@@ -97,10 +107,6 @@ export default function SubjectsPage() {
     );
   }
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
   const handleCreate = () => {
     setIsCreateModalOpen(true);
   };
@@ -119,7 +125,7 @@ export default function SubjectsPage() {
       };
 
       await AuthenticatedApiService.post('/Subject/create', dataToSend);
-      await loadSubjects(); // Reload the list to show new data
+      await loadSubjects(currentPage, true); // Reload only the table
     } catch (error) {
       console.error('Error creating subject:', error);
       throw error; // Re-throw to let the modal handle the error display
@@ -141,7 +147,7 @@ export default function SubjectsPage() {
   const handleSaveEdit = async (id: string, formData: SubjectFormData) => {
     try {
       await AuthenticatedApiService.put(`/Subject/${id}`, formData);
-      await loadSubjects(); // Reload the list to show updated data
+      await loadSubjects(currentPage, true); // Reload only the table
     } catch (error) {
       console.error('Error updating subject:', error);
       throw error; // Re-throw to let the modal handle the error display
@@ -161,10 +167,13 @@ export default function SubjectsPage() {
     }
   };
 
-  const handleConfirmDelete = async (id: string) => {
+  const handleConfirmDelete = async () => {
+    if (!deletingSubject) return;
+    
     try {
-      await AuthenticatedApiService.delete(`/Subject/${id}`);
-      await loadSubjects(); // Reload the list to show updated data
+      await AuthenticatedApiService.delete(`/Subject/${deletingSubject.id}`);
+      await loadSubjects(currentPage, true); // Reload only the table
+      handleCloseDeleteModal();
     } catch (error) {
       console.error('Error deleting subject:', error);
       throw error; // Re-throw to let the modal handle the error display
@@ -255,17 +264,6 @@ export default function SubjectsPage() {
     );
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-96 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
-          <p className="mt-4 text-sm text-gray-500">Загрузка предметов...</p>
-        </div>
-      </div>
-    );
-  }
-
   if (error) {
     return (
       <div className="min-h-96 flex items-center justify-center">
@@ -274,7 +272,7 @@ export default function SubjectsPage() {
             <p className="font-medium">Ошибка загрузки</p>
             <p className="text-sm mt-1">{error}</p>
             <button
-              onClick={loadSubjects}
+              onClick={() => loadSubjects(currentPage, true)}
               className="mt-3 px-4 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700"
             >
               Попробовать снова
@@ -300,8 +298,16 @@ export default function SubjectsPage() {
           </button>
         </div>
 
+        {/* Loading State */}
+        {tableLoading && (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+            <p className="mt-2 text-sm text-gray-500">Загрузка...</p>
+          </div>
+        )}
+
         {/* Desktop Table */}
-        <div className="hidden md:block">
+        <div className="hidden md:block">{!tableLoading && (
           <table className="min-w-full divide-y divide-gray-200 ">
             <thead className="bg-gray-50 ">
               <tr>
@@ -356,10 +362,11 @@ export default function SubjectsPage() {
               ))}
             </tbody>
           </table>
+          )}
         </div>
 
         {/* Mobile Cards */}
-        <div className="md:hidden">
+        <div className="md:hidden">{!tableLoading && (
           <div className="space-y-4 p-4">
             {subjects.map((subject, index) => (
               <div key={subject.id} className="bg-white border border-gray-200 rounded-lg p-4">
@@ -394,10 +401,11 @@ export default function SubjectsPage() {
               </div>
             ))}
           </div>
+          )}
         </div>
 
         {/* Empty State */}
-        {subjects.length === 0 && !loading && (
+        {subjects.length === 0 && !tableLoading && (
           <div className="text-center py-12">
             <BookOpenIcon className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">Нет предметов</h3>
@@ -436,11 +444,13 @@ export default function SubjectsPage() {
       />
 
       {/* Delete Subject Confirmation Modal */}
-      <DeleteSubjectConfirmationModal
+      <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}
-        subject={deletingSubject}
         onClose={handleCloseDeleteModal}
         onConfirm={handleConfirmDelete}
+        title="Удаление предмета"
+        message={`Вы уверены, что хотите удалить предмет "${deletingSubject?.name}"?`}
+        itemName={deletingSubject?.name}
       />
     </div>
   );

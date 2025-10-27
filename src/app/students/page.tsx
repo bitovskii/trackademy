@@ -3,12 +3,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
-import { ApiService } from '../../services/ApiService';
 import { UserIcon, PencilIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { User, UserFormData } from '../../types/User';
 import EditUserModal from '../../components/EditUserModal';
-import DeleteUserConfirmationModal from '../../components/DeleteUserConfirmationModal';
+import { DeleteConfirmationModal } from '../../components/ui/DeleteConfirmationModal';
 import CreateUserModal, { CreateUserData } from '../../components/CreateUserModal';
+import { UserFilters, UserFilters as UserFiltersType } from '../../components/ui/UserFilters';
+import { UsersTable } from '../../components/ui/UsersTable';
+import { useDebounce } from '../../hooks/useDebounce';
 import { canManageUsers } from '../../types/Role';
 import Link from 'next/link';
 
@@ -23,7 +25,6 @@ interface UsersResponse {
 export default function StudentsPage() {
   const { isAuthenticated, user } = useAuth();
   const [students, setStudents] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
@@ -33,11 +34,29 @@ export default function StudentsPage() {
   const [deletingUser, setDeletingUser] = useState<User | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [filters, setFilters] = useState<UserFiltersType>({
+    search: '',
+    roleIds: [],
+    groupIds: []
+  });
+  const [groups, setGroups] = useState<Array<{id: string, name: string}>>([]);
+  const [tableLoading, setTableLoading] = useState(false);
+  
+  // Debounce search to avoid too many API calls
+  const debouncedSearchTerm = useDebounce(filters.search, 300);
+  
+  // Track previous search term to avoid unnecessary calls
+  const [prevDebouncedSearch, setPrevDebouncedSearch] = useState('');
+  
   const pageSize = 10;
 
-  const loadStudents = useCallback(async () => {
+  const loadStudents = useCallback(async (page: number = currentPage, userFilters: UserFiltersType = filters, isTableOnly: boolean = true) => {
     try {
-      setLoading(true);
+      if (isTableOnly) {
+        setTableLoading(true);
+      } else {
+        // Не нужно устанавливать loading, используем только tableLoading
+      }
       setError(null);
       
       const organizationId = user?.organizationId || localStorage.getItem('userOrganizationId');
@@ -53,188 +72,60 @@ export default function StudentsPage() {
         return;
       }
 
-      const requestBody = {
-        pageNumber: currentPage,
-        pageSize: pageSize,
-        search: '',
-        groupIds: [],
-        roleIds: [], // Empty array will get all roles
-        organizationId: organizationId
-      };
-      
-      const data = await AuthenticatedApiService.post<UsersResponse>('/User/get-users', requestBody);
+      // Используем debouncedSearchTerm для поиска
+      const searchTerm = userFilters === filters ? debouncedSearchTerm : userFilters.search;
+
+      const data = await AuthenticatedApiService.getUsers({
+        organizationId,
+        pageNumber: page,
+        pageSize,
+        search: searchTerm || undefined,
+        roleIds: userFilters.roleIds.length > 0 ? userFilters.roleIds : undefined,
+        groupIds: userFilters.groupIds.length > 0 ? userFilters.groupIds : undefined
+      });
       
       setStudents(data.items);
       setTotalPages(data.totalPages);
       setTotalCount(data.totalCount);
+      setCurrentPage(page);
       
     } catch (error) {
       console.error('Failed to load students:', error);
       if (error instanceof Error) {
-        setError(`Ошибка загрузки: ${error.message}`);
+        setError(error.message);
       } else {
         setError('Не удалось загрузить список пользователей');
       }
     } finally {
-      setLoading(false);
+      if (isTableOnly) {
+        setTableLoading(false);
+      } else {
+        // Не нужно управлять loading, используем только tableLoading
+      }
     }
-  }, [currentPage, user?.organizationId]);
+  }, [currentPage, user?.organizationId, debouncedSearchTerm]);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      loadStudents();
+  const loadGroups = useCallback(async () => {
+    try {
+      const organizationId = user?.organizationId || localStorage.getItem('userOrganizationId');
+      if (!organizationId) return;
+
+      const groupsResponse = await AuthenticatedApiService.getGroups(organizationId, 1000);
+      setGroups(groupsResponse?.items || []);
+    } catch (error) {
+      console.error('Failed to load groups:', error);
     }
-  }, [currentPage, isAuthenticated, loadStudents]);
+  }, [user?.organizationId]);
 
-  // Check authentication after all hooks are called
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-96 flex items-center justify-center">
-        <div className="text-center card glass-card max-w-md mx-auto">
-          <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-2xl mb-6"
-               style={{ background: 'var(--gradient-cool)' }}>
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-          </div>
-          <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>
-            Требуется авторизация
-          </h3>
-          <p className="mb-6" style={{ color: 'var(--muted-foreground)' }}>
-            Войдите в систему для управления пользователями
-          </p>
-          <Link
-            href="/login"
-            className="btn-primary hover-lift inline-flex items-center"
-          >
-            Войти в систему
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  const handleFilterChange = useCallback((newFilters: UserFiltersType) => {
+    setFilters(newFilters);
+    setCurrentPage(1); // Reset to first page when filters change
+  }, []);
 
-  const handlePageChange = (page: number) => {
+  const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page);
-  };
-
-  const getRoleText = (role: number) => {
-    switch (role) {
-      case 1:
-        return 'Студент';
-      case 2:
-        return 'Администратор';
-      case 3:
-        return 'Преподаватель';
-      case 4:
-        return 'Владелец системы';
-      default:
-        return 'Неизвестная роль';
-    }
-  };
-
-  const getRoleColor = (role: number) => {
-    switch (role) {
-      case 1:
-        return 'bg-gradient-to-r from-green-500 to-teal-500 text-white'; // Студент
-      case 2:
-        return 'bg-gradient-to-r from-red-500 to-pink-500 text-white'; // Администратор
-      case 3:
-        return 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'; // Преподаватель
-      case 4:
-        return 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white'; // Владелец системы
-      default:
-        return 'bg-gradient-to-r from-gray-500 to-slate-500 text-white';
-    }
-  };
-
-  const handleEdit = (id: string) => {
-    const student = students.find(s => s.id === id);
-    if (student) {
-      setEditingUser(student);
-      setIsEditModalOpen(true);
-    }
-  };
-
-  const handleSaveEdit = async (id: string, formData: UserFormData) => {
-    try {
-      const result = await ApiService.updateUser(id, formData);
-      
-      // Check if the update was successful (handle boolean response)
-      if (result === false) {
-        throw new Error('Не удалось обновить пользователя. Попробуйте еще раз.');
-      }
-      
-      await loadStudents(); // Reload the list to show updated data
-    } catch (error) {
-      console.error('Error updating user:', error);
-      throw error; // Re-throw to let the modal handle the error display
-    }
-  };
-
-  const handleCloseEditModal = () => {
-    setIsEditModalOpen(false);
-    setEditingUser(null);
-  };
-
-  const handleDelete = (id: string) => {
-    const student = students.find(s => s.id === id);
-    if (student) {
-      setDeletingUser(student);
-      setIsDeleteModalOpen(true);
-    }
-  };
-
-  const handleConfirmDelete = async (id: string) => {
-    try {
-      const result = await ApiService.deleteUser(id);
-      
-      // Check if the deletion was successful
-      if (result === false) {
-        throw new Error('Не удалось удалить пользователя. Попробуйте еще раз.');
-      }
-      
-      await loadStudents(); // Reload the list to show updated data
-    } catch (error) {
-      console.error('Error deleting user:', error);
-      throw error; // Re-throw to let the modal handle the error display
-    }
-  };
-
-  const handleCloseDeleteModal = () => {
-    setIsDeleteModalOpen(false);
-    setDeletingUser(null);
-  };
-
-  // Create user handlers
-  const handleCreateUser = async (userData: CreateUserData) => {
-    try {
-      const response = await fetch('https://trackademy.onrender.com/api/User/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-        },
-        body: JSON.stringify(userData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Не удалось создать пользователя');
-      }
-
-      // Reload the students list to show the new user
-      await loadStudents();
-      setIsCreateModalOpen(false);
-    } catch (error) {
-      console.error('Error creating user:', error);
-      throw error; // Re-throw to let the modal handle the error display
-    }
-  };
-
-  const handleCloseCreateModal = () => {
-    setIsCreateModalOpen(false);
-  };
+    loadStudents(page, filters, true); // Only update table
+  }, [filters]);
 
   const renderPagination = () => {
     if (totalPages <= 1) return null;
@@ -315,17 +206,179 @@ export default function StudentsPage() {
     );
   };
 
-  if (loading) {
+  // Effect for debounced search
+  useEffect(() => {
+    if (isAuthenticated && debouncedSearchTerm !== prevDebouncedSearch) {
+      setPrevDebouncedSearch(debouncedSearchTerm);
+      loadStudents(1, filters, true); // Only update table
+    }
+  }, [debouncedSearchTerm, isAuthenticated]);
+
+  // Effect for role and group filters (immediate)
+  useEffect(() => {
+    if (isAuthenticated && (filters.roleIds.length > 0 || filters.groupIds.length > 0)) {
+      loadStudents(1, filters, true); // Only update table
+    }
+  }, [filters.roleIds, filters.groupIds, isAuthenticated]);
+
+  // If all filters are cleared, make sure the table refreshes to show unfiltered data
+  useEffect(() => {
+    const noFilters = !filters.search && filters.roleIds.length === 0 && filters.groupIds.length === 0;
+    if (isAuthenticated && noFilters) {
+      // Force table-only reload when user clears all filters
+      loadStudents(1, filters, true);
+    }
+  }, [filters.search, filters.roleIds.length, filters.groupIds.length, isAuthenticated]);
+
+  useEffect(() => {
+    if (isAuthenticated && !students.length) {
+      loadStudents(1, filters, true); // Only update table, no full page load needed
+      loadGroups();
+    }
+  }, [isAuthenticated, students.length]);
+
+  // Check authentication after all hooks are called
+  if (!isAuthenticated) {
     return (
       <div className="min-h-96 flex items-center justify-center">
         <div className="text-center card glass-card max-w-md mx-auto">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-4 mx-auto mb-4"
-               style={{ borderColor: 'var(--primary)' }}></div>
-          <p style={{ color: 'var(--muted-foreground)' }}>Загрузка пользователей...</p>
+          <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-2xl mb-6"
+               style={{ background: 'var(--gradient-cool)' }}>
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>
+            Требуется авторизация
+          </h3>
+          <p className="mb-6" style={{ color: 'var(--muted-foreground)' }}>
+            Войдите в систему для управления пользователями
+          </p>
+          <Link
+            href="/login"
+            className="btn-primary hover-lift inline-flex items-center"
+          >
+            Войти в систему
+          </Link>
         </div>
       </div>
     );
   }
+
+  const getRoleText = (role: number) => {
+    switch (role) {
+      case 1:
+        return 'Студент';
+      case 2:
+        return 'Администратор';
+      case 3:
+        return 'Преподаватель';
+      case 4:
+        return 'Владелец системы';
+      default:
+        return 'Неизвестная роль';
+    }
+  };
+
+  const getRoleColor = (role: number) => {
+    switch (role) {
+      case 1:
+        return 'bg-gradient-to-r from-green-500 to-teal-500 text-white'; // Студент
+      case 2:
+        return 'bg-gradient-to-r from-red-500 to-pink-500 text-white'; // Администратор
+      case 3:
+        return 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'; // Преподаватель
+      case 4:
+        return 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white'; // Владелец системы
+      default:
+        return 'bg-gradient-to-r from-gray-500 to-slate-500 text-white';
+    }
+  };
+
+  const handleEdit = (user: User) => {
+    setEditingUser(user);
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEdit = async (id: string, formData: UserFormData) => {
+    try {
+      const result = await AuthenticatedApiService.updateUser(id, formData);
+      
+      // Check if the update was successful (handle boolean response)
+      if (result === false) {
+        throw new Error('Не удалось обновить пользователя. Попробуйте еще раз.');
+      }
+      
+      await loadStudents(currentPage, filters, true); // Reload only the table
+    } catch (error) {
+      console.error('Error updating user:', error);
+      throw error; // Re-throw to let the modal handle the error display
+    }
+  };
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setEditingUser(null);
+  };
+
+  const handleDelete = (user: User) => {
+    setDeletingUser(user);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingUser) return;
+    
+    try {
+      const result = await AuthenticatedApiService.deleteUser(deletingUser.id);
+      
+      // Check if the deletion was successful
+      if (result === false) {
+        throw new Error('Не удалось удалить пользователя. Попробуйте еще раз.');
+      }
+      
+      await loadStudents(currentPage, filters, true); // Reload only the table
+      handleCloseDeleteModal();
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      throw error; // Re-throw to let the modal handle the error display
+    }
+  };
+
+  const handleCloseDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+    setDeletingUser(null);
+  };
+
+  // Create user handlers
+  const handleCreateUser = async (userData: CreateUserData) => {
+    try {
+      const response = await fetch('https://trackademy.onrender.com/api/User/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+        },
+        body: JSON.stringify(userData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Не удалось создать пользователя');
+      }
+
+      // Reload only the table to show the new user
+      await loadStudents(currentPage, filters, true);
+      setIsCreateModalOpen(false);
+    } catch (error) {
+      console.error('Error creating user:', error);
+      throw error; // Re-throw to let the modal handle the error display
+    }
+  };
+
+  const handleCloseCreateModal = () => {
+    setIsCreateModalOpen(false);
+  };
 
   if (error) {
     return (
@@ -340,7 +393,7 @@ export default function StudentsPage() {
             <p className="font-medium mb-2">Ошибка загрузки</p>
             <p className="text-sm mb-4">{error}</p>
             <button
-              onClick={loadStudents}
+              onClick={() => loadStudents(currentPage, filters, true)}
               className="btn-primary hover-lift"
             >
               Попробовать снова
@@ -368,140 +421,23 @@ export default function StudentsPage() {
           )}
         </div>
 
-        {/* Desktop Table */}
-        <div className="hidden md:block">
-          <table className="min-w-full divide-y divide-gray-200 ">
-            <thead className="bg-white-header">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                  №
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                  Логин
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                  Имя
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                  Телефон
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                  Роль
-                </th>
-                <th className="relative px-6 py-3">
-                  <span className="sr-only">Действия</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200 ">
-              {students.map((student, index) => (
-                <tr key={student.id} className="bg-white-row">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-500">{(currentPage - 1) * pageSize + index + 1}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{student.login}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
-                      {student.name}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{student.email}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{student.phone}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleColor(student.role)}`}>
-                      {getRoleText(student.role)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex justify-end space-x-2">
-                      <button 
-                        onClick={() => handleEdit(student.id)}
-                        className="text-blue-600 hover:text-blue-900 p-1"
-                      >
-                        <PencilIcon className="h-4 w-4" />
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(student.id)}
-                        className="text-red-600 hover:text-red-900 p-1"
-                      >
-                        <TrashIcon className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {/* Filters */}
+        <div className="px-6 py-4 border-b border-gray-200">
+          <UserFilters
+            onFilterChange={handleFilterChange}
+            groups={groups}
+            isLoading={tableLoading}
+          />
         </div>
 
-        {/* Mobile Cards */}
-        <div className="md:hidden">
-          <div className="space-y-4 p-4">
-            {students.map((student, index) => (
-              <div key={student.id} className="bg-white border border-gray-200 rounded-lg p-4">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">#{(currentPage - 1) * pageSize + index + 1}</span>
-                    <h3 className="text-sm font-medium text-gray-900">
-                      {student.name}
-                    </h3>
-                  </div>
-                  <div className="flex space-x-2">
-                    <button 
-                      onClick={() => handleEdit(student.id)}
-                      className="text-blue-600 hover:text-blue-900 p-1"
-                    >
-                      <PencilIcon className="h-4 w-4" />
-                    </button>
-                    <button 
-                      onClick={() => handleDelete(student.id)}
-                      className="text-red-600 hover:text-red-900 p-1"
-                    >
-                      <TrashIcon className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div>Логин: <span className="font-medium text-gray-900">{student.login}</span></div>
-                  <div>Email: {student.email}</div>
-                  <div>Телефон: {student.phone}</div>
-                  <div className="flex items-center gap-2">
-                    <span>Роль:</span>
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleColor(student.role)}`}>
-                      {getRoleText(student.role)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Empty State */}
-        {students.length === 0 && !loading && (
-          <div className="text-center py-12">
-            <UserIcon className="mx-auto h-12 w-12 text-gray-400 " />
-            <h3 className="mt-2 text-sm font-medium text-gray-900 ">Нет пользователей</h3>
-            <p className="mt-1 text-sm text-gray-500 ">
-              Начните с добавления первого пользователя
-            </p>
-            <div className="mt-6">
-              <button className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 ">
-                <PlusIcon className="h-4 w-4 mr-2" />
-                Добавить пользователя
-              </button>
-            </div>
-          </div>
-        )}
+        {/* Users Table */}
+        <UsersTable
+          users={students}
+          isLoading={tableLoading}
+          currentUser={user}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
 
         {/* Pagination */}
         {renderPagination()}
@@ -523,11 +459,14 @@ export default function StudentsPage() {
       />
 
       {/* Delete User Confirmation Modal */}
-      <DeleteUserConfirmationModal
+      <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}
-        user={deletingUser}
         onClose={handleCloseDeleteModal}
         onConfirm={handleConfirmDelete}
+        title="Удалить пользователя"
+        message="Вы действительно хотите удалить этого пользователя? Все данные пользователя будут безвозвратно потеряны."
+        itemName={deletingUser?.name}
+        danger={true}
       />
     </div>
   );

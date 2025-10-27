@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { Organization, OrganizationFormData } from '../../types/Organization';
-import { ApiService } from '../../services/ApiService';
+import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
 import { PhoneIcon, MapPinIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../../contexts/AuthContext';
 import Link from 'next/link';
 
 import EditOrganizationModal from '../../components/EditOrganizationModal';
 import CreateOrganizationModal from '../../components/CreateOrganizationModal';
-import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
+import { DeleteConfirmationModal } from '../../components/ui/DeleteConfirmationModal';
 import OwnerProtectedRoute from '../../components/OwnerProtectedRoute';
 
 function OrganizationsPage() {
@@ -60,7 +60,7 @@ function OrganizationsPage() {
     try {
       setLoading(true);
       setError(null);
-      const data = await ApiService.getOrganizations();
+      const data = await AuthenticatedApiService.getOrganizations();
       setOrganizations(data);
     } catch (err) {
       setError('�� ������� ��������� �����������. ���������� ��� ���.');
@@ -79,7 +79,7 @@ function OrganizationsPage() {
   };
 
   const handleSaveEdit = async (id: number, formData: OrganizationFormData) => {
-    await ApiService.updateOrganization(id, formData);
+    await AuthenticatedApiService.updateOrganization(id.toString(), formData);
     await loadOrganizations(); // Reload the list to show updated data
   };
 
@@ -101,13 +101,20 @@ function OrganizationsPage() {
   };
 
   const handleSaveCreate = async (formData: OrganizationFormData) => {
-    await ApiService.createOrganization(formData);
+    await AuthenticatedApiService.createOrganization(formData);
     await loadOrganizations(); // Reload the list to show new data
   };
 
-  const handleConfirmDelete = async (id: number) => {
-    await ApiService.deleteOrganization(id);
-    await loadOrganizations(); // Reload the list to show updated data
+  const handleConfirmDelete = async () => {
+    if (!deletingOrganization) return;
+    
+    try {
+      await AuthenticatedApiService.deleteOrganization(deletingOrganization.id.toString());
+      await loadOrganizations(); // Reload the list to show updated data
+      handleCloseDeleteModal();
+    } catch (error) {
+      console.error('Error deleting organization:', error);
+    }
   };
 
   const handleCloseCreateModal = () => {
@@ -302,9 +309,12 @@ function OrganizationsPage() {
       {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}
-        organization={deletingOrganization}
         onClose={handleCloseDeleteModal}
         onConfirm={handleConfirmDelete}
+        title="Удалить организацию"
+        message="Вы действительно хотите удалить эту организацию? Все данные, связанные с организацией, будут безвозвратно потеряны."
+        itemName={deletingOrganization?.name}
+        danger={true}
       />
     </div>
   );

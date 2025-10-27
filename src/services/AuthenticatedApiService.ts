@@ -96,4 +96,98 @@ export class AuthenticatedApiService {
   static async delete<T>(endpoint: string): Promise<T> {
     return this.request<T>(endpoint, { method: 'DELETE' });
   }
+
+  // User management methods
+  static async updateUser(id: string, userData: any): Promise<any> {
+    return this.put(`/User/update-user/${id}`, userData);
+  }
+
+  static async deleteUser(id: string): Promise<any> {
+    return this.delete(`/User/${id}`);
+  }
+
+  static async createUser(userData: any): Promise<any> {
+    return this.post('/User', userData);
+  }
+
+  static async getUsers(filters: {
+    organizationId: string;
+    pageNumber?: number;
+    pageSize?: number;
+    search?: string;
+    groupIds?: string[];
+    roleIds?: number[];
+  }): Promise<any> {
+    const body = {
+      pageNumber: filters.pageNumber || 1,
+      pageSize: filters.pageSize || 10,
+      organizationId: filters.organizationId,
+      ...(filters.search && { search: filters.search }),
+      ...(filters.groupIds && filters.groupIds.length > 0 && { groupIds: filters.groupIds }),
+      ...(filters.roleIds && filters.roleIds.length > 0 && { roleIds: filters.roleIds })
+    };
+    
+    return this.post('/User/get-users', body);
+  }
+
+  // Organization management methods
+  static async getOrganizations(): Promise<any> {
+    return this.get('/Organization');
+  }
+
+  static async createOrganization(orgData: any): Promise<any> {
+    return this.post('/Organization', orgData);
+  }
+
+  static async updateOrganization(id: string, orgData: any): Promise<any> {
+    return this.put(`/Organization/${id}`, orgData);
+  }
+
+  static async deleteOrganization(id: string): Promise<any> {
+    return this.delete(`/Organization/${id}`);
+  }
+
+  // Room management methods
+  static async getRooms(organizationId: string): Promise<any> {
+    return this.get(`/Room?organizationId=${organizationId}`);
+  }
+
+  static async createRoom(roomData: any): Promise<any> {
+    return this.post('/Room', roomData);
+  }
+
+  static async updateRoom(id: string, roomData: any): Promise<any> {
+    return this.put(`/Room/${id}`, roomData);
+  }
+
+  static async deleteRoom(id: string): Promise<any> {
+    return this.delete(`/Room/${id}`);
+  }
+
+  // Subject management methods
+  static async getSubjects(organizationId: string): Promise<any> {
+    return this.get(`/Subject?organizationId=${organizationId}`);
+  }
+
+  static async createSubject(subjectData: any): Promise<any> {
+    return this.post('/Subject', subjectData);
+  }
+
+  static async updateSubject(id: string, subjectData: any): Promise<any> {
+    return this.put(`/Subject/${id}`, subjectData);
+  }
+
+  static async deleteSubject(id: string): Promise<any> {
+    return this.delete(`/Subject/${id}`);
+  }
+
+  // Group management methods
+  static async getGroups(organizationId: string, pageSize: number = 1000): Promise<any> {
+    const body = {
+      pageNumber: 1,
+      pageSize: pageSize,
+      organizationId: organizationId
+    };
+    return this.post('/Group/get-groups', body);
+  }
 }

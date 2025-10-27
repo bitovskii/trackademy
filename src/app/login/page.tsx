@@ -92,19 +92,19 @@ export default function LoginPage() {
 
       <div className={`max-w-md w-full space-y-8 relative z-10 transition-all duration-1000 ${isVisible ? 'animate-slide-in-up' : 'opacity-0'}`}>
         {/* Header */}
-        <div className="text-center">
-          <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-2xl mb-6 shadow-xl hover-lift"
+        <div className="text-center animate-fade-in">
+          <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-2xl mb-6 shadow-2xl hover-lift animate-pulse-glow"
                style={{ background: 'var(--gradient-cool)' }}>
             <AcademicCapIcon className="w-8 h-8 text-white" />
           </div>
-          <h2 className="text-3xl font-bold mb-2">
+          <h2 className="text-4xl font-bold mb-3 animate-fade-in animate-delay-100">
             <span className="gradient-text">Добро пожаловать</span>
           </h2>
-          <p style={{ color: 'var(--muted-foreground)' }}>
+          <p className="text-lg mb-4 animate-fade-in animate-delay-200" style={{ color: 'var(--muted-foreground)' }}>
             Войдите в TrackAcademy для продолжения
           </p>
-          <div className="mt-4">
-            <Link href="/" className="text-sm hover:underline transition-all duration-300"
+          <div className="animate-fade-in animate-delay-300">
+            <Link href="/" className="text-sm hover:underline transition-all duration-300 hover:scale-105 inline-block"
                   style={{ color: 'var(--primary)' }}>
               ← Вернуться на главную
             </Link>
@@ -112,23 +112,17 @@ export default function LoginPage() {
         </div>
         
         {/* Login Form */}
-        <div className="card glass-card">
+        <div className="card glass-card animate-scale-in animate-delay-200">
           <form className="space-y-6" onSubmit={handleSubmit}>
             {error && (
-              <div className="p-4 rounded-lg border animate-slide-in-right"
-                   style={{ 
-                     background: 'rgba(239, 68, 68, 0.1)',
-                     borderColor: 'var(--secondary)',
-                     color: 'var(--secondary)'
-                   }}>
+              <div className="error-message">
                 {error}
               </div>
             )}
 
             {/* Login Field */}
-            <div className="space-y-2">
-              <label htmlFor="login" className="block text-sm font-medium"
-                     style={{ color: 'var(--foreground)' }}>
+            <div className="form-group animate-fade-in animate-delay-300">
+              <label htmlFor="login" className="form-label">
                 Логин
               </label>
               <input
@@ -144,12 +138,11 @@ export default function LoginPage() {
             </div>
 
             {/* Password Field */}
-            <div className="space-y-2">
-              <label htmlFor="password" className="block text-sm font-medium"
-                     style={{ color: 'var(--foreground)' }}>
+            <div className="form-group animate-fade-in animate-delay-400">
+              <label htmlFor="password" className="form-label">
                 Пароль
               </label>
-              <div className="relative">
+              <div className="password-container">
                 <input
                   id="password"
                   name="password"
@@ -157,28 +150,26 @@ export default function LoginPage() {
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  className="input-field pr-12"
+                  className="input-field"
                   placeholder="Введите ваш пароль"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center transition-colors duration-300"
-                  style={{ color: 'var(--muted-foreground)' }}
+                  className="password-toggle"
                 >
                   {showPassword ? (
-                    <EyeSlashIcon className="h-5 w-5 hover:scale-110 transition-transform" />
+                    <EyeSlashIcon className="h-5 w-5" />
                   ) : (
-                    <EyeIcon className="h-5 w-5 hover:scale-110 transition-transform" />
+                    <EyeIcon className="h-5 w-5" />
                   )}
                 </button>
               </div>
             </div>
 
             {/* Organization Selection */}
-            <div className="space-y-2">
-              <label htmlFor="organizationId" className="block text-sm font-medium"
-                     style={{ color: 'var(--foreground)' }}>
+            <div className="form-group animate-fade-in animate-delay-500">
+              <label htmlFor="organizationId" className="form-label">
                 Организация
               </label>
               <select
@@ -198,17 +189,17 @@ export default function LoginPage() {
             </div>
 
             {/* Submit Button */}
-            <div>
+            <div className="animate-fade-in animate-delay-500">
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                className="btn-primary animate-pulse-glow"
               >
                 {loading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  <div className="flex items-center justify-center">
+                    <div className="loading-spinner mr-2"></div>
                     Вход...
-                  </>
+                  </div>
                 ) : (
                   'Войти в систему'
                 )}
@@ -216,7 +207,7 @@ export default function LoginPage() {
             </div>
 
             {/* Additional Links */}
-            <div className="text-center space-y-2">
+            <div className="text-center space-y-2 animate-fade-in animate-delay-500">
               <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
                 Нет аккаунта?{' '}
                 <button
@@ -233,17 +224,20 @@ export default function LoginPage() {
         </div>
 
         {/* Features Preview */}
-        <div className={`grid grid-cols-2 gap-4 transition-all duration-1000 ${isVisible ? 'animate-fade-in' : 'opacity-0'}`}
-             style={{ animationDelay: '0.5s' }}>
-          <div className="text-center p-3 rounded-lg hover-lift"
-               style={{ background: 'var(--muted)' }}>
-            <BuildingOfficeIcon className="w-6 h-6 mx-auto mb-2" style={{ color: 'var(--primary)' }} />
-            <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Управление организациями</p>
+        <div className="grid grid-cols-2 gap-4 mt-8 animate-fade-in animate-delay-500">
+          <div className="text-center p-4 rounded-2xl hover-lift transition-all duration-300 bg-white/80 backdrop-blur-sm border border-white/20 shadow-lg">
+            <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+              <BuildingOfficeIcon className="w-6 h-6 text-white" />
+            </div>
+            <p className="text-sm font-semibold text-gray-800 mb-1">Управление организациями</p>
+            <p className="text-xs text-gray-600">Эффективное управление учебными заведениями</p>
           </div>
-          <div className="text-center p-3 rounded-lg hover-lift"
-               style={{ background: 'var(--muted)' }}>
-            <UserGroupIcon className="w-6 h-6 mx-auto mb-2" style={{ color: 'var(--primary)' }} />
-            <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Работа со студентами</p>
+          <div className="text-center p-4 rounded-2xl hover-lift transition-all duration-300 bg-white/80 backdrop-blur-sm border border-white/20 shadow-lg">
+            <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center">
+              <UserGroupIcon className="w-6 h-6 text-white" />
+            </div>
+            <p className="text-sm font-semibold text-gray-800 mb-1">Работа со студентами</p>
+            <p className="text-xs text-gray-600">Контроль успеваемости и посещаемости</p>
           </div>
         </div>
       </div>

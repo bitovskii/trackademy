@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BuildingOfficeIcon, HomeModernIcon, HomeIcon, UserCircleIcon, AcademicCapIcon, BookOpenIcon, ArrowRightEndOnRectangleIcon, UserPlusIcon, CogIcon } from '@heroicons/react/24/outline';
-import { BuildingOfficeIcon as BuildingOfficeIconSolid, HomeModernIcon as HomeModernIconSolid, HomeIcon as HomeIconSolid, UserCircleIcon as UserCircleIconSolid, AcademicCapIcon as AcademicCapIconSolid, BookOpenIcon as BookOpenIconSolid, CogIcon as CogIconSolid } from '@heroicons/react/24/solid';
+import { BuildingOfficeIcon, HomeModernIcon, HomeIcon, AcademicCapIcon, BookOpenIcon } from '@heroicons/react/24/outline';
+import { BuildingOfficeIcon as BuildingOfficeIconSolid, HomeModernIcon as HomeModernIconSolid, HomeIcon as HomeIconSolid, AcademicCapIcon as AcademicCapIconSolid, BookOpenIcon as BookOpenIconSolid } from '@heroicons/react/24/solid';
 import { useAuth } from '../contexts/AuthContext';
 import { useState } from 'react';
 import RegisterModal from './RegisterModal';
@@ -11,7 +11,7 @@ import { isOwner } from '../types/Role';
 
 const Sidebar: React.FC = () => {
   const pathname = usePathname();
-  const { isAuthenticated, logout, user } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [showRegisterModal, setShowRegisterModal] = useState(false);
 
   const allNavigation = [
@@ -20,7 +20,6 @@ const Sidebar: React.FC = () => {
     { name: 'Студенты', href: '/students', icon: AcademicCapIcon, activeIcon: AcademicCapIconSolid, requireAuth: true, requireOwner: false },
     { name: 'Кабинеты', href: '/rooms', icon: HomeModernIcon, activeIcon: HomeModernIconSolid, requireAuth: true, requireOwner: false },
     { name: 'Предметы', href: '/subjects', icon: BookOpenIcon, activeIcon: BookOpenIconSolid, requireAuth: true, requireOwner: false },
-    { name: 'Профиль', href: '/profile', icon: UserCircleIcon, activeIcon: UserCircleIconSolid, requireAuth: true, requireOwner: false },
   ];
 
   // Filter navigation based on authentication status and role
@@ -147,35 +146,25 @@ const Sidebar: React.FC = () => {
           </nav>
         </div>
 
-        {/* Auth Section */}
-        <div className="px-4 py-4 border-t border-gray-200">
-          {isAuthenticated ? (
-            <button 
-              onClick={logout}
-              className="w-full flex items-center justify-center px-4 py-3 rounded-xl text-sm font-medium bg-red-500 text-white transition-all duration-300 hover:bg-red-600"
-            >
-              <ArrowRightEndOnRectangleIcon className="h-5 w-5 mr-2" />
-              Выйти
-            </button>
-          ) : (
+        {/* Auth Section for non-authenticated users */}
+        {!isAuthenticated && (
+          <div className="px-4 py-4 border-t border-gray-200">
             <div className="space-y-2">
               <Link 
                 href="/login"
                 className="w-full flex items-center justify-center px-4 py-3 rounded-xl text-sm font-medium bg-gradient-to-r from-blue-500 to-purple-600 text-white transition-all duration-300 hover:shadow-lg"
               >
-                <ArrowRightEndOnRectangleIcon className="h-5 w-5 mr-2" />
                 Войти
               </Link>
               <button 
                 onClick={() => setShowRegisterModal(true)}
                 className="w-full flex items-center justify-center px-4 py-3 rounded-xl text-sm font-medium bg-gray-100 text-gray-700 transition-all duration-300 hover:bg-gray-200"
               >
-                <UserPlusIcon className="h-5 w-5 mr-2" />
                 Регистрация
               </button>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Register Modal */}

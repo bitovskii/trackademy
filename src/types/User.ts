@@ -14,10 +14,11 @@ export interface User {
 
 export interface UserFormData {
   login: string;
-  name: string;
+  fullName: string;
   email: string;
   phone: string;
   parentPhone?: string;
   birthday?: string;
+  role: number;
   organizationId?: string;
 }

@@ -1,8 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, UserFormData } from '../types/User';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { UserIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { BaseModal } from './ui/BaseModal';
+import { FormField, FormLabel, FormInput, FormError } from './ui/FormField';
+import { ActionButtons } from './ui/ActionButtons';
+import { RoleSelection } from './ui/RoleSelection';
+import { usePhoneFormatter } from '../hooks/usePhoneFormatter';
 
 interface EditUserModalProps {
   isOpen: boolean;
@@ -19,190 +24,258 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
 }) => {
   const [formData, setFormData] = useState<UserFormData>({
     login: '',
-    name: '',
+    fullName: '',
     email: '',
     phone: '',
     parentPhone: '',
     birthday: '',
+    role: 1, // Default to student role
   });
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { formatPhoneDisplay, formatPhoneForApi, handlePhoneKeyDown } = usePhoneFormatter();
+
+  // Role options - only Student and Teacher  
+  const roleOptions = [
+    { value: 1, label: 'Студент', icon: '🎓', color: 'from-green-400 to-emerald-500' },
+    { value: 3, label: 'Преподаватель', icon: '👨‍🏫', color: 'from-blue-400 to-cyan-500' }
+  ];
+
+  const handleRoleChange = (role: number) => {
+    setFormData(prev => ({ ...prev, role }));
+    if (errors.role) {
+      setErrors(prev => ({ ...prev, role: '' }));
+    }
+  };
 
   useEffect(() => {
     if (user) {
       setFormData({
         login: user.login,
-        name: user.name,
+        fullName: user.name,
         email: user.email,
         phone: user.phone,
         parentPhone: user.parentPhone || '',
         birthday: user.birthday || '',
+        role: user.role,
       });
     }
   }, [user]);
 
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.login.trim()) newErrors.login = 'Логин обязателен';
+    if (!formData.fullName.trim()) newErrors.fullName = 'Полное имя обязательно';
+    if (!formData.email.trim()) newErrors.email = 'Email обязателен';
+    if (!formData.phone.trim()) newErrors.phone = 'Телефон обязателен';
+
+    // Email validation
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Некорректный формат email';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user || !validateForm()) return;
 
-    setIsLoading(true);
-    setError(null);
+    setIsSubmitting(true);
 
     try {
-      await onSave(user.id, formData);
-      onClose();
+      // Format phone numbers for API
+      const apiFormData = {
+        ...formData,
+        phone: formatPhoneForApi(formData.phone),
+        parentPhone: formData.parentPhone ? formatPhoneForApi(formData.parentPhone) : ''
+      };
+      
+      await onSave(user.id, apiFormData);
+      handleClose();
     } catch (err) {
-      setError('Не удалось обновить пользователя. Попробуйте еще раз.');
+      setErrors({ general: 'Не удалось обновить пользователя. Попробуйте еще раз.' });
       console.error('Error updating user:', err);
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-    }));
+    
+    if (name === 'phone' || name === 'parentPhone') {
+      const formatted = formatPhoneDisplay(value);
+      setFormData(prev => ({
+        ...prev,
+        [name]: formatted
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
+    
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
   };
 
   const handleClose = () => {
-    setError(null);
+    setFormData({
+      login: '',
+      fullName: '',
+      email: '',
+      phone: '',
+      parentPhone: '',
+      birthday: '',
+      role: 1,
+    });
+    setErrors({});
     onClose();
   };
 
   if (!isOpen || !user) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-medium text-gray-900">
-            Редактировать пользователя
-          </h3>
-          <button
-            onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <XMarkIcon className="h-6 w-6" />
-          </button>
-        </div>
-
-        {error && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-            {error}
+    <BaseModal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title="Редактировать пользователя"
+      subtitle="Обновите информацию о пользователе"
+      icon={<UserIcon className="w-3 h-3" />}
+      maxWidth="lg"
+    >
+      <form onSubmit={handleSubmit} className="space-y-2">
+        {/* General Error */}
+        {errors.general && (
+          <div className="error-message">
+            {errors.general}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="login" className="block text-sm font-medium text-gray-700">
-              Логин
-            </label>
-            <input
-              type="text"
-              id="login"
-              name="login"
-              value={formData.login}
-              onChange={handleChange}
-              required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
+        {/* Login Field */}
+        <FormField>
+          <FormLabel htmlFor="login" required>
+            Логин
+          </FormLabel>
+          <FormInput
+            id="login"
+            name="login"
+            type="text"
+            value={formData.login}
+            onChange={handleInputChange}
+            placeholder="Введите логин"
+            error={errors.login}
+          />
+          <FormError error={errors.login} />
+        </FormField>
 
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-              Имя
-            </label>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
+        {/* Name Field */}
+        <FormField>
+          <FormLabel htmlFor="name" required>
+            Полное имя
+          </FormLabel>
+          <FormInput
+            id="fullName"
+            name="fullName"
+            type="text"
+            value={formData.fullName}
+            onChange={handleInputChange}
+            placeholder="Введите полное имя"
+            error={errors.fullName}
+          />
+          <FormError error={errors.fullName} />
+        </FormField>
 
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
+        {/* Email Field */}
+        <FormField>
+          <FormLabel htmlFor="email" required>
+            Email
+          </FormLabel>
+          <FormInput
+            id="email"
+            name="email"
+            type="email"
+            value={formData.email}
+            onChange={handleInputChange}
+            placeholder="example@domain.com"
+            error={errors.email}
+          />
+          <FormError error={errors.email} />
+        </FormField>
 
-          <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-              Телефон
-            </label>
-            <input
-              type="tel"
-              id="phone"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
+        {/* Phone Field */}
+        <FormField>
+          <FormLabel htmlFor="phone" required>
+            Телефон
+          </FormLabel>
+          <FormInput
+            id="phone"
+            name="phone"
+            type="tel"
+            value={formData.phone}
+            onChange={handleInputChange}
+            onKeyDown={handlePhoneKeyDown}
+            placeholder="+7 (999) 999-99-99"
+            error={errors.phone}
+            maxLength={18}
+          />
+          <FormError error={errors.phone} />
+        </FormField>
 
-          <div>
-            <label htmlFor="parentPhone" className="block text-sm font-medium text-gray-700">
-              Телефон родителя
-            </label>
-            <input
-              type="tel"
-              id="parentPhone"
-              name="parentPhone"
-              value={formData.parentPhone}
-              onChange={handleChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
+        {/* Parent Phone Field */}
+        <FormField>
+          <FormLabel htmlFor="parentPhone">
+            Телефон родителя
+          </FormLabel>
+          <FormInput
+            id="parentPhone"
+            name="parentPhone"
+            type="tel"
+            value={formData.parentPhone}
+            onChange={handleInputChange}
+            onKeyDown={handlePhoneKeyDown}
+            placeholder="+7 (999) 999-99-99"
+            maxLength={18}
+          />
+        </FormField>
 
-          <div>
-            <label htmlFor="birthday" className="block text-sm font-medium text-gray-700">
-              Дата рождения
-            </label>
-            <input
-              type="date"
-              id="birthday"
-              name="birthday"
-              value={formData.birthday}
-              onChange={handleChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
+        {/* Birthday Field */}
+        <FormField>
+          <FormLabel htmlFor="birthday">
+            Дата рождения
+          </FormLabel>
+          <FormInput
+            id="birthday"
+            name="birthday"
+            type="date"
+            value={formData.birthday}
+            onChange={handleInputChange}
+          />
+        </FormField>
 
-          <div className="flex justify-end space-x-3">
-            <button
-              type="button"
-              onClick={handleClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              Отмена
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? 'Сохранение...' : 'Сохранить изменения'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        {/* Role Selection */}
+        <RoleSelection
+          selectedRole={formData.role}
+          onRoleChange={handleRoleChange}
+          options={roleOptions}
+          error={errors.role}
+        />
+
+        {/* Action Buttons */}
+        <ActionButtons
+          onCancel={handleClose}
+          submitText="Сохранить изменения"
+          isSubmitting={isSubmitting}
+          loadingText="Сохранение..."
+        />
+      </form>
+    </BaseModal>
   );
 };
 

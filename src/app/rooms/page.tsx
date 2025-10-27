@@ -7,7 +7,7 @@ import { HomeModernIcon, PencilIcon, TrashIcon, PlusIcon } from '@heroicons/reac
 import { Room, RoomFormData } from '../../types/Room';
 import CreateRoomModal from '../../components/CreateRoomModal';
 import EditRoomModal from '../../components/EditRoomModal';
-import DeleteRoomConfirmationModal from '../../components/DeleteRoomConfirmationModal';
+import { DeleteConfirmationModal } from '../../components/ui/DeleteConfirmationModal';
 import Link from 'next/link';
 
 interface RoomsResponse {
@@ -21,11 +21,11 @@ interface RoomsResponse {
 export default function RoomsPage() {
   const { isAuthenticated, user } = useAuth();
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
+  const [tableLoading, setTableLoading] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -33,9 +33,11 @@ export default function RoomsPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const pageSize = 10;
 
-  const loadRooms = useCallback(async () => {
+  const loadRooms = useCallback(async (page: number = currentPage, isTableOnly: boolean = true) => {
     try {
-      setLoading(true);
+      if (isTableOnly) {
+        setTableLoading(true);
+      }
       setError(null);
       
       const organizationId = user?.organizationId || localStorage.getItem('userOrganizationId');
@@ -46,7 +48,7 @@ export default function RoomsPage() {
       }
 
       const requestBody = {
-        pageNumber: currentPage,
+        pageNumber: page,
         pageSize: pageSize,
         organizationId: organizationId
       };
@@ -56,19 +58,22 @@ export default function RoomsPage() {
       setRooms(data.items);
       setTotalPages(data.totalPages);
       setTotalCount(data.totalCount);
+      setCurrentPage(page);
     } catch (error) {
       console.error('Failed to load rooms:', error);
       setError('Не удалось загрузить список кабинетов');
     } finally {
-      setLoading(false);
+      if (isTableOnly) {
+        setTableLoading(false);
+      }
     }
   }, [currentPage, user?.organizationId]);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      loadRooms();
+    if (isAuthenticated && !rooms.length) {
+      loadRooms(currentPage, true);
     }
-  }, [currentPage, isAuthenticated, loadRooms]);
+  }, [isAuthenticated, rooms.length]);
 
   // Check authentication after all hooks are called
   if (!isAuthenticated) {
@@ -119,7 +124,7 @@ export default function RoomsPage() {
       };
 
       await AuthenticatedApiService.post('/Room/create', dataToSend);
-      await loadRooms(); // Reload the list to show new data
+      await loadRooms(currentPage, true); // Reload only the table
     } catch (error) {
       console.error('Error creating room:', error);
       throw error; // Re-throw to let the modal handle the error display
@@ -141,7 +146,7 @@ export default function RoomsPage() {
   const handleSaveEdit = async (id: string, formData: RoomFormData) => {
     try {
       await AuthenticatedApiService.put(`/Room/${id}`, formData);
-      await loadRooms(); // Reload the list to show updated data
+      await loadRooms(currentPage, true); // Reload only the table
     } catch (error) {
       console.error('Error updating room:', error);
       throw error; // Re-throw to let the modal handle the error display
@@ -161,10 +166,13 @@ export default function RoomsPage() {
     }
   };
 
-  const handleConfirmDelete = async (id: string) => {
+  const handleConfirmDelete = async () => {
+    if (!deletingRoom) return;
+    
     try {
-      await AuthenticatedApiService.delete(`/Room/${id}`);
-      await loadRooms(); // Reload the list to show updated data
+      await AuthenticatedApiService.delete(`/Room/${deletingRoom.id}`);
+      await loadRooms(currentPage, true); // Reload only the table
+      handleCloseDeleteModal();
     } catch (error) {
       console.error('Error deleting room:', error);
       throw error; // Re-throw to let the modal handle the error display
@@ -255,17 +263,6 @@ export default function RoomsPage() {
     );
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-96 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-sm text-gray-500">Загрузка кабинетов...</p>
-        </div>
-      </div>
-    );
-  }
-
   if (error) {
     return (
       <div className="min-h-96 flex items-center justify-center">
@@ -274,7 +271,7 @@ export default function RoomsPage() {
             <p className="font-medium">Ошибка загрузки</p>
             <p className="text-sm mt-1">{error}</p>
             <button
-              onClick={loadRooms}
+              onClick={() => loadRooms(currentPage, true)}
               className="mt-3 px-4 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700"
             >
               Попробовать снова
@@ -300,8 +297,16 @@ export default function RoomsPage() {
           </button>
         </div>
 
+        {/* Loading State */}
+        {tableLoading && (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-2 text-sm text-gray-500">Загрузка...</p>
+          </div>
+        )}
+
         {/* Desktop Table */}
-        <div className="hidden md:block">
+        <div className="hidden md:block">{!tableLoading && (
           <table className="min-w-full divide-y divide-gray-200 ">
             <thead className="bg-gray-50 ">
               <tr>
@@ -354,10 +359,11 @@ export default function RoomsPage() {
               ))}
             </tbody>
           </table>
+          )}
         </div>
 
         {/* Mobile Cards */}
-        <div className="md:hidden">
+        <div className="md:hidden">{!tableLoading && (
           <div className="space-y-4 p-4">
             {rooms.map((room, index) => (
               <div key={room.id} className="bg-white border border-gray-200 rounded-lg p-4">
@@ -394,10 +400,11 @@ export default function RoomsPage() {
               </div>
             ))}
           </div>
+          )}
         </div>
 
         {/* Empty State */}
-        {rooms.length === 0 && !loading && (
+        {rooms.length === 0 && !tableLoading && (
           <div className="text-center py-12">
             <HomeModernIcon className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">Нет кабинетов</h3>
@@ -436,11 +443,13 @@ export default function RoomsPage() {
       />
 
       {/* Delete Room Confirmation Modal */}
-      <DeleteRoomConfirmationModal
+      <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}
-        room={deletingRoom}
         onClose={handleCloseDeleteModal}
         onConfirm={handleConfirmDelete}
+        title="Удаление аудитории"
+        message={`Вы уверены, что хотите удалить аудиторию "${deletingRoom?.name}"?`}
+        itemName={deletingRoom?.name}
       />
     </div>
   );

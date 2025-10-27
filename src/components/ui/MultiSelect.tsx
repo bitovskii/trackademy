@@ -101,15 +101,17 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
                 return (
                   <span
                     key={optionId}
+                    style={{ color: '#000000' }} // Inline style for guaranteed black color
                     className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md 
-                             bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300
+                             bg-blue-100 dark:bg-blue-900/20
                              border border-blue-200 dark:border-blue-800"
                   >
-                    {name}
+                    <span style={{ color: '#000000' }}>{name}</span>
                     {!disabled && (
                       <button
                         onClick={(e) => handleRemoveOption(optionId, e)}
-                        className="ml-1 hover:text-blue-600 dark:hover:text-blue-200"
+                        style={{ color: '#000000' }} // Inline style for guaranteed black color
+                        className="ml-1 hover:text-gray-700 dark:hover:text-blue-200"
                       >
                         <XMarkIcon className="h-3 w-3" />
                       </button>
@@ -127,11 +129,11 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
                 className="p-1 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors"
                 title="Очистить все"
               >
-                <XMarkIcon className="h-4 w-4 text-gray-400" />
+                <XMarkIcon className="h-4 w-4 text-gray-400 dark:text-gray-400" />
               </button>
             )}
             <ChevronDownIcon 
-              className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${
+              className={`h-4 w-4 text-gray-400 dark:text-gray-400 transition-transform duration-200 ${
                 isOpen ? 'rotate-180' : ''
               }`} 
             />
@@ -153,9 +155,10 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
                 placeholder="Поиск..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                style={{ color: '#000000' }} // Inline style for guaranteed black color
                 className="w-full px-3 py-2 text-sm border border-gray-300 
-                         rounded-md bg-white text-gray-900
-                         placeholder-gray-500
+                         rounded-md bg-white dark:bg-gray-700
+                         placeholder-gray-500 dark:placeholder-gray-400
                          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 autoFocus
               />
@@ -165,7 +168,7 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
           {/* Options List */}
           <div className="max-h-60 overflow-auto py-1" style={{ maxHeight }}>
             {filteredOptions.length === 0 ? (
-              <div className="px-3 py-2 text-sm text-gray-500">
+              <div className="px-3 py-2 text-sm" style={{ color: '#000000' }}>
                 {searchTerm ? 'Ничего не найдено' : 'Нет доступных опций'}
               </div>
             ) : (
@@ -175,14 +178,15 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
                   <div
                     key={option.id}
                     onClick={() => handleToggleOption(option.id)}
+                    style={{ color: isSelected ? '#1e3a8a' : '#000000' }} // Inline style for guaranteed color
                     className={`flex items-center justify-between px-3 py-2 text-sm cursor-pointer 
                                transition-colors ${
                       isSelected
-                        ? 'bg-blue-50 text-blue-900'
-                        : 'text-gray-900 hover:bg-gray-50'
+                        ? 'bg-blue-50 dark:bg-blue-900/30'
+                        : 'hover:bg-gray-50 dark:hover:bg-gray-700'
                     }`}
                   >
-                    <span className="flex-1">{option.name}</span>
+                    <span className="flex-1" style={{ color: isSelected ? '#1e3a8a' : '#000000' }}>{option.name}</span>
                     {isSelected && (
                       <CheckIcon className="h-4 w-4 text-blue-600" />
                     )}
@@ -195,7 +199,7 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
           {/* Footer with selection count */}
           {selectedValues.length > 0 && (
             <div className="px-3 py-2 border-t border-gray-100 
-                           bg-gray-50 text-xs text-gray-500">
+                           bg-gray-50 dark:bg-gray-700 text-xs text-gray-500 dark:text-gray-400">
               Выбрано: {selectedValues.length} из {options.length}
             </div>
           )}

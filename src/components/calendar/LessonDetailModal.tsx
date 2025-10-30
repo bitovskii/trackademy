@@ -2,6 +2,7 @@
 
 import { Lesson, formatDate, formatTimeRange, getLessonStatusText, getLessonStatusColor, getAttendanceStatusText, getAttendanceStatusColor, generateSubjectColor } from '@/types/Lesson';
 import { useState } from 'react';
+import QuickAttendance from '@/components/attendance/QuickAttendance';
 
 interface LessonDetailModalProps {
   lesson: Lesson;
@@ -10,7 +11,7 @@ interface LessonDetailModalProps {
 }
 
 export default function LessonDetailModal({ lesson, isOpen, onClose }: LessonDetailModalProps) {
-  const [activeTab, setActiveTab] = useState<'details' | 'attendance'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'attendance' | 'quick-attendance'>('details');
 
   if (!isOpen) return null;
 
@@ -78,6 +79,16 @@ export default function LessonDetailModal({ lesson, isOpen, onClose }: LessonDet
           >
             Посещаемость ({lesson.students.length})
           </button>
+          <button
+            onClick={() => setActiveTab('quick-attendance')}
+            className={`px-6 py-3 font-medium text-sm transition-colors ${
+              activeTab === 'quick-attendance'
+                ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+            }`}
+          >
+            Отметить посещаемость
+          </button>
         </div>
 
         {/* Content */}
@@ -93,6 +104,13 @@ export default function LessonDetailModal({ lesson, isOpen, onClose }: LessonDet
               absentStudents={absentStudents}
               unmarkedStudents={unmarkedStudents}
               lessonStatus={lesson.lessonStatus}
+            />
+          )}
+          
+          {activeTab === 'quick-attendance' && (
+            <QuickAttendance 
+              lesson={lesson} 
+              onUpdate={() => window.location.reload()} 
             />
           )}
         </div>

@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BuildingOfficeIcon, HomeModernIcon, HomeIcon, AcademicCapIcon, BookOpenIcon, UserGroupIcon, CalendarDaysIcon, CalendarIcon } from '@heroicons/react/24/outline';
-import { BuildingOfficeIcon as BuildingOfficeIconSolid, HomeModernIcon as HomeModernIconSolid, HomeIcon as HomeIconSolid, AcademicCapIcon as AcademicCapIconSolid, BookOpenIcon as BookOpenIconSolid, UserGroupIcon as UserGroupIconSolid, CalendarDaysIcon as CalendarDaysIconSolid, CalendarIcon as CalendarIconSolid } from '@heroicons/react/24/solid';
+import { BuildingOfficeIcon, HomeModernIcon, HomeIcon, AcademicCapIcon, BookOpenIcon, UserGroupIcon, CalendarDaysIcon, CalendarIcon, ClipboardDocumentCheckIcon } from '@heroicons/react/24/outline';
+import { BuildingOfficeIcon as BuildingOfficeIconSolid, HomeModernIcon as HomeModernIconSolid, HomeIcon as HomeIconSolid, AcademicCapIcon as AcademicCapIconSolid, BookOpenIcon as BookOpenIconSolid, UserGroupIcon as UserGroupIconSolid, CalendarDaysIcon as CalendarDaysIconSolid, CalendarIcon as CalendarIconSolid, ClipboardDocumentCheckIcon as ClipboardDocumentCheckIconSolid } from '@heroicons/react/24/solid';
 import { useAuth } from '../contexts/AuthContext';
 import { useState } from 'react';
 import RegisterModal from './RegisterModal';
@@ -23,6 +23,7 @@ const Sidebar: React.FC = () => {
     { name: 'Группы', href: '/groups', icon: UserGroupIcon, activeIcon: UserGroupIconSolid, requireAuth: true, requireOwner: false, requireAdmin: true },
     { name: 'Шаблоны расписаний', href: '/schedules', icon: CalendarDaysIcon, activeIcon: CalendarDaysIconSolid, requireAuth: true, requireOwner: false, requireAdmin: true },
     { name: 'Календарь занятий', href: '/lessons', icon: CalendarIcon, activeIcon: CalendarIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false },
+    { name: 'Посещаемость', href: '/attendance', icon: ClipboardDocumentCheckIcon, activeIcon: ClipboardDocumentCheckIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false },
   ];
 
   // Filter navigation based on authentication status and role

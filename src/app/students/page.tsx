@@ -3,16 +3,20 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
-import { UserIcon, PencilIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { UserIcon, PencilIcon, TrashIcon, PlusIcon, AcademicCapIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 import { User, UserFormData } from '../../types/User';
-import EditUserModal from '../../components/EditUserModal';
+import UniversalModal from '../../components/ui/UniversalModal';
+import { useUniversalModal } from '../../hooks/useUniversalModal';
 import { DeleteConfirmationModal } from '../../components/ui/DeleteConfirmationModal';
-import CreateUserModal, { CreateUserData } from '../../components/CreateUserModal';
-import { UserFilters, UserFilters as UserFiltersType } from '../../components/ui/UserFilters';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { UserFilters, UserFilters as UserFiltersType } from '../../components/ui/UserFiltersUpdated';
 import { UsersTable } from '../../components/ui/UsersTable';
 import { useDebounce } from '../../hooks/useDebounce';
 import { canManageUsers } from '../../types/Role';
 import Link from 'next/link';
+import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
+import { useColumnVisibility, ColumnVisibilityControl } from '../../components/ui/ColumnVisibilityControl';
 
 interface UsersResponse {
   items: User[];
@@ -29,11 +33,22 @@ export default function StudentsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [deletingUser, setDeletingUser] = useState<User | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  // Универсальная система модалов для пользователей
+  const userModal = useUniversalModal('user', {
+    login: '',
+    fullName: '',
+    email: '',
+    password: '',
+    phone: '',
+    parentPhone: '',
+    birthday: '',
+    role: 1,
+    organizationId: ''
+  });
+
   const [filters, setFilters] = useState<UserFiltersType>({
     search: '',
     roleIds: [],
@@ -41,6 +56,15 @@ export default function StudentsPage() {
   });
   const [groups, setGroups] = useState<Array<{id: string, name: string}>>([]);
   const [tableLoading, setTableLoading] = useState(false);
+  
+  // Column visibility management
+  const { columns, toggleColumn, isColumnVisible } = useColumnVisibility([
+    { key: 'user', label: 'Пользователь', required: true },
+    { key: 'contacts', label: 'Контакты' },
+    { key: 'role', label: 'Роль' },
+    { key: 'group', label: 'Группа' },
+    { key: 'actions', label: 'Действия', required: !!(user && canManageUsers(user.role)) }
+  ]);
   
   // Debounce search to avoid too many API calls
   const debouncedSearchTerm = useDebounce(filters.search, 300);
@@ -145,62 +169,67 @@ export default function StudentsPage() {
     }
 
     return (
-      <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-        <div className="flex-1 flex justify-between sm:hidden">
+      <div className="flex items-center justify-between">
+        {/* Info */}
+        <div className="flex-1">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Показано{' '}
+            <span className="font-medium text-gray-900 dark:text-white">
+              {(currentPage - 1) * pageSize + 1}
+            </span>
+            {' '}–{' '}
+            <span className="font-medium text-gray-900 dark:text-white">
+              {Math.min(currentPage * pageSize, totalCount)}
+            </span>
+            {' '}из{' '}
+            <span className="font-medium text-gray-900 dark:text-white">
+              {totalCount}
+            </span>
+            {' '}результатов
+          </p>
+        </div>
+
+        {/* Navigation */}
+        <div className="flex items-center gap-2">
           <button
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 
+                     text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 
+                     disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            Предыдущая
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
           </button>
+          
+          <div className="flex items-center gap-1">
+            {pageNumbers.map((number) => (
+              <button
+                key={number}
+                onClick={() => handlePageChange(number)}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  currentPage === number
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+              >
+                {number}
+              </button>
+            ))}
+          </div>
+          
           <button
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 
+                     text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 
+                     disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            Следующая
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
           </button>
-        </div>
-        <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm text-gray-700">
-              Показано <span className="font-medium">{(currentPage - 1) * pageSize + 1}</span> до{' '}
-              <span className="font-medium">{Math.min(currentPage * pageSize, totalCount)}</span> из{' '}
-              <span className="font-medium">{totalCount}</span> результатов
-            </p>
-          </div>
-          <div>
-            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-              <button
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Предыдущая
-              </button>
-              {pageNumbers.map((number) => (
-                <button
-                  key={number}
-                  onClick={() => handlePageChange(number)}
-                  className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                    currentPage === number
-                      ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                      : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                  }`}
-                >
-                  {number}
-                </button>
-              ))}
-              <button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Следующая
-              </button>
-            </nav>
-          </div>
         </div>
       </div>
     );
@@ -240,26 +269,29 @@ export default function StudentsPage() {
   // Check authentication after all hooks are called
   if (!isAuthenticated) {
     return (
-      <div className="min-h-96 flex items-center justify-center">
-        <div className="text-center card glass-card max-w-md mx-auto">
-          <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-2xl mb-6"
-               style={{ background: 'var(--gradient-cool)' }}>
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 max-w-md">
+              <div className="text-blue-500 text-4xl mb-4">
+                🔒
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                Требуется авторизация
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Войдите в систему для управления пользователями
+              </p>
+              <Link
+                href="/login"
+                className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 
+                         text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all 
+                         duration-200 transform hover:-translate-y-0.5"
+              >
+                Войти в систему
+              </Link>
+            </div>
           </div>
-          <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>
-            Требуется авторизация
-          </h3>
-          <p className="mb-6" style={{ color: 'var(--muted-foreground)' }}>
-            Войдите в систему для управления пользователями
-          </p>
-          <Link
-            href="/login"
-            className="btn-primary hover-lift inline-flex items-center"
-          >
-            Войти в систему
-          </Link>
         </div>
       </div>
     );
@@ -296,8 +328,17 @@ export default function StudentsPage() {
   };
 
   const handleEdit = (user: User) => {
-    setEditingUser(user);
-    setIsEditModalOpen(true);
+    userModal.openEditModal({
+      login: user.login,
+      fullName: user.name,
+      email: user.email,
+      password: '', // Пароль не заполняем при редактировании
+      phone: user.phone,
+      parentPhone: user.parentPhone || '',
+      birthday: user.birthday || '',
+      role: user.role,
+      organizationId: user.organizationId || ''
+    });
   };
 
   const handleSaveEdit = async (id: string, formData: UserFormData) => {
@@ -310,15 +351,11 @@ export default function StudentsPage() {
       }
       
       await loadStudents(currentPage, filters, true); // Reload only the table
+      userModal.closeModal();
     } catch (error) {
       console.error('Error updating user:', error);
       throw error; // Re-throw to let the modal handle the error display
     }
-  };
-
-  const handleCloseEditModal = () => {
-    setIsEditModalOpen(false);
-    setEditingUser(null);
   };
 
   const handleDelete = (user: User) => {
@@ -351,7 +388,7 @@ export default function StudentsPage() {
   };
 
   // Create user handlers
-  const handleCreateUser = async (userData: CreateUserData) => {
+  const handleCreateUser = async (userData: UserFormData) => {
     try {
       const response = await fetch('https://trackademy.onrender.com/api/User/create', {
         method: 'POST',
@@ -369,35 +406,37 @@ export default function StudentsPage() {
 
       // Reload only the table to show the new user
       await loadStudents(currentPage, filters, true);
-      setIsCreateModalOpen(false);
+      userModal.closeModal();
     } catch (error) {
       console.error('Error creating user:', error);
       throw error; // Re-throw to let the modal handle the error display
     }
   };
 
-  const handleCloseCreateModal = () => {
-    setIsCreateModalOpen(false);
-  };
-
   if (error) {
     return (
-      <div className="min-h-96 flex items-center justify-center">
-        <div className="text-center card max-w-md mx-auto">
-          <div className="p-6 rounded-lg border"
-               style={{ 
-                 background: 'rgba(239, 68, 68, 0.1)',
-                 borderColor: 'var(--secondary)',
-                 color: 'var(--secondary)'
-               }}>
-            <p className="font-medium mb-2">Ошибка загрузки</p>
-            <p className="text-sm mb-4">{error}</p>
-            <button
-              onClick={() => loadStudents(currentPage, filters, true)}
-              className="btn-primary hover-lift"
-            >
-              Попробовать снова
-            </button>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 max-w-md">
+              <div className="text-red-500 text-4xl mb-4">
+                ⚠️
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                Ошибка загрузки
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                {error}
+              </p>
+              <button
+                onClick={() => loadStudents(currentPage, filters, true)}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 
+                         text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all 
+                         duration-200 transform hover:-translate-y-0.5"
+              >
+                Попробовать снова
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -405,58 +444,250 @@ export default function StudentsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white shadow rounded-lg overflow-hidden">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-          <h1 className="text-xl font-semibold text-gray-900">Пользователи</h1>
-          {user && canManageUsers(user.role) && (
-            <button 
-              onClick={() => setIsCreateModalOpen(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors flex items-center"
-            >
-              <PlusIcon className="h-4 w-4 mr-2" />
-              Добавить пользователя
-            </button>
-          )}
-        </div>
-
-        {/* Filters */}
-        <div className="px-6 py-4 border-b border-gray-200">
-          <UserFilters
-            onFilterChange={handleFilterChange}
-            groups={groups}
-            isLoading={tableLoading}
-          />
-        </div>
-
-        {/* Users Table */}
-        <UsersTable
-          users={students}
-          isLoading={tableLoading}
-          currentUser={user}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Modern Header with Gradient */}
+        <PageHeaderWithStats
+          title="Студенты"
+          subtitle="Управление пользователями системы"
+          icon={AcademicCapIcon}
+          gradientFrom="emerald-500"
+          gradientTo="lime-600"
+          actionLabel={user && canManageUsers(user.role) ? "Добавить студента" : undefined}
+          onAction={user && canManageUsers(user.role) ? () => userModal.openCreateModal() : undefined}
+          extraActions={
+            <ColumnVisibilityControl
+              columns={columns}
+              onColumnToggle={toggleColumn}
+              variant="header"
+            />
+          }
+          stats={[
+            { label: "Всего студентов", value: totalCount, color: "emerald" },
+            { label: "На странице", value: students.length, color: "lime" },
+            { label: "Страниц", value: totalPages, color: "green" }
+          ]}
         />
 
-        {/* Pagination */}
-        {renderPagination()}
+        {/* Content Card */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+          {/* Filters Section */}
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+            <UserFilters
+              onFilterChange={handleFilterChange}
+              groups={groups}
+              isLoading={tableLoading}
+            />
+          </div>
+
+          {/* Users Table */}
+          <div className="overflow-hidden">
+            <UsersTable
+              users={students}
+              isLoading={tableLoading}
+              currentUser={user}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              showColumnControls={false}
+              columnVisibility={isColumnVisible}
+            />
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+              {renderPagination()}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Edit User Modal */}
-      <EditUserModal
-        isOpen={isEditModalOpen}
-        user={editingUser}
-        onClose={handleCloseEditModal}
-        onSave={handleSaveEdit}
-      />
+      {/* Universal User Modal */}
+      <UniversalModal
+        isOpen={userModal.isOpen}
+        mode={userModal.mode}
+        title={userModal.getConfig().title}
+        subtitle={userModal.getConfig().subtitle}
+        icon={userModal.getConfig().icon}
+        gradientFrom={userModal.getConfig().gradientFrom}
+        gradientTo={userModal.getConfig().gradientTo}
+        maxWidth="2xl"
+        initialData={userModal.editData || {
+          login: '',
+          fullName: '',
+          email: '',
+          password: '',
+          phone: '',
+          parentPhone: '',
+          birthday: '',
+          role: 1,
+          organizationId: user?.organizationId || ''
+        }}
+        onClose={userModal.closeModal}
+        onSave={async (data: any) => {
+          if (userModal.mode === 'create') {
+            await handleCreateUser(data);
+          } else {
+            await handleSaveEdit('', data);
+          }
+        }}
+        submitText={userModal.getConfig().submitText}
+        loadingText={userModal.getConfig().loadingText}
+      >
+        {({ formData, setFormData, errors, setErrors }) => (
+          <div className="space-y-6">
+            {/* Role Selection */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                Роль пользователя
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <label className={`relative flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
+                  formData.role === 1 ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' : 'border-gray-200 dark:border-gray-600'
+                }`}>
+                  <input
+                    type="radio"
+                    name="role"
+                    value={1}
+                    checked={formData.role === 1}
+                    onChange={(e) => setFormData(prev => ({ ...prev, role: parseInt(e.target.value) }))}
+                    className="sr-only"
+                  />
+                  <span className={`text-sm font-medium ${formData.role === 1 ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-700 dark:text-gray-300'}`}>
+                    Студент
+                  </span>
+                  {formData.role === 1 && <div className="absolute top-2 right-2 w-3 h-3 bg-emerald-500 rounded-full"></div>}
+                </label>
+                <label className={`relative flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
+                  formData.role === 2 ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' : 'border-gray-200 dark:border-gray-600'
+                }`}>
+                  <input
+                    type="radio"
+                    name="role"
+                    value={2}
+                    checked={formData.role === 2}
+                    onChange={(e) => setFormData(prev => ({ ...prev, role: parseInt(e.target.value) }))}
+                    className="sr-only"
+                  />
+                  <span className={`text-sm font-medium ${formData.role === 2 ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-700 dark:text-gray-300'}`}>
+                    Преподаватель
+                  </span>
+                  {formData.role === 2 && <div className="absolute top-2 right-2 w-3 h-3 bg-emerald-500 rounded-full"></div>}
+                </label>
+              </div>
+            </div>
 
-      {/* Create User Modal */}
-      <CreateUserModal
-        isOpen={isCreateModalOpen}
-        onClose={handleCloseCreateModal}
-        onSave={handleCreateUser}
-      />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Login */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Логин *
+                </label>
+                <input
+                  type="text"
+                  value={formData.login || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, login: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="Введите логин"
+                  required
+                />
+              </div>
+
+              {/* Full Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Полное имя *
+                </label>
+                <input
+                  type="text"
+                  value={formData.fullName || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="Введите полное имя"
+                  required
+                />
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Email *
+                </label>
+                <input
+                  type="email"
+                  value={formData.email || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="Введите email"
+                  required
+                />
+              </div>
+
+              {/* Phone */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Телефон *
+                </label>
+                <input
+                  type="tel"
+                  value={formData.phone || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="+7 (xxx) xxx-xx-xx"
+                  required
+                />
+              </div>
+
+              {/* Parent Phone - только для студентов */}
+              {formData.role === 1 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Телефон родителя *
+                  </label>
+                  <input
+                    type="tel"
+                    value={formData.parentPhone || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, parentPhone: e.target.value }))}
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    placeholder="+7 (xxx) xxx-xx-xx"
+                    required={formData.role === 1}
+                  />
+                </div>
+              )}
+
+              {/* Birthday */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Дата рождения
+                </label>
+                <input
+                  type="date"
+                  value={formData.birthday || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, birthday: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
+
+              {/* Password - только при создании */}
+              {userModal.mode === 'create' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Пароль *
+                  </label>
+                  <input
+                    type="password"
+                    value={formData.password || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    placeholder="Введите пароль"
+                    required
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </UniversalModal>
 
       {/* Delete User Confirmation Modal */}
       <DeleteConfirmationModal

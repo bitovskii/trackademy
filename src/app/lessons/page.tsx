@@ -7,11 +7,14 @@ import { User } from '@/types/User';
 import { AuthenticatedApiService } from '@/services/AuthenticatedApiService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, PlusIcon } from '@heroicons/react/24/outline';
 import DayView from '@/components/calendar/DayView';
 import WeekView from '@/components/calendar/WeekView';
 import MonthView from '@/components/calendar/MonthView';
 import ListView from '@/components/calendar/ListView';
+import RangeCalendarView from '@/components/calendar/RangeCalendarView';
 import LessonDetailModal from '@/components/calendar/LessonDetailModal';
+import { PageHeaderWithStats } from '@/components/ui/PageHeaderWithStats';
 
 export default function LessonsPage() {
   const { user } = useAuth();
@@ -26,6 +29,9 @@ export default function LessonsPage() {
   const [selectedSchedule, setSelectedSchedule] = useState<string>('');
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [showLessonModal, setShowLessonModal] = useState(false);
+  const [dateFrom, setDateFrom] = useState<Date | null>(null);
+  const [dateTo, setDateTo] = useState<Date | null>(null);
+  const [rangeViewMode, setRangeViewMode] = useState<'list' | 'calendar'>('list');
 
   // Check authorization
   useEffect(() => {
@@ -46,7 +52,7 @@ export default function LessonsPage() {
     if (user) {
       loadLessons();
     }
-  }, [selectedSchedule, currentDate, view, user]);
+  }, [selectedSchedule, currentDate, view, dateFrom, dateTo, user]);
 
   const loadSchedules = async () => {
     if (!user?.organizationId) {
@@ -109,6 +115,14 @@ export default function LessonsPage() {
 
   const getDateRangeForView = (date: Date, viewType: CalendarView): { fromDate: string; toDate: string } => {
     const formatDate = (d: Date): string => d.toISOString().split('T')[0];
+
+    // If custom date range is set, use it
+    if (dateFrom && dateTo) {
+      return {
+        fromDate: formatDate(dateFrom),
+        toDate: formatDate(dateTo)
+      };
+    }
 
     switch (viewType) {
       case 'day': {
@@ -210,6 +224,26 @@ export default function LessonsPage() {
 
   const goToToday = () => {
     setCurrentDate(new Date());
+    // Clear custom date range when going to today
+    setDateFrom(null);
+    setDateTo(null);
+    setRangeViewMode('list');
+  };
+
+  const handleDateRangeChange = (from: Date | null, to: Date | null) => {
+    setDateFrom(from);
+    setDateTo(to);
+    // Clear current date navigation when using custom range
+    if (from && to) {
+      // Set current date to the start of the range for display purposes
+      setCurrentDate(from);
+    }
+  };
+
+  const clearDateRange = () => {
+    setDateFrom(null);
+    setDateTo(null);
+    setRangeViewMode('list');
   };
 
   const handleLessonClick = (lesson: Lesson) => {
@@ -219,6 +253,21 @@ export default function LessonsPage() {
 
   // Format current date for display
   const getCurrentDateText = (): string => {
+    // If custom date range is selected, show it
+    if (dateFrom && dateTo) {
+      const startDate = dateFrom.toLocaleDateString('ru-RU', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+      const endDate = dateTo.toLocaleDateString('ru-RU', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+      return `${startDate} - ${endDate}`;
+    }
+    
     const options: Intl.DateTimeFormatOptions = {};
     
     switch (view) {
@@ -247,6 +296,11 @@ export default function LessonsPage() {
   };
 
   const getViewTitle = (): string => {
+    // If custom date range is selected, show range view mode
+    if (dateFrom && dateTo) {
+      return rangeViewMode === 'list' ? 'Период (Список)' : 'Период (Календарь)';
+    }
+    
     switch (view) {
       case 'day': return 'День';
       case 'week': return 'Неделя';
@@ -261,130 +315,269 @@ export default function LessonsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4 lg:mb-0">
-            Календарь занятий
-          </h1>
-          
-            {/* Controls */}
-            <div className="flex flex-col sm:flex-row gap-4">
-              {/* Schedule filter */}
-              <select
-                value={selectedSchedule}
-                onChange={(e) => setSelectedSchedule(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
-                         bg-white dark:bg-gray-700 text-gray-900 dark:text-white 
-                         focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">Все расписания</option>
-                {schedules.map((schedule) => (
-                  <option key={schedule.id} value={schedule.id}>
-                    {schedule.subject.subjectName} - {schedule.group.name}
-                  </option>
-                ))}
-              </select>            {/* View selector */}
-            <div className="flex bg-gray-200 dark:bg-gray-700 rounded-lg p-1">
-              {(['day', 'week', 'month', 'list'] as CalendarView[]).map((viewType) => (
-                <button
-                  key={viewType}
-                  onClick={() => setView(viewType)}
-                  className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${
-                    view === viewType
-                      ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                      : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
-                  }`}
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Modern Header with Gradient */}
+        <PageHeaderWithStats
+        title="Расписание занятий"
+        subtitle="Просмотр и управление расписанием в разных форматах"
+        icon={CalendarIcon}
+        gradientFrom="violet-500"
+        gradientTo="purple-600"
+        stats={[
+          { 
+            label: "Всего занятий", 
+            value: lessons.length, 
+            color: "violet" as const
+          },
+          { 
+            label: "Сегодня", 
+            value: lessons.filter(lesson => {
+              const today = new Date();
+              const lessonDate = new Date(lesson.date);
+              return lessonDate.toDateString() === today.toDateString();
+            }).length, 
+            color: "purple" as const
+          },
+          { 
+            label: "Расписаний", 
+            value: schedules.length, 
+            color: "indigo" as const
+          }
+        ]}
+      />
+
+      {/* Content Section */}
+      <div className="space-y-6">
+        {/* Navigation and Calendar Content Card */}
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-lg rounded-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
+          {/* Filters Section */}
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-violet-50 dark:from-gray-800 dark:to-gray-700">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Schedule Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Расписание</label>
+                <select
+                  value={selectedSchedule}
+                  onChange={(e) => setSelectedSchedule(e.target.value)}
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-sm text-gray-900 dark:text-white transition-all duration-200"
                 >
-                  {viewType === 'day' ? 'День' : 
-                   viewType === 'week' ? 'Неделя' : 
-                   viewType === 'month' ? 'Месяц' : 'Список'}
-                </button>
-              ))}
+                  <option value="">Все расписания</option>
+                  {schedules.map((schedule) => (
+                    <option key={schedule.id} value={schedule.id}>
+                      {schedule.subject.subjectName} - {schedule.group.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* View selector */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Вид {(dateFrom && dateTo) && <span className="text-violet-600 dark:text-violet-400">(период)</span>}
+                </label>
+                <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                  {(['day', 'week', 'month', 'list'] as CalendarView[]).map((viewType) => (
+                    <button
+                      key={viewType}
+                      onClick={() => setView(viewType)}
+                      disabled={!!(dateFrom && dateTo)}
+                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        view === viewType && !(dateFrom && dateTo)
+                          ? 'bg-white dark:bg-gray-600 text-violet-600 dark:text-violet-400 shadow-sm'
+                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                      } ${(dateFrom && dateTo) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      {viewType === 'day' ? 'День' : 
+                       viewType === 'week' ? 'Неделя' : 
+                       viewType === 'month' ? 'Месяц' : 'Список'}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
+
+          {/* Navigation */}
+          <div className="p-6 bg-gradient-to-r from-gray-50 to-violet-50 dark:from-gray-700/50 dark:to-gray-600/50 border-b border-gray-200 dark:border-gray-700">
+            {/* Date Range Selection */}
+            <div className="mb-4 p-4 bg-white/70 dark:bg-gray-700/70 backdrop-blur-sm rounded-lg border border-gray-200/50 dark:border-gray-600/50">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Выбор диапазона дат</label>
+              <div className="flex flex-wrap items-center gap-3 mb-3">
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-gray-600 dark:text-gray-400">С:</label>
+                  <input
+                    type="date"
+                    value={dateFrom ? dateFrom.toISOString().split('T')[0] : ''}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        const newDateFrom = new Date(e.target.value);
+                        handleDateRangeChange(newDateFrom, dateTo);
+                      }
+                    }}
+                    className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                  />
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-gray-600 dark:text-gray-400">До:</label>
+                  <input
+                    type="date"
+                    value={dateTo ? dateTo.toISOString().split('T')[0] : ''}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        const newDateTo = new Date(e.target.value);
+                        handleDateRangeChange(dateFrom, newDateTo);
+                      }
+                    }}
+                    className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                  />
+                </div>
+                
+                {(dateFrom || dateTo) && (
+                  <button
+                    onClick={clearDateRange}
+                    className="px-3 py-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 rounded-md text-sm transition-colors"
+                  >
+                    Очистить
+                  </button>
+                )}
+              </div>
+              
+              {/* Range View Mode Selector */}
+              {(dateFrom && dateTo) && (
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-gray-600 dark:text-gray-400">Режим просмотра:</label>
+                  <div className="flex bg-gray-100 dark:bg-gray-600 rounded-lg p-1">
+                    <button
+                      onClick={() => setRangeViewMode('list')}
+                      className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 ${
+                        rangeViewMode === 'list'
+                          ? 'bg-white dark:bg-gray-700 text-violet-600 dark:text-violet-400 shadow-sm'
+                          : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                      }`}
+                    >
+                      Список
+                    </button>
+                    <button
+                      onClick={() => setRangeViewMode('calendar')}
+                      className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 ${
+                        rangeViewMode === 'calendar'
+                          ? 'bg-white dark:bg-gray-700 text-violet-600 dark:text-violet-400 shadow-sm'
+                          : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                      }`}
+                    >
+                      Календарь
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => navigateDate('prev')}
+                  disabled={!!(dateFrom || dateTo)}
+                  className="bg-violet-100 hover:bg-violet-200 dark:bg-violet-900/30 dark:hover:bg-violet-800/50 text-violet-700 dark:text-violet-300 p-2 rounded-lg transition-all duration-200 hover:scale-105 flex items-center disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                >
+                  <ChevronLeftIcon className="w-5 h-5" />
+                </button>
+                
+                <button
+                  onClick={goToToday}
+                  disabled={!!(dateFrom || dateTo)}
+                  className="bg-gradient-to-r from-violet-500 to-purple-600 text-white px-6 py-2 rounded-lg font-medium hover:shadow-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                >
+                  Сегодня
+                </button>
+                
+                <button
+                  onClick={() => navigateDate('next')}
+                  disabled={!!(dateFrom || dateTo)}
+                  className="bg-violet-100 hover:bg-violet-200 dark:bg-violet-900/30 dark:hover:bg-violet-800/50 text-violet-700 dark:text-violet-300 p-2 rounded-lg transition-all duration-200 hover:scale-105 flex items-center disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                >
+                  <ChevronRightIcon className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="bg-white/70 dark:bg-gray-700/70 backdrop-blur-sm rounded-lg px-4 py-2 border border-gray-200/50 dark:border-gray-600/50 shadow-lg">
+                <div className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {getCurrentDateText()}
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                  {getViewTitle()}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Calendar Content */}
+          {loading ? (
+            <div className="flex justify-center items-center h-64 p-8">
+              <div className="text-center">
+                <div className="p-4 bg-violet-100 dark:bg-violet-900/30 rounded-full w-16 h-16 mx-auto mb-4">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600 dark:border-violet-400 mx-auto mt-2"></div>
+                </div>
+                <p className="text-gray-600 dark:text-gray-400">Загрузка календаря...</p>
+              </div>
+            </div>
+          ) : (
+            <div className="h-[700px]">
+              {/* If custom date range is selected, show based on rangeViewMode */}
+              {(dateFrom && dateTo) ? (
+                rangeViewMode === 'list' ? (
+                  <ListView
+                    date={currentDate}
+                    lessons={lessons}
+                    onLessonClick={handleLessonClick}
+                  />
+                ) : (
+                  <RangeCalendarView
+                    dateFrom={dateFrom}
+                    dateTo={dateTo}
+                    lessons={lessons}
+                    onLessonClick={handleLessonClick}
+                  />
+                )
+              ) : (
+                <>
+                  {view === 'day' && (
+                    <DayView
+                      date={currentDate}
+                      lessons={lessons}
+                      onLessonClick={handleLessonClick}
+                    />
+                  )}
+                  
+                  {view === 'week' && (
+                    <WeekView
+                      date={currentDate}
+                      lessons={lessons}
+                      onLessonClick={handleLessonClick}
+                    />
+                  )}
+                  
+                  {view === 'month' && (
+                    <MonthView
+                      date={currentDate}
+                      lessons={lessons}
+                      onLessonClick={handleLessonClick}
+                    />
+                  )}
+                  
+                  {view === 'list' && (
+                    <ListView
+                      date={currentDate}
+                      lessons={lessons}
+                      onLessonClick={handleLessonClick}
+                    />
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </div>
-
-        {/* Navigation */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigateDate('prev')}
-              className="p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 
-                       text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 
-                       transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            
-            <button
-              onClick={goToToday}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                       transition-colors font-medium"
-            >
-              Сегодня
-            </button>
-            
-            <button
-              onClick={() => navigateDate('next')}
-              className="p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 
-                       text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 
-                       transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
-
-          <div className="text-xl font-semibold text-gray-900 dark:text-white">
-            {getCurrentDateText()}
-          </div>
-        </div>
-
-        {/* Calendar Content */}
-        {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          </div>
-        ) : (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 h-[600px]">
-            {view === 'day' && (
-              <DayView
-                date={currentDate}
-                lessons={lessons}
-                onLessonClick={handleLessonClick}
-              />
-            )}
-            
-            {view === 'week' && (
-              <WeekView
-                date={currentDate}
-                lessons={lessons}
-                onLessonClick={handleLessonClick}
-              />
-            )}
-            
-            {view === 'month' && (
-              <MonthView
-                date={currentDate}
-                lessons={lessons}
-                onLessonClick={handleLessonClick}
-              />
-            )}
-            
-            {view === 'list' && (
-              <ListView
-                date={currentDate}
-                lessons={lessons}
-                onLessonClick={handleLessonClick}
-              />
-            )}
-          </div>
-        )}
       </div>
 
       {/* Lesson Details Modal */}
@@ -395,6 +588,7 @@ export default function LessonsPage() {
           onClose={() => setShowLessonModal(false)}
         />
       )}
+      </div>
     </div>
   );
 }

@@ -32,62 +32,64 @@ export default function MonthView({ date, lessons, onLessonClick }: MonthViewPro
       </div>
 
       {/* Calendar grid */}
-      <div className="flex-1 grid grid-cols-7 auto-rows-fr">
-        {calendarDays.map((day) => {
-          const dayLessons = getLessonsForDay(lessons, day);
-          const isCurrentMonth = day.getMonth() === currentMonth;
-          const isToday = day.toDateString() === today.toDateString();
-          const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+      <div className="flex-1 overflow-y-auto">
+        <div className="grid grid-cols-7" style={{ gridTemplateRows: 'repeat(6, minmax(140px, 1fr))' }}>
+          {calendarDays.map((day) => {
+            const dayLessons = getLessonsForDay(lessons, day);
+            const isCurrentMonth = day.getMonth() === currentMonth;
+            const isToday = day.toDateString() === today.toDateString();
+            const isWeekend = day.getDay() === 0 || day.getDay() === 6;
 
-          return (
-            <div
-              key={day.toISOString()}
-              className={`border-r border-b border-gray-200 dark:border-gray-700 p-2 min-h-[120px] last:border-r-0 ${
-                isCurrentMonth 
-                  ? 'bg-white dark:bg-gray-800' 
-                  : 'bg-gray-50 dark:bg-gray-900'
-              } ${isWeekend ? 'bg-gray-25 dark:bg-gray-850' : ''}`}
-            >
-              {/* Day number */}
-              <div className="flex items-center justify-between mb-2">
-                <div
-                  className={`text-sm font-medium ${
-                    isToday
-                      ? 'bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center'
-                      : isCurrentMonth
-                      ? 'text-gray-900 dark:text-white'
-                      : 'text-gray-400 dark:text-gray-500'
-                  }`}
-                >
-                  {day.getDate()}
+            return (
+              <div
+                key={day.toISOString()}
+                className={`border-r border-b border-gray-200 dark:border-gray-700 p-2 min-h-[140px] last:border-r-0 ${
+                  isCurrentMonth 
+                    ? 'bg-white dark:bg-gray-800' 
+                    : 'bg-gray-50 dark:bg-gray-900'
+                } ${isWeekend ? 'bg-gray-25 dark:bg-gray-850' : ''}`}
+              >
+                {/* Day number */}
+                <div className="flex items-center justify-between mb-2">
+                  <div
+                    className={`text-sm font-medium ${
+                      isToday
+                        ? 'bg-violet-600 text-white rounded-full w-6 h-6 flex items-center justify-center'
+                        : isCurrentMonth
+                        ? 'text-gray-900 dark:text-white'
+                        : 'text-gray-400 dark:text-gray-500'
+                    }`}
+                  >
+                    {day.getDate()}
+                  </div>
+                  
+                  {dayLessons.length > 0 && (
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      {dayLessons.length}
+                    </div>
+                  )}
                 </div>
-                
-                {dayLessons.length > 0 && (
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {dayLessons.length}
-                  </div>
-                )}
-              </div>
 
-              {/* Lessons */}
-              <div className="space-y-1">
-                {dayLessons.slice(0, 3).map((lesson) => (
-                  <MonthLessonBlock
-                    key={lesson.id}
-                    lesson={lesson}
-                    onClick={() => onLessonClick(lesson)}
-                  />
-                ))}
-                
-                {dayLessons.length > 3 && (
-                  <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-1">
-                    +{dayLessons.length - 3} еще
-                  </div>
-                )}
+                {/* Lessons */}
+                <div className="space-y-1">
+                  {dayLessons.slice(0, 3).map((lesson) => (
+                    <MonthLessonBlock
+                      key={lesson.id}
+                      lesson={lesson}
+                      onClick={() => onLessonClick(lesson)}
+                    />
+                  ))}
+                  
+                  {dayLessons.length > 3 && (
+                    <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-1">
+                      +{dayLessons.length - 3} еще
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </div>
   );

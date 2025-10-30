@@ -6,7 +6,7 @@ export interface User {
   phone: string;
   parentPhone: string;
   birthday: string;
-  groups: string[];
+  groups: (string | { id: string; name?: string; groupName?: string })[];
   role: number;
   organizationId?: string;
   organizationName?: string;

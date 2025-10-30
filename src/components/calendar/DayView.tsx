@@ -1,6 +1,6 @@
 'use client';
 
-import { Lesson, getTimeSlots, isLessonInTimeSlot, getLessonsForDay, formatTime, generateSubjectColor, getLessonStatusColor } from '@/types/Lesson';
+import { Lesson, getTimeSlots, getLessonsForDay, formatTime, generateSubjectColor, getLessonStatusColor } from '@/types/Lesson';
 
 interface DayViewProps {
   date: Date;
@@ -11,6 +11,27 @@ interface DayViewProps {
 export default function DayView({ date, lessons, onLessonClick }: DayViewProps) {
   const timeSlots = getTimeSlots(); // 08:00 - 23:00
   const dayLessons = getLessonsForDay(lessons, date);
+
+  // Calculate lesson position and height
+  const getLessonPosition = (lesson: Lesson) => {
+    const [startHour, startMin] = lesson.startTime.split(':').map(Number);
+    const [endHour, endMin] = lesson.endTime.split(':').map(Number);
+    
+    const startTotalMin = startHour * 60 + startMin;
+    const endTotalMin = endHour * 60 + endMin;
+    
+    // First time slot is 08:00 (8 * 60 = 480 minutes from midnight)
+    const firstSlotMin = 8 * 60;
+    
+    // Calculate position relative to the first time slot
+    const topOffset = ((startTotalMin - firstSlotMin) / 60) * 60; // 60px per hour
+    const height = ((endTotalMin - startTotalMin) / 60) * 60; // 60px per hour
+    
+    return {
+      top: Math.max(0, topOffset), // Ensure non-negative
+      height: Math.max(60, height) // Minimum 60px
+    };
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -32,43 +53,48 @@ export default function DayView({ date, lessons, onLessonClick }: DayViewProps) 
       {/* Time grid */}
       <div className="flex-1 overflow-y-auto">
         <div className="relative">
-          {timeSlots.map((timeSlot, index) => {
-            const nextTimeSlot = timeSlots[index + 1] || '24:00';
-            const slotLessons = dayLessons.filter(lesson => 
-              isLessonInTimeSlot(lesson, timeSlot)
-            );
-
-            return (
-              <div
-                key={timeSlot}
-                className="flex border-b border-gray-100 dark:border-gray-700 min-h-[60px]"
-              >
-                {/* Time label */}
-                <div className="w-16 flex-shrink-0 p-2 text-sm text-gray-500 dark:text-gray-400 border-r border-gray-100 dark:border-gray-700">
-                  {timeSlot}
-                </div>
-
-                {/* Lesson slot */}
-                <div className="flex-1 p-2 relative">
-                  {slotLessons.length === 0 ? (
-                    <div className="h-full flex items-center justify-center text-gray-400 dark:text-gray-500 text-sm">
-                      {/* Empty slot */}
-                    </div>
-                  ) : (
-                    <div className="space-y-1">
-                      {slotLessons.map((lesson) => (
-                        <LessonBlock
-                          key={lesson.id}
-                          lesson={lesson}
-                          onClick={() => onLessonClick(lesson)}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
+          {/* Time slots grid */}
+          {timeSlots.map((timeSlot) => (
+            <div
+              key={timeSlot}
+              className="flex border-b border-gray-100 dark:border-gray-700 min-h-[60px]"
+            >
+              {/* Time label */}
+              <div className="w-16 flex-shrink-0 p-2 text-sm text-gray-500 dark:text-gray-400 border-r border-gray-100 dark:border-gray-700">
+                {timeSlot}
               </div>
-            );
-          })}
+
+              {/* Empty lesson area */}
+              <div className="flex-1 p-2 relative">
+                {/* This space will be filled by absolutely positioned lessons */}
+              </div>
+            </div>
+          ))}
+
+          {/* Absolutely positioned lessons */}
+          <div className="absolute inset-0 left-16 pointer-events-none">
+            {dayLessons.map((lesson) => {
+              const position = getLessonPosition(lesson);
+              
+              return (
+                <div
+                  key={lesson.id}
+                  className="absolute left-2 right-2 pointer-events-auto"
+                  style={{
+                    top: `${position.top}px`,
+                    height: `${position.height}px`,
+                    zIndex: 10
+                  }}
+                >
+                  <LessonBlock
+                    lesson={lesson}
+                    onClick={() => onLessonClick(lesson)}
+                    height={position.height}
+                  />
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
@@ -78,9 +104,10 @@ export default function DayView({ date, lessons, onLessonClick }: DayViewProps) 
 interface LessonBlockProps {
   lesson: Lesson;
   onClick: () => void;
+  height?: number;
 }
 
-function LessonBlock({ lesson, onClick }: LessonBlockProps) {
+function LessonBlock({ lesson, onClick, height }: LessonBlockProps) {
   const subjectColor = generateSubjectColor(lesson.subject.subjectName);
   const statusColor = getLessonStatusColor(lesson.lessonStatus);
 
@@ -89,9 +116,13 @@ function LessonBlock({ lesson, onClick }: LessonBlockProps) {
       onClick={onClick}
       className="p-3 rounded-lg border-l-4 cursor-pointer hover:shadow-md transition-all
                  bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600"
-      style={{ borderLeftColor: subjectColor }}
+      style={{ 
+        borderLeftColor: subjectColor,
+        height: height ? `${height}px` : 'auto',
+        minHeight: '60px'
+      }}
     >
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between h-full">
         <div className="flex-1 min-w-0">
           <h4 className="font-medium text-gray-900 dark:text-white truncate">
             {lesson.subject.subjectName}

@@ -218,7 +218,7 @@ export const getCalendarGrid = (date: Date): Date[] => {
   const endDate = getWeekEnd(monthEnd);
   
   const days: Date[] = [];
-  let currentDate = new Date(startDate);
+  const currentDate = new Date(startDate);
   
   while (currentDate <= endDate) {
     days.push(new Date(currentDate));

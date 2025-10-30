@@ -119,7 +119,7 @@ export default function ListView({ date, lessons, onLessonClick }: ListViewProps
       </div>
 
       {/* Lessons list */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto relative">
         {sortedDates.length === 0 ? (
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
@@ -132,7 +132,7 @@ export default function ListView({ date, lessons, onLessonClick }: ListViewProps
             </div>
           </div>
         ) : (
-          <div className="space-y-6 p-4">
+          <div className="space-y-8 p-4 pb-8">
             {sortedDates.map((dateKey) => {
               const dayLessons = filterLessons(groupedLessons[dateKey]);
               if (dayLessons.length === 0) return null;
@@ -140,9 +140,9 @@ export default function ListView({ date, lessons, onLessonClick }: ListViewProps
               const sortedDayLessons = sortLessonsInDay(dayLessons);
               
               return (
-                <div key={dateKey} className="space-y-3">
+                <div key={dateKey} className="space-y-4">
                   {/* Date header */}
-                  <div className="sticky top-16 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                  <div className="sticky top-0 bg-gray-50/95 dark:bg-gray-700/95 backdrop-blur-sm p-3 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm z-10">
                     <h4 className="font-semibold text-gray-900 dark:text-white">
                       {formatDate(dateKey)}
                     </h4>
@@ -152,7 +152,7 @@ export default function ListView({ date, lessons, onLessonClick }: ListViewProps
                   </div>
 
                   {/* Lessons for this day */}
-                  <div className="space-y-2">
+                  <div className="space-y-3 mt-2">
                     {sortedDayLessons.map((lesson) => (
                       <ListLessonCard
                         key={lesson.id}

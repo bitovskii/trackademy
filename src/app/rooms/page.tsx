@@ -5,9 +5,10 @@ import { useAuth } from '../../contexts/AuthContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
 import { HomeModernIcon, PencilIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { Room, RoomFormData } from '../../types/Room';
-import CreateRoomModal from '../../components/CreateRoomModal';
-import EditRoomModal from '../../components/EditRoomModal';
+import UniversalModal from '../../components/ui/UniversalModal';
+import { useUniversalModal } from '../../hooks/useUniversalModal';
 import { DeleteConfirmationModal } from '../../components/ui/DeleteConfirmationModal';
+import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import Link from 'next/link';
 
 interface RoomsResponse {
@@ -26,11 +27,15 @@ export default function RoomsPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
   const [tableLoading, setTableLoading] = useState(false);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [editingRoom, setEditingRoom] = useState<Room | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [deletingRoom, setDeletingRoom] = useState<Room | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  // Универсальная система модалов для комнат
+  const roomModal = useUniversalModal('room', {
+    name: '',
+    capacity: 0
+  });
+
   const pageSize = 10;
 
   const loadRooms = useCallback(async (page: number = currentPage, isTableOnly: boolean = true) => {
@@ -78,24 +83,26 @@ export default function RoomsPage() {
   // Check authentication after all hooks are called
   if (!isAuthenticated) {
     return (
-      <div className="min-h-96 flex items-center justify-center">
-        <div className="text-center">
-          <div className="mx-auto h-12 w-12 text-gray-400">
-            <svg className="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-          </div>
-          <h3 className="mt-2 text-sm font-medium text-gray-900">Требуется авторизация</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            Войдите в систему для управления кабинетами
-          </p>
-          <div className="mt-6">
-            <Link
-              href="/login"
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              Войти в систему
-            </Link>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+        <div className="max-w-md w-full">
+          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-xl rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6">
+            <div className="text-center">
+              <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-full w-16 h-16 mx-auto mb-4">
+                <svg className="w-10 h-10 text-green-600 dark:text-green-400 mx-auto mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Требуется авторизация</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">
+                Войдите в систему для управления кабинетами организации
+              </p>
+              <Link
+                href="/login"
+                className="w-full inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+              >
+                Войти в систему
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -107,7 +114,7 @@ export default function RoomsPage() {
   };
 
   const handleCreate = () => {
-    setIsCreateModalOpen(true);
+    roomModal.openCreateModal();
   };
 
   const handleSaveCreate = async (formData: RoomFormData) => {
@@ -125,21 +132,20 @@ export default function RoomsPage() {
 
       await AuthenticatedApiService.post('/Room/create', dataToSend);
       await loadRooms(currentPage, true); // Reload only the table
+      roomModal.closeModal();
     } catch (error) {
       console.error('Error creating room:', error);
       throw error; // Re-throw to let the modal handle the error display
     }
   };
 
-  const handleCloseCreateModal = () => {
-    setIsCreateModalOpen(false);
-  };
-
   const handleEdit = (id: string) => {
     const room = rooms.find(r => r.id === id);
     if (room) {
-      setEditingRoom(room);
-      setIsEditModalOpen(true);
+      roomModal.openEditModal({
+        name: room.name,
+        capacity: room.capacity
+      });
     }
   };
 
@@ -147,15 +153,11 @@ export default function RoomsPage() {
     try {
       await AuthenticatedApiService.put(`/Room/${id}`, formData);
       await loadRooms(currentPage, true); // Reload only the table
+      roomModal.closeModal();
     } catch (error) {
       console.error('Error updating room:', error);
       throw error; // Re-throw to let the modal handle the error display
     }
-  };
-
-  const handleCloseEditModal = () => {
-    setIsEditModalOpen(false);
-    setEditingRoom(null);
   };
 
   const handleDelete = (id: string) => {
@@ -202,61 +204,69 @@ export default function RoomsPage() {
     }
 
     return (
-      <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-        <div className="flex-1 flex justify-between sm:hidden">
-          <button
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-            className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Предыдущая
-          </button>
-          <button
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Следующая
-          </button>
-        </div>
-        <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm text-gray-700">
-              Показано <span className="font-medium">{(currentPage - 1) * pageSize + 1}</span> до{' '}
-              <span className="font-medium">{Math.min(currentPage * pageSize, totalCount)}</span> из{' '}
-              <span className="font-medium">{totalCount}</span> результатов
-            </p>
-          </div>
-          <div>
-            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+      <div className="bg-gradient-to-r from-gray-50 to-green-50 dark:from-gray-700 dark:to-gray-600 px-6 py-4 border-t border-gray-200/50 dark:border-gray-600/50">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          {/* Mobile Pagination */}
+          <div className="flex justify-center sm:hidden w-full">
+            <div className="flex space-x-2">
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
-                className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
               >
                 Предыдущая
               </button>
+              <div className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-sm font-medium rounded-lg">
+                {currentPage} из {totalPages}
+              </div>
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              >
+                Следующая
+              </button>
+            </div>
+          </div>
+
+          {/* Desktop Pagination */}
+          <div className="hidden sm:flex sm:items-center sm:justify-between w-full">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Показано <span className="font-semibold text-green-600 dark:text-green-400">{(currentPage - 1) * pageSize + 1}</span> до{' '}
+              <span className="font-semibold text-green-600 dark:text-green-400">{Math.min(currentPage * pageSize, totalCount)}</span> из{' '}
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400">{totalCount}</span> результатов
+            </div>
+            <div className="flex items-center space-x-1">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105"
+              >
+                ←
+              </button>
+              
               {pageNumbers.map((number) => (
                 <button
                   key={number}
                   onClick={() => handlePageChange(number)}
-                  className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 hover:scale-105 ${
                     currentPage === number
-                      ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                      : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                      ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg'
+                      : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
                 >
                   {number}
                 </button>
               ))}
+              
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
-                className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105"
               >
-                Следующая
+                →
               </button>
-            </nav>
+            </div>
           </div>
         </div>
       </div>
@@ -265,17 +275,24 @@ export default function RoomsPage() {
 
   if (error) {
     return (
-      <div className="min-h-96 flex items-center justify-center">
-        <div className="text-center">
-          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">
-            <p className="font-medium">Ошибка загрузки</p>
-            <p className="text-sm mt-1">{error}</p>
-            <button
-              onClick={() => loadRooms(currentPage, true)}
-              className="mt-3 px-4 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700"
-            >
-              Попробовать снова
-            </button>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+        <div className="max-w-md w-full">
+          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-xl rounded-xl border border-red-200/50 dark:border-red-700/50 p-6">
+            <div className="text-center">
+              <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-full w-16 h-16 mx-auto mb-4">
+                <svg className="w-10 h-10 text-red-600 dark:text-red-400 mx-auto mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Ошибка загрузки</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">{error}</p>
+              <button
+                onClick={() => loadRooms(currentPage, true)}
+                className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all duration-200 hover:scale-105"
+              >
+                Попробовать снова
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -283,172 +300,240 @@ export default function RoomsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white shadow rounded-lg overflow-hidden">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-          <h1 className="text-xl font-semibold text-gray-900 ">Кабинеты</h1>
-          <button 
-            onClick={handleCreate}
-            className="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700 transition-colors flex items-center"
-          >
-            <PlusIcon className="h-4 w-4 mr-2" />
-            Добавить кабинет
-          </button>
-        </div>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Modern Header Card */}
+        <PageHeaderWithStats
+          title="Кабинеты"
+          subtitle="Управление кабинетами организации"
+          icon={HomeModernIcon}
+          gradientFrom="green-500"
+          gradientTo="emerald-600"
+          actionLabel="Добавить кабинет"
+          onAction={handleCreate}
+          stats={[
+            { label: "Всего кабинетов", value: totalCount, color: "emerald" },
+            { label: "Текущая страница", value: currentPage, color: "green" },
+            { label: "Всего страниц", value: totalPages, color: "teal" }
+          ]}
+        />
 
-        {/* Loading State */}
-        {tableLoading && (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-2 text-sm text-gray-500">Загрузка...</p>
+        {/* Content Card */}
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-lg rounded-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
+          {/* Loading State */}
+          {tableLoading && (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-200 border-t-green-600 mx-auto"></div>
+              <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">Загрузка кабинетов...</p>
+            </div>
+          )}
+
+          {/* Desktop Table */}
+          <div className="hidden md:block">{!tableLoading && (
+            <div className="overflow-hidden">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gradient-to-r from-gray-50 to-green-50 dark:from-gray-700 dark:to-gray-600">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                      №
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                      Название кабинета
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                      Вместимость
+                    </th>
+                    <th className="relative px-6 py-4">
+                      <span className="sr-only">Действия</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                  {rooms.map((room, index) => (
+                    <tr key={room.id} className="hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 dark:hover:from-gray-700 dark:hover:to-gray-600 transition-all duration-200">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-sm font-medium rounded-lg shadow-sm">
+                          {(currentPage - 1) * pageSize + index + 1}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="p-2 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900 dark:to-emerald-900 rounded-lg mr-3">
+                            <HomeModernIcon className="h-5 w-5 text-green-600 dark:text-green-400" />
+                          </div>
+                          <div className="text-sm font-semibold text-gray-900 dark:text-white">{room.name}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-600 dark:text-gray-300">
+                          <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-lg font-medium">
+                            {room.capacity} мест
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex justify-end space-x-2">
+                          <button 
+                            onClick={() => handleEdit(room.id)}
+                            className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 rounded-lg transition-all duration-200 hover:scale-110"
+                            title="Редактировать"
+                          >
+                            <PencilIcon className="h-4 w-4" />
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(room.id)}
+                            className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 rounded-lg transition-all duration-200 hover:scale-110"
+                            title="Удалить"
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            )}
           </div>
-        )}
-
-        {/* Desktop Table */}
-        <div className="hidden md:block">{!tableLoading && (
-          <table className="min-w-full divide-y divide-gray-200 ">
-            <thead className="bg-gray-50 ">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  №
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Название
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Вместимость
-                </th>
-                <th className="relative px-6 py-3">
-                  <span className="sr-only">Действия</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200 ">
+          {/* Mobile Cards */}
+          <div className="md:hidden">{!tableLoading && (
+            <div className="space-y-4 p-4">
               {rooms.map((room, index) => (
-                <tr key={room.id} className="hover:bg-gray-50 ">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-500 ">{(currentPage - 1) * pageSize + index + 1}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <HomeModernIcon className="h-5 w-5 text-gray-400 mr-3" />
-                      <div className="text-sm font-medium text-gray-900 ">{room.name}</div>
+                <div key={room.id} className="bg-gradient-to-r from-white to-green-50 dark:from-gray-800 dark:to-gray-700 border border-gray-200/50 dark:border-gray-600/50 rounded-xl p-4 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.02]">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-sm font-medium rounded-lg shadow-sm">
+                        {(currentPage - 1) * pageSize + index + 1}
+                      </div>
+                      <div className="flex items-center">
+                        <div className="p-2 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900 dark:to-emerald-900 rounded-lg mr-2">
+                          <HomeModernIcon className="h-5 w-5 text-green-600 dark:text-green-400" />
+                        </div>
+                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{room.name}</h3>
+                      </div>
                     </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900 ">{room.capacity} мест</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex justify-end space-x-2">
+                    <div className="flex space-x-2">
                       <button 
                         onClick={() => handleEdit(room.id)}
-                        className="text-blue-600 hover:text-blue-900 p-1"
+                        className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 rounded-lg transition-all duration-200 hover:scale-110"
                       >
                         <PencilIcon className="h-4 w-4" />
                       </button>
                       <button 
                         onClick={() => handleDelete(room.id)}
-                        className="text-red-600 hover:text-red-900 p-1"
+                        className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 rounded-lg transition-all duration-200 hover:scale-110"
                       >
                         <TrashIcon className="h-4 w-4" />
                       </button>
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          )}
-        </div>
-
-        {/* Mobile Cards */}
-        <div className="md:hidden">{!tableLoading && (
-          <div className="space-y-4 p-4">
-            {rooms.map((room, index) => (
-              <div key={room.id} className="bg-white border border-gray-200 rounded-lg p-4">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">#{(currentPage - 1) * pageSize + index + 1}</span>
-                    <div className="flex items-center">
-                      <HomeModernIcon className="h-5 w-5 text-gray-400 mr-2" />
-                      <h3 className="text-sm font-medium text-gray-900 ">{room.name}</h3>
+                  </div>
+                  
+                  <div className="mt-3 p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-gray-200/30 dark:border-gray-600/30">
+                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                      <span className="font-medium">Вместимость:</span>
+                      <span className="ml-2 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-lg">{room.capacity} мест</span>
                     </div>
                   </div>
-                  <div className="flex space-x-2">
-                    <button 
-                      onClick={() => handleEdit(room.id)}
-                      className="text-blue-600 hover:text-blue-900 p-1"
-                    >
-                      <PencilIcon className="h-4 w-4" />
-                    </button>
-                    <button 
-                      onClick={() => handleDelete(room.id)}
-                      className="text-red-600 hover:text-red-900 p-1"
-                    >
-                      <TrashIcon className="h-4 w-4" />
-                    </button>
-                  </div>
                 </div>
-                
-                <div className="space-y-2">
-                  <div className="flex items-center text-sm text-gray-600">
-                    <span className="font-medium">Вместимость:</span>
-                    <span className="ml-2">{room.capacity} мест</span>
-                  </div>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
+            )}
           </div>
-          )}
-        </div>
 
-        {/* Empty State */}
-        {rooms.length === 0 && !tableLoading && (
-          <div className="text-center py-12">
-            <HomeModernIcon className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">Нет кабинетов</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              Начните с добавления первого кабинета
-            </p>
-            <div className="mt-6">
-              <button 
-                onClick={handleCreate}
-                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
-              >
-                <PlusIcon className="h-4 w-4 mr-2" />
-                Добавить кабинет
-              </button>
+          {/* Empty State */}
+          {rooms.length === 0 && !tableLoading && (
+            <div className="text-center py-12">
+              <div className="p-4 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900 dark:to-emerald-900 rounded-full w-16 h-16 mx-auto mb-4">
+                <HomeModernIcon className="w-8 h-8 text-green-600 dark:text-green-400 mx-auto mt-2" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Нет кабинетов</h3>
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                Начните с добавления первого кабинета в вашу организацию
+              </p>
+              <div className="mt-6">
+                <button 
+                  onClick={handleCreate}
+                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+                >
+                  <PlusIcon className="h-5 w-5 mr-2" />
+                  Добавить кабинет
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {renderPagination()}
+        </div>
+      </div>
+
+      {/* Universal Room Modal */}
+      <UniversalModal
+        isOpen={roomModal.isOpen}
+        mode={roomModal.mode}
+        title={roomModal.getConfig().title}
+        subtitle={roomModal.getConfig().subtitle}
+        icon={roomModal.getConfig().icon}
+        gradientFrom={roomModal.getConfig().gradientFrom}
+        gradientTo={roomModal.getConfig().gradientTo}
+        maxWidth="md"
+        initialData={roomModal.editData || {
+          name: '',
+          capacity: 1
+        }}
+        onClose={roomModal.closeModal}
+        onSave={async (data: RoomFormData) => {
+          if (roomModal.mode === 'create') {
+            await handleSaveCreate(data);
+          } else {
+            await handleSaveEdit('', data);
+          }
+        }}
+        submitText={roomModal.getConfig().submitText}
+        loadingText={roomModal.getConfig().loadingText}
+      >
+        {({ formData, setFormData }) => (
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Название комнаты
+              </label>
+              <input
+                type="text"
+                value={formData.name || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="Введите название комнаты"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Вместимость
+              </label>
+              <input
+                type="number"
+                value={formData.capacity || 1}
+                onChange={(e) => setFormData(prev => ({ ...prev, capacity: parseInt(e.target.value) || 1 }))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="Введите вместимость"
+                min="1"
+                required
+              />
             </div>
           </div>
         )}
-
-        {/* Pagination */}
-        {renderPagination()}
-      </div>
-
-      {/* Create Room Modal */}
-      <CreateRoomModal
-        isOpen={isCreateModalOpen}
-        onClose={handleCloseCreateModal}
-        onSave={handleSaveCreate}
-      />
-
-      {/* Edit Room Modal */}
-      <EditRoomModal
-        isOpen={isEditModalOpen}
-        room={editingRoom}
-        onClose={handleCloseEditModal}
-        onSave={handleSaveEdit}
-      />
+      </UniversalModal>
 
       {/* Delete Room Confirmation Modal */}
       <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={handleCloseDeleteModal}
         onConfirm={handleConfirmDelete}
-        title="Удаление аудитории"
-        message={`Вы уверены, что хотите удалить аудиторию "${deletingRoom?.name}"?`}
+        title="Удаление кабинета"
+        message={`Вы уверены, что хотите удалить кабинет "${deletingRoom?.name}"?`}
         itemName={deletingRoom?.name}
       />
     </div>

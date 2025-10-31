@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { CalendarView, Lesson, LessonFilters, LessonsResponse } from '@/types/Lesson';
+import { CalendarView, Lesson, LessonFilters, LessonsResponse, getWeekStart, getWeekEnd, getMonthStart, getMonthEnd, getDayStart, getDayEnd } from '@/types/Lesson';
 import { Schedule } from '@/types/Schedule';
 import { User } from '@/types/User';
 import { AuthenticatedApiService } from '@/services/AuthenticatedApiService';
@@ -114,7 +114,13 @@ export default function LessonsPage() {
   }, [selectedSchedule, currentDate, view, user?.organizationId]);
 
   const getDateRangeForView = (date: Date, viewType: CalendarView): { fromDate: string; toDate: string } => {
-    const formatDate = (d: Date): string => d.toISOString().split('T')[0];
+    // Используем локальное форматирование даты для избежания UTC сдвигов
+    const formatDate = (d: Date): string => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
 
     // If custom date range is set, use it
     if (dateFrom && dateTo) {
@@ -166,38 +172,6 @@ export default function LessonsPage() {
           toDate: formatDate(date)
         };
     }
-  };
-
-  // Helper functions from Lesson types
-  const getWeekStart = (date: Date): Date => {
-    const result = new Date(date);
-    const day = result.getDay();
-    const diff = result.getDate() - day + (day === 0 ? -6 : 1);
-    result.setDate(diff);
-    result.setHours(0, 0, 0, 0);
-    return result;
-  };
-
-  const getWeekEnd = (date: Date): Date => {
-    const weekStart = getWeekStart(date);
-    const result = new Date(weekStart);
-    result.setDate(result.getDate() + 6);
-    result.setHours(23, 59, 59, 999);
-    return result;
-  };
-
-  const getMonthStart = (date: Date): Date => {
-    const result = new Date(date);
-    result.setDate(1);
-    result.setHours(0, 0, 0, 0);
-    return result;
-  };
-
-  const getMonthEnd = (date: Date): Date => {
-    const result = new Date(date);
-    result.setMonth(result.getMonth() + 1, 0);
-    result.setHours(23, 59, 59, 999);
-    return result;
   };
 
   // Navigation functions
@@ -586,6 +560,7 @@ export default function LessonsPage() {
           lesson={selectedLesson}
           isOpen={showLessonModal}
           onClose={() => setShowLessonModal(false)}
+          onUpdate={loadLessons}
         />
       )}
       </div>

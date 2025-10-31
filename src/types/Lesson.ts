@@ -86,6 +86,8 @@ export const getLessonStatusText = (status: Lesson['lessonStatus']): string => {
 };
 
 export const getAttendanceStatusText = (status: AttendanceStatus | null): string => {
+  if (status === null) return 'Не отмечено';
+  
   switch (status) {
     case 1:
       return 'Присутствовал';
@@ -95,14 +97,14 @@ export const getAttendanceStatusText = (status: AttendanceStatus | null): string
       return 'Опоздал';
     case 4:
       return 'Отсутствовал по уважительной причине';
-    case null:
-      return 'Не отмечено';
     default:
       return 'Не отмечено';
   }
 };
 
 export const getAttendanceStatusColor = (status: AttendanceStatus | null): string => {
+  if (status === null) return '#6B7280'; // Gray
+  
   switch (status) {
     case 1:
       return '#10B981'; // Green - присутствовал
@@ -112,8 +114,6 @@ export const getAttendanceStatusColor = (status: AttendanceStatus | null): strin
       return '#F59E0B'; // Yellow - опоздал
     case 4:
       return '#8B5CF6'; // Purple - уважительная причина
-    case null:
-      return '#6B7280'; // Gray
     default:
       return '#6B7280'; // Gray
   }
@@ -153,7 +153,9 @@ export const formatTimeRange = (startTime: string, endTime: string): string => {
 };
 
 export const formatDate = (dateString: string): string => {
-  const date = new Date(dateString);
+  // Парсим дату как локальную, избегая UTC конверсии
+  const [year, month, day] = dateString.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
   return date.toLocaleDateString('ru-RU', {
     day: 'numeric',
     month: 'long',
@@ -162,7 +164,9 @@ export const formatDate = (dateString: string): string => {
 };
 
 export const formatDateShort = (dateString: string): string => {
-  const date = new Date(dateString);
+  // Парсим дату как локальную, избегая UTC конверсии
+  const [year, month, day] = dateString.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
   return date.toLocaleDateString('ru-RU', {
     day: '2-digit',
     month: '2-digit'
@@ -213,9 +217,18 @@ export const getDayEnd = (date: Date): Date => {
   return result;
 };
 
-// Format date for API (YYYY-MM-DD)
+// Parse date string from API safely (avoiding UTC conversion)
+export const parseApiDate = (dateString: string): Date => {
+  const [year, month, day] = dateString.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+
+// Format date for API (YYYY-MM-DD) - using local timezone
 export const formatDateForApi = (date: Date): string => {
-  return date.toISOString().split('T')[0];
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 // Calendar grid helpers

@@ -55,7 +55,33 @@ export default function AttendancePage() {
   };
 
   const updateFilters = (newFilters: Partial<AttendanceFilters>) => {
-    setFilters(prev => ({ ...prev, ...newFilters, pageNumber: 1 }));
+    setFilters(prev => {
+      const updated = { ...prev, ...newFilters, pageNumber: 1 };
+      
+      // Если мы очищаем дату, удаляем её из фильтров полностью
+      if (newFilters.fromDate === '') {
+        delete updated.fromDate;
+      }
+      if (newFilters.toDate === '') {
+        delete updated.toDate;
+      }
+      if (newFilters.studentSearch === '') {
+        delete updated.studentSearch;
+      }
+      if (newFilters.status === undefined || newFilters.status === null) {
+        delete updated.status;
+      }
+      
+      return updated;
+    });
+  };
+
+  const resetFilters = () => {
+    setFilters({
+      organizationId: user?.organizationId || '',
+      pageNumber: 1,
+      pageSize: 20
+    });
   };
 
   const getAttendanceStats = () => {
@@ -174,6 +200,15 @@ export default function AttendancePage() {
         <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-lg rounded-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
           {/* Filters */}
           <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-emerald-50 dark:from-gray-800 dark:to-gray-700">
+            <div className="flex items-end justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Фильтры</h3>
+              <button
+                onClick={resetFilters}
+                className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors text-sm"
+              >
+                Сбросить фильтры
+              </button>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {/* Student Search */}
               <div>

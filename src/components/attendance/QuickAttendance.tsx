@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Lesson } from '@/types/Lesson';
 import { AttendanceStatus, getAttendanceStatusText, getAttendanceStatusColor, getAttendanceStatusIcon } from '@/types/Attendance';
 import { attendanceApi } from '@/services/AttendanceApiService';
@@ -78,17 +78,32 @@ export default function QuickAttendance({ lesson, onUpdate }: QuickAttendancePro
     }
   };
 
-  const getAttendanceStats = () => {
-    const attended = lesson.students.filter(s => s.attendanceStatus === 1).length;
-    const absent = lesson.students.filter(s => s.attendanceStatus === 2).length;
-    const late = lesson.students.filter(s => s.attendanceStatus === 3).length;
-    const specialReason = lesson.students.filter(s => s.attendanceStatus === 4).length;
-    const unmarked = lesson.students.filter(s => s.attendanceStatus === null).length;
+  const getAttendanceStats = useMemo(() => {
+    const stats = { attended: 0, absent: 0, late: 0, specialReason: 0, unmarked: 0 };
+    
+    lesson.students.forEach(student => {
+      switch (student.attendanceStatus) {
+        case 1:
+          stats.attended++;
+          break;
+        case 2:
+          stats.absent++;
+          break;
+        case 3:
+          stats.late++;
+          break;
+        case 4:
+          stats.specialReason++;
+          break;
+        default:
+          stats.unmarked++;
+      }
+    });
 
-    return { attended, absent, late, specialReason, unmarked };
-  };
+    return stats;
+  }, [lesson.students]);
 
-  const stats = getAttendanceStats();
+  const stats = getAttendanceStats;
 
   return (
     <div className="space-y-6">

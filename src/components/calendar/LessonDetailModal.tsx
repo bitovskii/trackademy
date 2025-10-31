@@ -1,16 +1,19 @@
 'use client';
 
-import { Lesson, formatDate, formatTimeRange, getLessonStatusText, getLessonStatusColor, getAttendanceStatusText, getAttendanceStatusColor, generateSubjectColor } from '@/types/Lesson';
+import { Lesson, formatDate, formatTimeRange, getLessonStatusText, getLessonStatusColor, generateSubjectColor } from '@/types/Lesson';
+import { getAttendanceStatusText, getAttendanceStatusColor } from '@/types/Attendance';
 import { useState } from 'react';
 import QuickAttendance from '@/components/attendance/QuickAttendance';
+import ImprovedAttendance from '@/components/attendance/ImprovedAttendance';
 
 interface LessonDetailModalProps {
   lesson: Lesson;
   isOpen: boolean;
   onClose: () => void;
+  onUpdate?: () => void;
 }
 
-export default function LessonDetailModal({ lesson, isOpen, onClose }: LessonDetailModalProps) {
+export default function LessonDetailModal({ lesson, isOpen, onClose, onUpdate }: LessonDetailModalProps) {
   const [activeTab, setActiveTab] = useState<'details' | 'attendance' | 'quick-attendance'>('details');
 
   if (!isOpen) return null;
@@ -23,7 +26,7 @@ export default function LessonDetailModal({ lesson, isOpen, onClose }: LessonDet
   const unmarkedStudents = lesson.students.filter(s => s.attendanceStatus === null);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-gray-900/20 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-xl">
         {/* Header */}
         <div className="flex items-start justify-between p-6 border-b border-gray-200 dark:border-gray-700">
@@ -108,9 +111,10 @@ export default function LessonDetailModal({ lesson, isOpen, onClose }: LessonDet
           )}
           
           {activeTab === 'quick-attendance' && (
-            <QuickAttendance 
+            <ImprovedAttendance 
               lesson={lesson} 
-              onUpdate={() => window.location.reload()} 
+              onUpdate={onUpdate || (() => {})} 
+              onClose={onClose}
             />
           )}
         </div>

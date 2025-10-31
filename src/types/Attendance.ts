@@ -95,37 +95,13 @@ export interface ExportAttendanceRequest {
 
 export type AttendanceStatus = 1 | 2 | 3 | 4;
 
-// Helper functions
-export const getAttendanceStatusText = (status: AttendanceStatus): string => {
-  switch (status) {
-    case 1:
-      return 'Присутствовал';
-    case 2:
-      return 'Отсутствовал';
-    case 3:
-      return 'Опоздал';
-    case 4:
-      return 'Отсутствовал по уважительной причине';
-    default:
-      return 'Неизвестно';
-  }
-};
+// Re-export from Lesson.ts to avoid duplication
+export { 
+  getAttendanceStatusText, 
+  getAttendanceStatusColor 
+} from './Lesson';
 
-export const getAttendanceStatusColor = (status: AttendanceStatus): string => {
-  switch (status) {
-    case 1:
-      return '#10B981'; // Green - присутствовал
-    case 2:
-      return '#EF4444'; // Red - отсутствовал
-    case 3:
-      return '#F59E0B'; // Yellow - опоздал
-    case 4:
-      return '#8B5CF6'; // Purple - уважительная причина
-    default:
-      return '#6B7280'; // Gray
-  }
-};
-
+// Additional helper functions specific to Attendance
 export const getAttendanceStatusBgColor = (status: AttendanceStatus): string => {
   switch (status) {
     case 1:

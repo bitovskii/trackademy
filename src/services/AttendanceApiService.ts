@@ -28,7 +28,21 @@ class AttendanceApiService {
     });
 
     if (!response.ok) {
-      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      // Если ошибка аутентификации, можем логировать но не перенаправлять
+      if (response.status === 401 || response.status === 403) {
+        console.warn('Authentication error in AttendanceApiService:', response.status);
+        throw new Error(`Ошибка аутентификации: ${response.status}. Возможно, сессия истекла.`);
+      }
+      
+      let errorMessage;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.title || `API Error: ${response.status} ${response.statusText}`;
+      } catch {
+        errorMessage = `API Error: ${response.status} ${response.statusText}`;
+      }
+      
+      throw new Error(errorMessage);
     }
 
     return response.json();

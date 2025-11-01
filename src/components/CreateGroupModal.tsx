@@ -55,7 +55,7 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
   const loadSubjects = async () => {
     try {
       setSubjectsLoading(true);
-      const response: any = await AuthenticatedApiService.post('/Subject/GetAllSubjects', {
+      const response: { items: Subject[] } = await AuthenticatedApiService.post('/Subject/GetAllSubjects', {
         pageNumber: 1,
         pageSize: 1000,
         organizationId: organizationId

@@ -17,7 +17,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
   onClose,
   onSave,
 }) => {
-  const handleSave = async (data: any, userId?: string) => {
+  const handleSave = async (data: UserFormData, userId?: string) => {
     if (userId) {
       await onSave(userId, data);
     }

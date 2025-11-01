@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ClipboardDocumentCheckIcon } from '@heroicons/react/24/outline';
 import { PageHeaderWithStats } from '@/components/ui/PageHeaderWithStats';
 import { attendanceApi } from '@/services/AttendanceApiService';
-import { AttendanceRecord, AttendanceFilters, getAttendanceStatusText, getAttendanceStatusColor, getAttendanceStatusIcon } from '@/types/Attendance';
+import { AttendanceRecord, AttendanceFilters, AttendanceStatus, getAttendanceStatusText, getAttendanceStatusColor, getAttendanceStatusIcon } from '@/types/Attendance';
 
 export default function AttendancePage() {
   const { user } = useAuth();
@@ -231,7 +231,7 @@ export default function AttendancePage() {
                 </label>
                 <select
                   value={filters.status || ''}
-                  onChange={(e) => updateFilters({ status: e.target.value ? Number(e.target.value) as any : undefined })}
+                  onChange={(e) => updateFilters({ status: e.target.value ? Number(e.target.value) as AttendanceStatus : undefined })}
                   className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm text-gray-900 dark:text-white"
                 >
                   <option value="">Все статусы</option>

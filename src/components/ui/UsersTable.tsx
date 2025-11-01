@@ -9,7 +9,7 @@ import { useColumnVisibility, ColumnVisibilityControl } from './ColumnVisibility
 interface UsersTableProps {
   users: User[];
   isLoading: boolean;
-  currentUser?: any;
+  currentUser?: User;
   onEdit: (user: User) => void;
   onDelete: (user: User) => void;
   showColumnControls?: boolean;
@@ -172,7 +172,7 @@ export const UsersTable: React.FC<UsersTableProps> = ({
                 {isColumnVisible('group') && (
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     {user.groups.length > 0 
-                      ? user.groups.map((group: any) => 
+                      ? user.groups.map((group: string | { id: string; name?: string; groupName?: string }) => 
                           typeof group === 'string' ? group : group.name || group.groupName || group
                         ).join(', ') 
                       : '-'
@@ -243,7 +243,7 @@ export const UsersTable: React.FC<UsersTableProps> = ({
                   )}
                   {isColumnVisible('group') && user.groups.length > 0 && (
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Группы: {user.groups.map((group: any) => 
+                      Группы: {user.groups.map((group: string | { id: string; name?: string; groupName?: string }) => 
                         typeof group === 'string' ? group : group.name || group.groupName || group
                       ).join(', ')}
                     </p>

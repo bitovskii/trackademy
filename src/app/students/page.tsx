@@ -3,13 +3,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
-import { UserIcon, PencilIcon, TrashIcon, PlusIcon, AcademicCapIcon, UserGroupIcon } from '@heroicons/react/24/outline';
+import { AcademicCapIcon } from '@heroicons/react/24/outline';
 import { User, UserFormData } from '../../types/User';
 import UniversalModal from '../../components/ui/UniversalModal';
 import { useUniversalModal } from '../../hooks/useUniversalModal';
 import { DeleteConfirmationModal } from '../../components/ui/DeleteConfirmationModal';
-import { PageHeader } from '../../components/ui/PageHeader';
-import { EmptyState } from '../../components/ui/EmptyState';
 import { UserFilters, UserFilters as UserFiltersType } from '../../components/ui/UserFiltersUpdated';
 import { UsersTable } from '../../components/ui/UsersTable';
 import { useDebounce } from '../../hooks/useDebounce';
@@ -17,14 +15,6 @@ import { canManageUsers } from '../../types/Role';
 import Link from 'next/link';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import { useColumnVisibility, ColumnVisibilityControl } from '../../components/ui/ColumnVisibilityControl';
-
-interface UsersResponse {
-  items: User[];
-  totalCount: number;
-  pageNumber: number;
-  pageSize: number;
-  totalPages: number;
-}
 
 export default function StudentsPage() {
   const { isAuthenticated, user } = useAuth();
@@ -297,36 +287,6 @@ export default function StudentsPage() {
     );
   }
 
-  const getRoleText = (role: number) => {
-    switch (role) {
-      case 1:
-        return 'Студент';
-      case 2:
-        return 'Администратор';
-      case 3:
-        return 'Преподаватель';
-      case 4:
-        return 'Владелец системы';
-      default:
-        return 'Неизвестная роль';
-    }
-  };
-
-  const getRoleColor = (role: number) => {
-    switch (role) {
-      case 1:
-        return 'bg-gradient-to-r from-green-500 to-teal-500 text-white'; // Студент
-      case 2:
-        return 'bg-gradient-to-r from-red-500 to-pink-500 text-white'; // Администратор
-      case 3:
-        return 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'; // Преподаватель
-      case 4:
-        return 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white'; // Владелец системы
-      default:
-        return 'bg-gradient-to-r from-gray-500 to-slate-500 text-white';
-    }
-  };
-
   const handleEdit = (user: User) => {
     userModal.openEditModal({
       login: user.login,
@@ -345,8 +305,8 @@ export default function StudentsPage() {
     try {
       const result = await AuthenticatedApiService.updateUser(id, formData);
       
-      // Check if the update was successful (handle boolean response)
-      if (result === false) {
+      // Check if the update was successful
+      if (!result.success) {
         throw new Error('Не удалось обновить пользователя. Попробуйте еще раз.');
       }
       
@@ -370,7 +330,7 @@ export default function StudentsPage() {
       const result = await AuthenticatedApiService.deleteUser(deletingUser.id);
       
       // Check if the deletion was successful
-      if (result === false) {
+      if (!result.success) {
         throw new Error('Не удалось удалить пользователя. Попробуйте еще раз.');
       }
       
@@ -485,7 +445,7 @@ export default function StudentsPage() {
             <UsersTable
               users={students}
               isLoading={tableLoading}
-              currentUser={user}
+              currentUser={undefined}
               onEdit={handleEdit}
               onDelete={handleDelete}
               showColumnControls={false}
@@ -524,23 +484,24 @@ export default function StudentsPage() {
           organizationId: user?.organizationId || ''
         }}
         onClose={userModal.closeModal}
-        onSave={async (data: any) => {
+        onSave={async (data: Record<string, unknown>) => {
           if (userModal.mode === 'create') {
-            await handleCreateUser(data);
+            await handleCreateUser(data as unknown as UserFormData);
           } else {
-            await handleSaveEdit('', data);
+            await handleSaveEdit('', data as unknown as UserFormData);
           }
         }}
         submitText={userModal.getConfig().submitText}
         loadingText={userModal.getConfig().loadingText}
       >
-        {({ formData, setFormData, errors, setErrors }) => (
+        {({ formData, setFormData, errors: _errors, setErrors: _setErrors }) => (
           <div className="space-y-6">
             {/* Role Selection */}
             <div>
-              <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-3">
-                Роль пользователя
-              </label>
+              <fieldset>
+                <legend className="block text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                  Роль пользователя
+                </legend>
               <div className="grid grid-cols-2 gap-3">
                 <label className={`relative flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
                   formData.role === 1 ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' : 'border-gray-200 dark:border-gray-600'
@@ -550,7 +511,7 @@ export default function StudentsPage() {
                     name="role"
                     value={1}
                     checked={formData.role === 1}
-                    onChange={(e) => setFormData((prev: UserFormData) => ({ ...prev, role: parseInt(e.target.value) }))}
+                    onChange={(e) => setFormData((prev: Record<string, unknown>) => ({ ...prev, role: Number.parseInt(e.target.value) }))}
                     className="sr-only"
                   />
                   <span className={`text-sm font-medium ${formData.role === 1 ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-700 dark:text-gray-300'}`}>
@@ -566,7 +527,7 @@ export default function StudentsPage() {
                     name="role"
                     value={2}
                     checked={formData.role === 2}
-                    onChange={(e) => setFormData((prev: UserFormData) => ({ ...prev, role: parseInt(e.target.value) }))}
+                    onChange={(e) => setFormData((prev: Record<string, unknown>) => ({ ...prev, role: Number.parseInt(e.target.value) }))}
                     className="sr-only"
                   />
                   <span className={`text-sm font-medium ${formData.role === 2 ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-700 dark:text-gray-300'}`}>
@@ -575,18 +536,20 @@ export default function StudentsPage() {
                   {formData.role === 2 && <div className="absolute top-2 right-2 w-3 h-3 bg-emerald-500 rounded-full"></div>}
                 </label>
               </div>
+              </fieldset>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Login */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Логин *
+                <label htmlFor="login" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Логин
                 </label>
                 <input
+                  id="login"
                   type="text"
-                  value={formData.login || ''}
-                  onChange={(e) => setFormData((prev: UserFormData) => ({ ...prev, login: e.target.value }))}
+                  value={(formData.login as string) || ''}
+                  onChange={(e) => setFormData((prev: Record<string, unknown>) => ({ ...prev, login: e.target.value }))}
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="Введите логин"
                   required
@@ -595,13 +558,14 @@ export default function StudentsPage() {
 
               {/* Full Name */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Полное имя *
+                <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Полное имя
                 </label>
                 <input
+                  id="fullName"
                   type="text"
-                  value={formData.fullName || ''}
-                  onChange={(e) => setFormData((prev: UserFormData) => ({ ...prev, fullName: e.target.value }))}
+                  value={(formData.fullName as string) || ''}
+                  onChange={(e) => setFormData((prev: Record<string, unknown>) => ({ ...prev, fullName: e.target.value }))}
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="Введите полное имя"
                   required
@@ -610,13 +574,14 @@ export default function StudentsPage() {
 
               {/* Email */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Email *
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Email
                 </label>
                 <input
+                  id="email"
                   type="email"
-                  value={formData.email || ''}
-                  onChange={(e) => setFormData((prev: UserFormData) => ({ ...prev, email: e.target.value }))}
+                  value={(formData.email as string) || ''}
+                  onChange={(e) => setFormData((prev: Record<string, unknown>) => ({ ...prev, email: e.target.value }))}
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="Введите email"
                   required
@@ -625,13 +590,14 @@ export default function StudentsPage() {
 
               {/* Phone */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Телефон *
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Телефон
                 </label>
                 <input
+                  id="phone"
                   type="tel"
-                  value={formData.phone || ''}
-                  onChange={(e) => setFormData((prev: UserFormData) => ({ ...prev, phone: e.target.value }))}
+                  value={(formData.phone as string) || ''}
+                  onChange={(e) => setFormData((prev: Record<string, unknown>) => ({ ...prev, phone: e.target.value }))}
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="+7 (xxx) xxx-xx-xx"
                   required
@@ -641,13 +607,14 @@ export default function StudentsPage() {
               {/* Parent Phone - только для студентов */}
               {formData.role === 1 && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Телефон родителя *
+                  <label htmlFor="parentPhone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Телефон родителя
                   </label>
                   <input
+                    id="parentPhone"
                     type="tel"
-                    value={formData.parentPhone || ''}
-                    onChange={(e) => setFormData((prev: UserFormData) => ({ ...prev, parentPhone: e.target.value }))}
+                    value={(formData.parentPhone as string) || ''}
+                    onChange={(e) => setFormData((prev: Record<string, unknown>) => ({ ...prev, parentPhone: e.target.value }))}
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder="+7 (xxx) xxx-xx-xx"
                     required={formData.role === 1}
@@ -657,13 +624,14 @@ export default function StudentsPage() {
 
               {/* Birthday */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label htmlFor="birthday" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Дата рождения
                 </label>
                 <input
+                  id="birthday"
                   type="date"
-                  value={formData.birthday || ''}
-                  onChange={(e) => setFormData((prev: UserFormData) => ({ ...prev, birthday: e.target.value }))}
+                  value={(formData.birthday as string) || ''}
+                  onChange={(e) => setFormData((prev: Record<string, unknown>) => ({ ...prev, birthday: e.target.value }))}
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
@@ -671,13 +639,14 @@ export default function StudentsPage() {
               {/* Password - только при создании */}
               {userModal.mode === 'create' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Пароль *
                   </label>
                   <input
+                    id="password"
                     type="password"
-                    value={formData.password || ''}
-                    onChange={(e) => setFormData((prev: UserFormData) => ({ ...prev, password: e.target.value }))}
+                    value={(formData.password as string) || ''}
+                    onChange={(e) => setFormData((prev: Record<string, unknown>) => ({ ...prev, password: e.target.value }))}
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder="Введите пароль"
                     required

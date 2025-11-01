@@ -149,10 +149,10 @@ export default function SchedulesPage() {
         })
       ]);
 
-      setGroups((groupsData as { items: any[] }).items || []);
-      setSubjects((subjectsData as { items: any[] }).items || []);
+      setGroups((groupsData as { items: Group[] }).items || []);
+      setSubjects((subjectsData as { items: Subject[] }).items || []);
       setTeachers(teachersData.items || []);
-      setRooms((roomsData as { items: any[] }).items || []);
+      setRooms((roomsData as { items: Room[] }).items || []);
     } catch (error) {
       console.error('Failed to load filter data:', error);
     }
@@ -230,38 +230,39 @@ export default function SchedulesPage() {
   };
 
   // Validation function for schedule forms
-  const validateScheduleForm = (data: Record<string, any>): Record<string, string> => {
+  const validateScheduleForm = (data: Record<string, unknown>): Record<string, string> => {
     const errors: Record<string, string> = {};
+    const scheduleData = data as unknown as ScheduleFormData;
     
-    if (!data.daysOfWeek || data.daysOfWeek.trim() === '') {
+    if (!scheduleData.daysOfWeek || scheduleData.daysOfWeek.length === 0) {
       errors.daysOfWeek = 'Дни недели обязательны';
     }
     
-    if (!data.startTime) {
+    if (!scheduleData.startTime) {
       errors.startTime = 'Время начала обязательно';
     }
     
-    if (!data.endTime) {
+    if (!scheduleData.endTime) {
       errors.endTime = 'Время окончания обязательно';
     }
     
-    if (data.startTime && data.endTime && data.startTime >= data.endTime) {
+    if (scheduleData.startTime && scheduleData.endTime && scheduleData.startTime >= scheduleData.endTime) {
       errors.endTime = 'Время окончания должно быть больше времени начала';
     }
     
-    if (!data.effectiveFrom) {
+    if (!scheduleData.effectiveFrom) {
       errors.effectiveFrom = 'Дата начала действия обязательна';
     }
     
-    if (!data.groupId) {
+    if (!scheduleData.groupId) {
       errors.groupId = 'Группа обязательна';
     }
     
-    if (!data.teacherId) {
+    if (!scheduleData.teacherId) {
       errors.teacherId = 'Преподаватель обязателен';
     }
     
-    if (!data.roomId) {
+    if (!scheduleData.roomId) {
       errors.roomId = 'Аудитория обязательна';
     }
     
@@ -291,17 +292,17 @@ export default function SchedulesPage() {
   };
 
   // Handlers for Universal Modal save operations
-  const handleSaveCreate = async (formData: Record<string, any>) => {
+  const handleSaveCreate = async (formData: Record<string, unknown>) => {
     try {
       const scheduleData: ScheduleFormData = {
-        daysOfWeek: formData.daysOfWeek ? formData.daysOfWeek.split(',').map((day: string) => parseInt(day.trim())) : [],
-        startTime: formData.startTime,
-        endTime: formData.endTime,
-        effectiveFrom: formData.effectiveFrom,
-        effectiveTo: formData.effectiveTo || undefined,
-        groupId: formData.groupId,
-        teacherId: formData.teacherId,
-        roomId: formData.roomId,
+        daysOfWeek: formData.daysOfWeek ? (formData.daysOfWeek as string).split(',').map((day: string) => parseInt(day.trim())) : [],
+        startTime: formData.startTime as string,
+        endTime: formData.endTime as string,
+        effectiveFrom: formData.effectiveFrom as string,
+        effectiveTo: (formData.effectiveTo as string) || undefined,
+        groupId: formData.groupId as string,
+        teacherId: formData.teacherId as string,
+        roomId: formData.roomId as string,
         organizationId: user?.organizationId || ''
       };
       
@@ -314,17 +315,17 @@ export default function SchedulesPage() {
     }
   };
 
-  const handleSaveEdit = async (formData: Record<string, any>) => {
+  const handleSaveEdit = async (formData: Record<string, unknown>) => {
     try {
       const updateData = {
-        daysOfWeek: formData.daysOfWeek ? formData.daysOfWeek.split(',').map((day: string) => parseInt(day.trim())) : [],
-        startTime: formData.startTime,
-        endTime: formData.endTime,
-        effectiveFrom: formData.effectiveFrom,
-        effectiveTo: formData.effectiveTo || null,
-        groupId: formData.groupId,
-        teacherId: formData.teacherId,
-        roomId: formData.roomId
+        daysOfWeek: formData.daysOfWeek ? (formData.daysOfWeek as string).split(',').map((day: string) => parseInt(day.trim())) : [],
+        startTime: formData.startTime as string,
+        endTime: formData.endTime as string,
+        effectiveFrom: formData.effectiveFrom as string,
+        effectiveTo: (formData.effectiveTo as string) || null,
+        groupId: formData.groupId as string,
+        teacherId: formData.teacherId as string,
+        roomId: formData.roomId as string
       };
       
       if (scheduleModal.editData) {

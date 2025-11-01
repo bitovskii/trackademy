@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Subject } from '../../types/Subject';
 import { User } from '../../types/User';
+import { GroupFormData } from '../../types/Group';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
 
 interface GroupFormUniversalProps {
-  formData: any;
-  setFormData: any;
+  formData: GroupFormData;
+  setFormData: (data: GroupFormData | ((prev: GroupFormData) => GroupFormData)) => void;
   errors: Record<string, string>;
   setErrors: (errors: Record<string, string>) => void;
   isSubmitting: boolean;
@@ -47,8 +48,8 @@ export const GroupFormUniversal: React.FC<GroupFormUniversalProps> = ({
         roles: [1] // Role 1 = Student
       });
       
-      setSubjects((subjectsResponse as any).items || []);
-      setStudents((studentsResponse as any).items || []);
+      setSubjects((subjectsResponse as { items: Subject[] }).items || []);
+      setStudents((studentsResponse as { items: User[] }).items || []);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -62,7 +63,7 @@ export const GroupFormUniversal: React.FC<GroupFormUniversalProps> = ({
       ? currentStudentIds.filter((id: string) => id !== studentId)
       : [...currentStudentIds, studentId];
     
-    setFormData((prev: any) => ({ ...prev, studentIds: updatedStudentIds }));
+    setFormData((prev: GroupFormData) => ({ ...prev, studentIds: updatedStudentIds }));
   };
 
   if (loading) {
@@ -85,7 +86,7 @@ export const GroupFormUniversal: React.FC<GroupFormUniversalProps> = ({
           <input
             type="text"
             value={formData.name || ''}
-            onChange={(e) => setFormData((prev: any) => ({ ...prev, name: e.target.value }))}
+            onChange={(e) => setFormData((prev: GroupFormData) => ({ ...prev, name: e.target.value }))}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             placeholder="Введите название группы"
             disabled={isSubmitting}
@@ -102,7 +103,7 @@ export const GroupFormUniversal: React.FC<GroupFormUniversalProps> = ({
           <input
             type="text"
             value={formData.code || ''}
-            onChange={(e) => setFormData((prev: any) => ({ ...prev, code: e.target.value }))}
+            onChange={(e) => setFormData((prev: GroupFormData) => ({ ...prev, code: e.target.value }))}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             placeholder="Введите код группы"
             disabled={isSubmitting}
@@ -121,7 +122,7 @@ export const GroupFormUniversal: React.FC<GroupFormUniversalProps> = ({
           </label>
           <select
             value={formData.level || ''}
-            onChange={(e) => setFormData((prev: any) => ({ ...prev, level: e.target.value }))}
+            onChange={(e) => setFormData((prev: GroupFormData) => ({ ...prev, level: e.target.value }))}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             disabled={isSubmitting}
           >
@@ -143,7 +144,7 @@ export const GroupFormUniversal: React.FC<GroupFormUniversalProps> = ({
           </label>
           <select
             value={formData.subjectId || ''}
-            onChange={(e) => setFormData((prev: any) => ({ ...prev, subjectId: e.target.value }))}
+            onChange={(e) => setFormData((prev: GroupFormData) => ({ ...prev, subjectId: e.target.value }))}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             disabled={isSubmitting}
             required

@@ -144,7 +144,7 @@ const UniversalModalDemo: React.FC = () => {
         gradientFrom={userConfig.gradientFrom}
         gradientTo={userConfig.gradientTo}
         initialData={userModal.initialData}
-        data={userModal.editData}
+        data={userModal.editData || undefined}
         onSave={handleSaveUser}
         validate={createUserValidator}
         submitText={userConfig.submitText}

@@ -12,19 +12,7 @@ interface UserModalProps {
   onClose: () => void;
   mode: 'create' | 'edit';
   user?: User | null;
-  onSave: (userData: any, userId?: string) => void | Promise<void>;
-}
-
-export interface CreateUserData {
-  login: string;
-  fullName: string;
-  email: string;
-  password: string;
-  phone: string;
-  parentPhone?: string;
-  birthday?: string;
-  role: number;
-  organizationId: string;
+  onSave: (userData: UserFormData, userId?: string) => void | Promise<void>;
 }
 
 const UserModal: React.FC<UserModalProps> = ({ 
@@ -37,7 +25,7 @@ const UserModal: React.FC<UserModalProps> = ({
   const { user: currentUser } = useAuth();
   const { formatPhoneDisplay, formatPhoneForApi, handlePhoneKeyDown } = usePhoneFormatter();
 
-  const [formData, setFormData] = useState<CreateUserData>({
+  const [formData, setFormData] = useState<UserFormData>({
     login: '',
     fullName: '',
     email: '',
@@ -157,7 +145,7 @@ const UserModal: React.FC<UserModalProps> = ({
 
     setIsSubmitting(true);
     try {
-      let dataToSubmit: any = {
+      let dataToSubmit: UserFormData = {
         ...formData,
         phone: formatPhoneForApi(formData.phone),
         parentPhone: formData.parentPhone ? formatPhoneForApi(formData.parentPhone) : undefined

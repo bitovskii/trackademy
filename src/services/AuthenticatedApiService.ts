@@ -1,6 +1,28 @@
 /**
  * Authenticated API service that includes JWT token in requests
  */
+import { User, UserFormData } from '../types/User';
+import { Organization, OrganizationFormData } from '../types/Organization';
+import { Room, RoomFormData } from '../types/Room';
+import { Subject, SubjectFormData } from '../types/Subject';
+import { GroupsResponse } from '../types/Group';
+
+interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  message?: string;
+}
+
+interface UsersResponse {
+  items: User[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
 export class AuthenticatedApiService {
   private static getAuthToken(): string | null {
     return localStorage.getItem('authToken');
@@ -98,15 +120,15 @@ export class AuthenticatedApiService {
   }
 
   // User management methods
-  static async updateUser(id: string, userData: any): Promise<any> {
+  static async updateUser(id: string, userData: UserFormData): Promise<ApiResponse<User>> {
     return this.put(`/User/update-user/${id}`, userData);
   }
 
-  static async deleteUser(id: string): Promise<any> {
+  static async deleteUser(id: string): Promise<ApiResponse<boolean>> {
     return this.delete(`/User/${id}`);
   }
 
-  static async createUser(userData: any): Promise<any> {
+  static async createUser(userData: UserFormData): Promise<ApiResponse<User>> {
     return this.post('/User', userData);
   }
 
@@ -117,7 +139,7 @@ export class AuthenticatedApiService {
     search?: string;
     groupIds?: string[];
     roleIds?: number[];
-  }): Promise<any> {
+  }): Promise<UsersResponse> {
     const body = {
       pageNumber: filters.pageNumber || 1,
       pageSize: filters.pageSize || 10,
@@ -131,58 +153,58 @@ export class AuthenticatedApiService {
   }
 
   // Organization management methods
-  static async getOrganizations(): Promise<any> {
+  static async getOrganizations(): Promise<Organization[]> {
     return this.get('/Organization');
   }
 
-  static async createOrganization(orgData: any): Promise<any> {
+  static async createOrganization(orgData: OrganizationFormData): Promise<ApiResponse<Organization>> {
     return this.post('/Organization', orgData);
   }
 
-  static async updateOrganization(id: string, orgData: any): Promise<any> {
+  static async updateOrganization(id: string, orgData: OrganizationFormData): Promise<ApiResponse<Organization>> {
     return this.put(`/Organization/${id}`, orgData);
   }
 
-  static async deleteOrganization(id: string): Promise<any> {
+  static async deleteOrganization(id: string): Promise<ApiResponse<boolean>> {
     return this.delete(`/Organization/${id}`);
   }
 
   // Room management methods
-  static async getRooms(organizationId: string): Promise<any> {
+  static async getRooms(organizationId: string): Promise<Room[]> {
     return this.get(`/Room?organizationId=${organizationId}`);
   }
 
-  static async createRoom(roomData: any): Promise<any> {
+  static async createRoom(roomData: RoomFormData): Promise<ApiResponse<Room>> {
     return this.post('/Room', roomData);
   }
 
-  static async updateRoom(id: string, roomData: any): Promise<any> {
+  static async updateRoom(id: string, roomData: RoomFormData): Promise<ApiResponse<Room>> {
     return this.put(`/Room/${id}`, roomData);
   }
 
-  static async deleteRoom(id: string): Promise<any> {
+  static async deleteRoom(id: string): Promise<ApiResponse<boolean>> {
     return this.delete(`/Room/${id}`);
   }
 
   // Subject management methods
-  static async getSubjects(organizationId: string): Promise<any> {
+  static async getSubjects(organizationId: string): Promise<Subject[]> {
     return this.get(`/Subject?organizationId=${organizationId}`);
   }
 
-  static async createSubject(subjectData: any): Promise<any> {
+  static async createSubject(subjectData: SubjectFormData): Promise<ApiResponse<Subject>> {
     return this.post('/Subject', subjectData);
   }
 
-  static async updateSubject(id: string, subjectData: any): Promise<any> {
+  static async updateSubject(id: string, subjectData: SubjectFormData): Promise<ApiResponse<Subject>> {
     return this.put(`/Subject/${id}`, subjectData);
   }
 
-  static async deleteSubject(id: string): Promise<any> {
+  static async deleteSubject(id: string): Promise<ApiResponse<boolean>> {
     return this.delete(`/Subject/${id}`);
   }
 
   // Group management methods
-  static async getGroups(organizationId: string, pageSize: number = 1000): Promise<any> {
+  static async getGroups(organizationId: string, pageSize: number = 1000): Promise<GroupsResponse> {
     const body = {
       pageNumber: 1,
       pageSize: pageSize,

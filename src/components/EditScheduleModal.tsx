@@ -108,10 +108,10 @@ const EditScheduleModal: React.FC<EditScheduleModalProps> = ({
         })
       ]);
 
-      setGroups((groupsData as any).items || []);
-      setSubjects((subjectsData as any).items || []);
+      setGroups((groupsData as { items: Group[] }).items || []);
+      setSubjects((subjectsData as { items: Subject[] }).items || []);
       setTeachers(teachersData.items || []);
-      setRooms((roomsData as any).items || []);
+      setRooms((roomsData as { items: Room[] }).items || []);
     } catch (error) {
       console.error('Failed to load data:', error);
       setError('Не удалось загрузить данные');

@@ -4,10 +4,11 @@ import React from 'react';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePhoneFormatter } from '../../hooks/usePhoneFormatter';
+import { UserFormData } from '../../types/User';
 
 interface UserFormProps {
-  formData: any;
-  setFormData: React.Dispatch<React.SetStateAction<any>>;
+  formData: UserFormData;
+  setFormData: React.Dispatch<React.SetStateAction<UserFormData>>;
   errors: Record<string, string>;
   setErrors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   mode: 'create' | 'edit';
@@ -33,12 +34,12 @@ export const UserForm: React.FC<UserFormProps> = ({
     const { name, value } = e.target;
     
     if (name === 'phone' || name === 'parentPhone') {
-      setFormData((prev: any) => ({
+      setFormData((prev: UserFormData) => ({
         ...prev,
         [name]: formatPhoneDisplay(value)
       }));
     } else {
-      setFormData((prev: any) => ({
+      setFormData((prev: UserFormData) => ({
         ...prev,
         [name]: name === 'role' ? parseInt(value) : value
       }));

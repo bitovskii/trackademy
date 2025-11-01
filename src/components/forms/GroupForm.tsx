@@ -41,8 +41,8 @@ export const GroupForm: React.FC<GroupFormProps> = ({
         AuthenticatedApiService.get('/Subject'),
         AuthenticatedApiService.get('/User/students')
       ]);
-      setSubjects((subjectsResponse as any).data.items || []);
-      setStudents((studentsResponse as any).data.items || []);
+      setSubjects((subjectsResponse as { data: { items: Subject[] } }).data.items || []);
+      setStudents((studentsResponse as { data: { items: User[] } }).data.items || []);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -164,7 +164,7 @@ export const GroupForm: React.FC<GroupFormProps> = ({
                     className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
                   />
                   <span className="text-sm text-gray-700 dark:text-gray-300">
-                    {(student as any).firstName} {(student as any).lastName}
+                    {(student as User).name}
                   </span>
                 </label>
               ))}

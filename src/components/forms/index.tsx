@@ -3,7 +3,6 @@
 import React from 'react';
 import { RoomFormData } from '../../types/Room';
 import { SubjectFormData } from '../../types/Subject';
-import { GroupFormData } from '../../types/Group';
 
 interface RoomFormProps {
   formData: RoomFormData;
@@ -23,7 +22,7 @@ export const RoomForm: React.FC<RoomFormProps> = ({
     
     setFormData((prev: RoomFormData) => ({
       ...prev,
-      [name]: name === 'capacity' ? parseInt(value) || 0 : value
+      [name]: name === 'capacity' ? Number.parseInt(value) || 0 : value
     }));
 
     if (errors[name]) {
@@ -35,10 +34,11 @@ export const RoomForm: React.FC<RoomFormProps> = ({
     <div className="space-y-6">
       {/* Room Name */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <label htmlFor="roomName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Название кабинета *
         </label>
         <input
+          id="roomName"
           type="text"
           name="name"
           value={formData.name || ''}
@@ -57,10 +57,11 @@ export const RoomForm: React.FC<RoomFormProps> = ({
 
       {/* Capacity */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <label htmlFor="roomCapacity" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Вместимость *
         </label>
         <input
+          id="roomCapacity"
           type="number"
           name="capacity"
           min="1"
@@ -80,10 +81,11 @@ export const RoomForm: React.FC<RoomFormProps> = ({
 
       {/* Description */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <label htmlFor="roomDescription" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Описание
         </label>
         <textarea
+          id="roomDescription"
           name="description"
           rows={3}
           value={formData.description || ''}
@@ -126,10 +128,11 @@ export const SubjectForm: React.FC<SubjectFormProps> = ({
     <div className="space-y-6">
       {/* Subject Name */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <label htmlFor="subjectName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Название предмета *
         </label>
         <input
+          id="subjectName"
           type="text"
           name="name"
           value={formData.name || ''}
@@ -148,10 +151,11 @@ export const SubjectForm: React.FC<SubjectFormProps> = ({
 
       {/* Description */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <label htmlFor="subjectDescription" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Описание
         </label>
         <textarea
+          id="subjectDescription"
           name="description"
           rows={3}
           value={formData.description || ''}

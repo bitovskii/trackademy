@@ -16,6 +16,7 @@ export interface UserFormData {
   login: string;
   fullName: string;
   email: string;
+  password?: string;
   phone: string;
   parentPhone?: string;
   birthday?: string;

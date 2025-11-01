@@ -1,12 +1,13 @@
 'use client';
 
 import React from 'react';
-import UserModal, { CreateUserData } from './UserModal';
+import UserModal from './UserModal';
+import { UserFormData } from '../types/User';
 
 interface CreateUserModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (userData: CreateUserData) => void;
+  onSave: (userData: UserFormData) => void | Promise<void>;
 }
 
 const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onSave }) => {
@@ -21,4 +22,3 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onSa
 };
 
 export default CreateUserModal;
-export type { CreateUserData };

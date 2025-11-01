@@ -5,6 +5,7 @@ import UniversalModal from '../src/components/ui/UniversalModal';
 import { useUniversalModal } from '../src/hooks/useUniversalModal';
 import { UserForm } from '../src/components/forms/UserForm';
 import { RoomForm, SubjectForm, GroupForm } from '../src/components/forms';
+import { UserFormData } from '../src/types/User';
 import { 
   createUserValidator, 
   createRoomValidator, 
@@ -14,16 +15,16 @@ import {
 
 // Пример использования для пользователей
 export const UserModalExample: React.FC = () => {
-  const userModal = useUniversalModal('user', {
+  const userModal = useUniversalModal<UserFormData>('user', {
     login: '',
     fullName: '',
     email: '',
-    password: '',
+    password: undefined,
     phone: '',
-    parentPhone: '',
-    birthday: '',
+    parentPhone: undefined,
+    birthday: undefined,
     role: 1,
-    organizationId: ''
+    organizationId: undefined
   });
 
   const handleSaveUser = async (userData: any, userId?: string) => {
@@ -52,7 +53,7 @@ export const UserModalExample: React.FC = () => {
         gradientFrom={config.gradientFrom}
         gradientTo={config.gradientTo}
         initialData={userModal.initialData}
-        data={userModal.editData}
+        data={userModal.editData || undefined}
         onSave={handleSaveUser}
         validate={createUserValidator}
         submitText={config.submitText}

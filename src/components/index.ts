@@ -19,7 +19,6 @@ export {
 
 // Универсальный компонент для создания и редактирования пользователей (legacy)
 export { default as UserModal } from './UserModal';
-export type { CreateUserData } from './UserModal';
 
 // Специализированные обертки для обратной совместимости (legacy)
 export { default as CreateUserModal } from './CreateUserModal'; 

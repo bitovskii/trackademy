@@ -1,16 +1,16 @@
 'use client';
 
 import React from 'react';
-import UniversalModal from '../ui/UniversalModal';
-import { useUniversalModal } from '../../hooks/useUniversalModal';
-import { UserForm } from '../forms/UserForm';
-import { RoomForm, SubjectForm, GroupForm } from '../forms';
+import UniversalModal from '../src/components/ui/UniversalModal';
+import { useUniversalModal } from '../src/hooks/useUniversalModal';
+import { UserForm } from '../src/components/forms/UserForm';
+import { RoomForm, SubjectForm, GroupForm } from '../src/components/forms';
 import { 
   createUserValidator, 
   createRoomValidator, 
   createSubjectValidator, 
   createGroupValidator 
-} from '../../utils/validators';
+} from '../src/utils/validators';
 
 // Пример использования для пользователей
 export const UserModalExample: React.FC = () => {

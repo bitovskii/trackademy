@@ -8,7 +8,7 @@ import {
   RoomForm,
   createUserValidator,
   createRoomValidator
-} from '../components';
+} from '../../components';
 
 const UniversalModalDemo: React.FC = () => {
   // Модал для пользователей
@@ -47,8 +47,9 @@ const UniversalModalDemo: React.FC = () => {
   const sampleUser = {
     id: '1',
     login: 'testuser',
-    name: 'Тестовый Пользователь',
+    fullName: 'Тестовый Пользователь',
     email: 'test@example.com',
+    password: '', // For edit mode, password can be empty
     phone: '+7 (999) 123-45-67',
     parentPhone: '+7 (999) 765-43-21',
     birthday: '2000-01-01',

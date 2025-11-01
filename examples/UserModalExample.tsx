@@ -2,8 +2,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { UserModal, CreateUserData } from '../components';
-import { User, UserFormData } from '../types/User';
+import { UserModal, CreateUserData } from '../src/components';
+import { User, UserFormData } from '../src/types/User';
 
 const ExampleUserManagement: React.FC = () => {
   // Состояния для модалов

@@ -550,7 +550,7 @@ export default function StudentsPage() {
                     name="role"
                     value={1}
                     checked={formData.role === 1}
-                    onChange={(e) => setFormData(prev => ({ ...prev, role: parseInt(e.target.value) }))}
+                    onChange={(e) => setFormData((prev: UserFormData) => ({ ...prev, role: parseInt(e.target.value) }))}
                     className="sr-only"
                   />
                   <span className={`text-sm font-medium ${formData.role === 1 ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-700 dark:text-gray-300'}`}>
@@ -566,7 +566,7 @@ export default function StudentsPage() {
                     name="role"
                     value={2}
                     checked={formData.role === 2}
-                    onChange={(e) => setFormData(prev => ({ ...prev, role: parseInt(e.target.value) }))}
+                    onChange={(e) => setFormData((prev: UserFormData) => ({ ...prev, role: parseInt(e.target.value) }))}
                     className="sr-only"
                   />
                   <span className={`text-sm font-medium ${formData.role === 2 ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-700 dark:text-gray-300'}`}>
@@ -586,7 +586,7 @@ export default function StudentsPage() {
                 <input
                   type="text"
                   value={formData.login || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, login: e.target.value }))}
+                  onChange={(e) => setFormData((prev: UserFormData) => ({ ...prev, login: e.target.value }))}
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="Введите логин"
                   required
@@ -601,7 +601,7 @@ export default function StudentsPage() {
                 <input
                   type="text"
                   value={formData.fullName || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
+                  onChange={(e) => setFormData((prev: UserFormData) => ({ ...prev, fullName: e.target.value }))}
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="Введите полное имя"
                   required
@@ -616,7 +616,7 @@ export default function StudentsPage() {
                 <input
                   type="email"
                   value={formData.email || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  onChange={(e) => setFormData((prev: UserFormData) => ({ ...prev, email: e.target.value }))}
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="Введите email"
                   required
@@ -631,7 +631,7 @@ export default function StudentsPage() {
                 <input
                   type="tel"
                   value={formData.phone || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                  onChange={(e) => setFormData((prev: UserFormData) => ({ ...prev, phone: e.target.value }))}
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="+7 (xxx) xxx-xx-xx"
                   required
@@ -647,7 +647,7 @@ export default function StudentsPage() {
                   <input
                     type="tel"
                     value={formData.parentPhone || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, parentPhone: e.target.value }))}
+                    onChange={(e) => setFormData((prev: UserFormData) => ({ ...prev, parentPhone: e.target.value }))}
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder="+7 (xxx) xxx-xx-xx"
                     required={formData.role === 1}
@@ -663,7 +663,7 @@ export default function StudentsPage() {
                 <input
                   type="date"
                   value={formData.birthday || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, birthday: e.target.value }))}
+                  onChange={(e) => setFormData((prev: UserFormData) => ({ ...prev, birthday: e.target.value }))}
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
@@ -677,7 +677,7 @@ export default function StudentsPage() {
                   <input
                     type="password"
                     value={formData.password || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                    onChange={(e) => setFormData((prev: UserFormData) => ({ ...prev, password: e.target.value }))}
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder="Введите пароль"
                     required

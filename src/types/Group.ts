@@ -13,6 +13,7 @@ export interface Group {
   name: string;
   code: string;
   level: string;
+  description?: string;
   subject: GroupSubject;
   students: GroupStudent[];
 }
@@ -21,6 +22,7 @@ export interface GroupFormData {
   name: string;
   code: string;
   level: string;
+  description?: string;
   subjectId: string;
   studentIds: string[];
   organizationId: string;

@@ -3,13 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import { Modal } from './Modal';
 
-interface UniversalModalProps<T = any> {
+interface UniversalModalProps<T = Record<string, unknown>> {
   isOpen: boolean;
   onClose: () => void;
   mode: 'create' | 'edit';
   title: string;
   subtitle?: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
   gradientFrom: string;
   gradientTo: string;
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
@@ -29,7 +29,7 @@ interface UniversalModalProps<T = any> {
   loadingText?: string;
 }
 
-const UniversalModal = <T extends Record<string, any>>({
+const UniversalModal = <T extends Record<string, unknown>>({
   isOpen,
   onClose,
   mode,

@@ -1,6 +1,11 @@
 // Универсальные валидаторы для разных типов сущностей
+import { UserFormData } from '../types/User';
+import { RoomFormData } from '../types/Room';
+import { SubjectFormData } from '../types/Subject';
+import { GroupFormData } from '../types/Group';
+import { OrganizationFormData } from '../types/Organization';
 
-export const createUserValidator = (data: any) => {
+export const createUserValidator = (data: UserFormData & { id?: string }) => {
   const errors: Record<string, string> = {};
 
   if (!data.login?.trim()) {
@@ -36,7 +41,7 @@ export const createUserValidator = (data: any) => {
   return errors;
 };
 
-export const createRoomValidator = (data: any) => {
+export const createRoomValidator = (data: RoomFormData) => {
   const errors: Record<string, string> = {};
 
   if (!data.name?.trim()) {
@@ -50,7 +55,7 @@ export const createRoomValidator = (data: any) => {
   return errors;
 };
 
-export const createSubjectValidator = (data: any) => {
+export const createSubjectValidator = (data: SubjectFormData) => {
   const errors: Record<string, string> = {};
 
   if (!data.name?.trim()) {
@@ -60,7 +65,7 @@ export const createSubjectValidator = (data: any) => {
   return errors;
 };
 
-export const createGroupValidator = (data: any) => {
+export const createGroupValidator = (data: GroupFormData) => {
   const errors: Record<string, string> = {};
 
   // Название, код и уровень группы не обязательны
@@ -88,7 +93,7 @@ export const createGroupValidator = (data: any) => {
   return errors;
 };
 
-export const createOrganizationValidator = (data: any) => {
+export const createOrganizationValidator = (data: OrganizationFormData) => {
   const errors: Record<string, string> = {};
 
   if (!data.name?.trim()) {

@@ -9,6 +9,8 @@ import {
   createUserValidator,
   createRoomValidator
 } from '../../components';
+import { UserFormData } from '../../types/User';
+import { RoomFormData } from '../../types/Room';
 
 const UniversalModalDemo: React.FC = () => {
   // Модал для пользователей
@@ -31,13 +33,13 @@ const UniversalModalDemo: React.FC = () => {
     description: ''
   });
 
-  const handleSaveUser = async (userData: any, userId?: string) => {
+  const handleSaveUser = async (userData: UserFormData, userId?: string) => {
     console.log('Saving user:', userData, userId);
     // Здесь ваша логика сохранения пользователя
     alert(`${userId ? 'Обновлен' : 'Создан'} пользователь: ${userData.fullName}`);
   };
 
-  const handleSaveRoom = async (roomData: any, roomId?: string) => {
+  const handleSaveRoom = async (roomData: RoomFormData, roomId?: string) => {
     console.log('Saving room:', roomData, roomId);
     // Здесь ваша логика сохранения кабинета
     alert(`${roomId ? 'Обновлен' : 'Создан'} кабинет: ${roomData.name}`);

@@ -1,10 +1,13 @@
 'use client';
 
 import React from 'react';
+import { RoomFormData } from '../../types/Room';
+import { SubjectFormData } from '../../types/Subject';
+import { GroupFormData } from '../../types/Group';
 
 interface RoomFormProps {
-  formData: any;
-  setFormData: React.Dispatch<React.SetStateAction<any>>;
+  formData: RoomFormData;
+  setFormData: React.Dispatch<React.SetStateAction<RoomFormData>>;
   errors: Record<string, string>;
   setErrors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
 }
@@ -18,7 +21,7 @@ export const RoomForm: React.FC<RoomFormProps> = ({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     
-    setFormData((prev: any) => ({
+    setFormData((prev: RoomFormData) => ({
       ...prev,
       [name]: name === 'capacity' ? parseInt(value) || 0 : value
     }));
@@ -94,8 +97,8 @@ export const RoomForm: React.FC<RoomFormProps> = ({
 };
 
 interface SubjectFormProps {
-  formData: any;
-  setFormData: React.Dispatch<React.SetStateAction<any>>;
+  formData: SubjectFormData;
+  setFormData: React.Dispatch<React.SetStateAction<SubjectFormData>>;
   errors: Record<string, string>;
   setErrors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
 }
@@ -109,7 +112,7 @@ export const SubjectForm: React.FC<SubjectFormProps> = ({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     
-    setFormData((prev: any) => ({
+    setFormData((prev: SubjectFormData) => ({
       ...prev,
       [name]: value
     }));
@@ -162,8 +165,8 @@ export const SubjectForm: React.FC<SubjectFormProps> = ({
 };
 
 interface GroupFormProps {
-  formData: any;
-  setFormData: React.Dispatch<React.SetStateAction<any>>;
+  formData: { name: string; description?: string };
+  setFormData: React.Dispatch<React.SetStateAction<{ name: string; description?: string }>>;
   errors: Record<string, string>;
   setErrors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
 }
@@ -177,7 +180,7 @@ export const GroupForm: React.FC<GroupFormProps> = ({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     
-    setFormData((prev: any) => ({
+    setFormData((prev: { name: string; description?: string }) => ({
       ...prev,
       [name]: value
     }));

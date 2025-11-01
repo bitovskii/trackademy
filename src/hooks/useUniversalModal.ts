@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { modalConfigs, EntityType, ModalMode } from '../config/modalConfigs';
 
-export const useUniversalModal = <T extends Record<string, any>>(
+export const useUniversalModal = <T extends Record<string, unknown>>(
   entityType: EntityType,
   initialData: T
 ) => {

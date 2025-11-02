@@ -56,11 +56,24 @@ export class AuthenticatedApiService {
       ...options,
     };
 
+    console.log('API Request:', { 
+      url, 
+      method: config.method || 'GET',
+      hasAuthToken: !!this.getAuthToken(),
+      headers: config.headers
+    });
+
     try {
       const response = await fetch(url, config);
       
       if (!response.ok) {
         if (response.status === 401) {
+          console.error('Authentication error during API call:', {
+            endpoint,
+            status: response.status,
+            statusText: response.statusText,
+            url
+          });
           // Token expired or invalid - redirect to login
           localStorage.removeItem('authToken');
           localStorage.removeItem('user');

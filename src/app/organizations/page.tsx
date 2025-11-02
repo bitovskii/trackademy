@@ -175,7 +175,7 @@ function OrganizationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6 pt-20 md:pt-24">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Modern Header Card */}
         <PageHeaderWithStats
@@ -187,9 +187,7 @@ function OrganizationsPage() {
           actionLabel="Добавить организацию"
           onAction={handleCreate}
           stats={[
-            { label: "Всего организаций", value: organizations.length, color: "violet" },
-            { label: "Активные", value: organizations.length, color: "purple" },
-            { label: "Регионы", value: new Set(organizations.map(org => org.address.split(',')[0])).size, color: "indigo" }
+            { label: "Всего организаций", value: organizations.length, color: "violet" }
           ]}
         />
         

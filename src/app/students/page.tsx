@@ -18,6 +18,7 @@ import { useColumnVisibility, ColumnVisibilityControl } from '../../components/u
 import { UserForm } from '../../components/forms/UserForm';
 import { PhoneInput } from '@/components/ui/PhoneInput';
 import { EmailInput } from '@/components/ui/EmailInput';
+import { PasswordInput } from '@/components/ui/PasswordInput';
 
 export default function StudentsPage() {
   const { isAuthenticated, user } = useAuth();
@@ -28,6 +29,7 @@ export default function StudentsPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [deletingUser, setDeletingUser] = useState<User | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
 
   // Универсальная система модалов для пользователей
   const userModal = useUniversalModal('user', {
@@ -389,33 +391,49 @@ export default function StudentsPage() {
     );
   }
 
-  const handleEdit = (user: User) => {
+  const handleEdit = (editUser: User) => {
+    console.log('Starting edit for user:', { 
+      editUserId: editUser.id, 
+      editUserRole: editUser.role, 
+      currentUserRole: user?.role,
+      isCurrentUser: editUser.id === user?.id
+    });
+    
+    setEditingUserId(editUser.id); // Сохраняем ID редактируемого пользователя
     userModal.openEditModal({
-      login: user.login,
-      fullName: user.name,
-      email: user.email,
+      login: editUser.login,
+      fullName: editUser.name,
+      email: editUser.email,
       password: '', // Пароль не заполняем при редактировании
-      phone: user.phone,
-      parentPhone: user.parentPhone || '',
-      birthday: user.birthday || '',
-      role: user.role,
-      organizationId: user.organizationId || ''
+      phone: editUser.phone,
+      parentPhone: editUser.parentPhone || '',
+      birthday: editUser.birthday || '',
+      role: editUser.role,
+      organizationId: editUser.organizationId || ''
     });
   };
 
   const handleSaveEdit = async (id: string, formData: UserFormData) => {
     try {
+      console.log('Starting user update:', { id, formData, authToken: !!localStorage.getItem('authToken') });
+      
       const result = await AuthenticatedApiService.updateUser(id, formData);
+      
+      console.log('Update result:', result);
       
       // Check if the update was successful
       if (!result.success) {
         throw new Error('Не удалось обновить пользователя. Попробуйте еще раз.');
       }
       
-      await loadStudents(currentPage, filters, true); // Reload only the table
-      userModal.closeModal();
+  await loadStudents(currentPage, filters, true); // Reload only the table
+  setEditingUserId(null); // Очищаем ID после успешного обновления
     } catch (error) {
       console.error('Error updating user:', error);
+      console.log('Auth state after error:', { 
+        authToken: !!localStorage.getItem('authToken'),
+        user: !!localStorage.getItem('user')
+      });
       throw error; // Re-throw to let the modal handle the error display
     }
   };
@@ -447,6 +465,11 @@ export default function StudentsPage() {
   const handleCloseDeleteModal = () => {
     setIsDeleteModalOpen(false);
     setDeletingUser(null);
+  };
+
+  const handleCloseModal = () => {
+    setEditingUserId(null); // Очищаем ID редактируемого пользователя
+    userModal.closeModal();
   };
 
   // Create user handlers
@@ -599,12 +622,15 @@ export default function StudentsPage() {
           organizationId: user?.organizationId || ''
         }}
         data={userModal.editData || undefined}
-        onClose={userModal.closeModal}
+        onClose={handleCloseModal}
         onSave={async (data: Record<string, unknown>) => {
           if (userModal.mode === 'create') {
             await handleCreateUser(data as unknown as UserFormData);
           } else {
-            await handleSaveEdit('', data as unknown as UserFormData);
+            if (!editingUserId) {
+              throw new Error('ID пользователя не найден для редактирования');
+            }
+            await handleSaveEdit(editingUserId, data as unknown as UserFormData);
           }
         }}
         submitText={userModal.getConfig().submitText}
@@ -716,7 +742,7 @@ export default function StudentsPage() {
               {formData.role === 1 && (
                 <div>
                   <label htmlFor="parentPhone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Телефон родителя
+                    Телефон родителя <span className="text-gray-500 text-sm">(необязательно)</span>
                   </label>
                   <PhoneInput
                     value={(formData.parentPhone as string) || ''}
@@ -746,13 +772,9 @@ export default function StudentsPage() {
                   <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Пароль *
                   </label>
-                  <input
-                    id="password"
-                    type="password"
+                  <PasswordInput
                     value={(formData.password as string) || ''}
-                    onChange={(e) => setFormData((prev: Record<string, unknown>) => ({ ...prev, password: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="Введите пароль"
+                    onChange={(value: string) => setFormData((prev: Record<string, unknown>) => ({ ...prev, password: value }))}
                     required
                   />
                 </div>

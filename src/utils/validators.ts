@@ -34,9 +34,10 @@ export const createUserValidator = (data: UserFormData & { id?: string }) => {
     errors.phone = 'Номер телефона обязателен';
   }
 
-  if (data.role === 1 && !data.parentPhone?.trim()) {
-    errors.parentPhone = 'Номер телефона родителя обязателен для студентов';
-  }
+  // Телефон родителя теперь необязательный для студентов
+  // if (data.role === 1 && !data.parentPhone?.trim()) {
+  //   errors.parentPhone = 'Номер телефона родителя обязателен для студентов';
+  // }
 
   return errors;
 };

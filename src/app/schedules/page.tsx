@@ -73,6 +73,7 @@ export default function SchedulesPage() {
 
   // Управление видимостью колонок
   const { columns, toggleColumn, isColumnVisible } = useColumnVisibility([
+    { key: 'number', label: '№', required: false },
     { key: 'group', label: 'Группа', required: true },
     { key: 'subject', label: 'Предмет' },
     { key: 'teacher', label: 'Преподаватель' },
@@ -648,13 +649,16 @@ export default function SchedulesPage() {
                 </div>
               ) : (
                 <div className="p-6 space-y-4">
-                  {schedules.map((schedule) => (
+                  {schedules.map((schedule, index) => (
                     <div
                       key={schedule.id}
                       className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-shadow duration-200"
                     >
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center space-x-3">
+                          <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-violet-500 to-purple-600 text-white text-sm font-medium rounded-lg shadow-sm">
+                            {(filters.pageNumber - 1) * pageSize + index + 1}
+                          </div>
                           <div className="p-2 bg-violet-100 dark:bg-violet-900/30 rounded-lg">
                             <CalendarDaysIcon className="h-6 w-6 text-violet-600 dark:text-violet-400" />
                           </div>
@@ -750,6 +754,11 @@ export default function SchedulesPage() {
                       <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead className="bg-gradient-to-r from-gray-50 to-violet-50 dark:from-gray-700 dark:to-gray-600">
                       <tr>
+                        {isColumnVisible('number') && (
+                          <th className="px-3 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider w-16">
+                            №
+                          </th>
+                        )}
                         {isColumnVisible('group') && (
                           <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
                             Группа
@@ -786,8 +795,8 @@ export default function SchedulesPage() {
                           </th>
                         )}
                         {isColumnVisible('actions') && (
-                          <th className="relative px-8 py-4 w-32">
-                            <span className="sr-only">Действия</span>
+                          <th className="px-8 py-4 w-32 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                            Действия
                           </th>
                         )}
                       </tr>
@@ -795,6 +804,13 @@ export default function SchedulesPage() {
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                       {schedules.map((schedule, index) => (
                         <tr key={schedule.id} className={`hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 ${index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50/50 dark:bg-gray-700/30'}`}>
+                          {isColumnVisible('number') && (
+                            <td className="px-3 py-4 whitespace-nowrap text-center">
+                              <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-violet-500 to-purple-600 text-white text-sm font-medium rounded-lg shadow-sm mx-auto">
+                                {(filters.pageNumber - 1) * pageSize + index + 1}
+                              </div>
+                            </td>
+                          )}
                           {isColumnVisible('group') && (
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                               {schedule.group.name}

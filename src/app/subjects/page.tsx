@@ -39,10 +39,10 @@ export default function SubjectsPage() {
 
   // Управление видимостью колонок
   const { columns, toggleColumn, isColumnVisible } = useColumnVisibility([
-    { key: 'number', label: '№', required: true },
-    { key: 'name', label: 'Название предмета' },
-    { key: 'description', label: 'Описание' },
-    { key: 'actions', label: 'Действия' }
+    { key: 'number', label: '№', required: false },
+    { key: 'name', label: 'Название предмета', required: true },
+    { key: 'description', label: 'Описание', required: false },
+    { key: 'actions', label: 'Действия', required: true }
   ]);
 
   const loadSubjects = useCallback(async (page: number = currentPage, isTableOnly: boolean = true) => {
@@ -347,7 +347,7 @@ export default function SubjectsPage() {
                 <thead className="bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-700 dark:to-gray-600">
                   <tr>
                     {isColumnVisible('number') && (
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                      <th className="px-3 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider w-16">
                         №
                       </th>
                     )}
@@ -362,8 +362,8 @@ export default function SubjectsPage() {
                       </th>
                     )}
                     {isColumnVisible('actions') && (
-                      <th className="relative px-6 py-4">
-                        <span className="sr-only">Действия</span>
+                      <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                        Действия
                       </th>
                     )}
                   </tr>
@@ -372,8 +372,8 @@ export default function SubjectsPage() {
                   {subjects.map((subject, index) => (
                     <tr key={subject.id} className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-gray-700 dark:hover:to-gray-600 transition-all duration-200">
                       {isColumnVisible('number') && (
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium rounded-lg shadow-sm">
+                        <td className="px-3 py-4 whitespace-nowrap text-center">
+                          <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium rounded-lg shadow-sm mx-auto">
                             {(currentPage - 1) * pageSize + index + 1}
                           </div>
                         </td>

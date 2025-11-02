@@ -45,7 +45,7 @@ export const GroupFormUniversal: React.FC<GroupFormUniversalProps> = ({
         pageNumber: 1,
         pageSize: 1000,
         organizationId: organizationId,
-        roles: [1] // Role 1 = Student
+        roleIds: [1] // Role 1 = Student
       });
       
       setSubjects((subjectsResponse as { items: Subject[] }).items || []);

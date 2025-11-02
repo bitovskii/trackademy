@@ -23,6 +23,7 @@ export default function GroupsPage() {
   const [deletingGroup, setDeletingGroup] = useState<Group | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [viewingGroup, setViewingGroup] = useState<Group | null>(null);
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
 
   // Универсальная система модалов для групп
   const groupModal = useUniversalModal('group', {
@@ -37,13 +38,13 @@ export default function GroupsPage() {
 
   // Управление видимостью колонок
   const { columns, toggleColumn, isColumnVisible } = useColumnVisibility([
-    { key: 'number', label: '№', required: true },
-    { key: 'name', label: 'Название группы' },
-    { key: 'code', label: 'Код' },
-    { key: 'level', label: 'Уровень' },
-    { key: 'subject', label: 'Предмет' },
-    { key: 'students', label: 'Студенты' },
-    { key: 'actions', label: 'Действия' }
+    { key: 'number', label: '№', required: false },
+    { key: 'name', label: 'Название группы', required: true },
+    { key: 'code', label: 'Код', required: false },
+    { key: 'level', label: 'Уровень', required: false },
+    { key: 'subject', label: 'Предмет', required: false },
+    { key: 'students', label: 'Студенты', required: true },
+    { key: 'actions', label: 'Действия', required: true }
   ]);
 
   const loadGroups = useCallback(async (page: number = currentPage, isTableOnly: boolean = true) => {
@@ -98,12 +99,14 @@ export default function GroupsPage() {
   }, [isAuthenticated, user]);
 
   const handleCreate = () => {
+    setEditingGroupId(null);
     groupModal.openCreateModal();
   };
 
   const handleEdit = (id: string) => {
     const group = groups.find(g => g.id === id);
     if (group) {
+      setEditingGroupId(id);
       groupModal.openEditModal({
         name: group.name,
         code: group.code,
@@ -152,10 +155,14 @@ export default function GroupsPage() {
     }
   };
 
-  const handleEditGroup = async (id: string, formData: GroupFormData) => {
+  const handleEditGroup = async (formData: GroupFormData) => {
     try {
-      await AuthenticatedApiService.put(`/Group/${id}`, formData);
+      if (!editingGroupId) {
+        throw new Error('ID группы не найден');
+      }
+      await AuthenticatedApiService.put(`/Group/${editingGroupId}`, formData);
       await loadGroups(currentPage, true);
+      setEditingGroupId(null);
       groupModal.closeModal();
     } catch (error) {
       console.error('Error updating group:', error);
@@ -307,7 +314,7 @@ export default function GroupsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6 pt-20 md:pt-24">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Modern Header Card */}
         <PageHeaderWithStats
@@ -647,13 +654,16 @@ export default function GroupsPage() {
           ...(groupModal.editData || {})
         }}
         data={groupModal.editData || undefined}
-        onClose={groupModal.closeModal}
+        onClose={() => {
+          setEditingGroupId(null);
+          groupModal.closeModal();
+        }}
         validate={createGroupValidator}
         onSave={async (data: GroupFormData) => {
           if (groupModal.mode === 'create') {
             await handleCreateGroup(data);
           } else {
-            await handleEditGroup('', data);
+            await handleEditGroup(data);
           }
         }}
         submitText={groupModal.getConfig().submitText}

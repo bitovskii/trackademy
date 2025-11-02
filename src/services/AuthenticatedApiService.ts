@@ -23,6 +23,16 @@ interface UsersResponse {
   hasPreviousPage: boolean;
 }
 
+interface RoomsResponse {
+  items: Room[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
 export class AuthenticatedApiService {
   private static getAuthToken(): string | null {
     return localStorage.getItem('authToken');
@@ -171,7 +181,7 @@ export class AuthenticatedApiService {
   }
 
   static async createOrganization(orgData: OrganizationFormData): Promise<ApiResponse<Organization>> {
-    return this.post('/Organization', orgData);
+    return this.post('/Organization/create', orgData);
   }
 
   static async updateOrganization(id: string, orgData: OrganizationFormData): Promise<ApiResponse<Organization>> {
@@ -183,12 +193,17 @@ export class AuthenticatedApiService {
   }
 
   // Room management methods
-  static async getRooms(organizationId: string): Promise<Room[]> {
-    return this.get(`/Room?organizationId=${organizationId}`);
+  static async getRooms(organizationId: string, pageNumber: number = 1, pageSize: number = 10): Promise<RoomsResponse> {
+    const requestBody = {
+      pageNumber,
+      pageSize,
+      organizationId
+    };
+    return this.post('/Room/GetAllRooms', requestBody);
   }
 
   static async createRoom(roomData: RoomFormData): Promise<ApiResponse<Room>> {
-    return this.post('/Room', roomData);
+    return this.post('/Room/create', roomData);
   }
 
   static async updateRoom(id: string, roomData: RoomFormData): Promise<ApiResponse<Room>> {

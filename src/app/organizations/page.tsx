@@ -10,6 +10,7 @@ import Link from 'next/link';
 import UniversalModal from '../../components/ui/UniversalModal';
 import { useUniversalModal } from '../../hooks/useUniversalModal';
 import { DeleteConfirmationModal } from '../../components/ui/DeleteConfirmationModal';
+import { PhoneInput } from '../../components/ui/PhoneInput';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import OwnerProtectedRoute from '../../components/OwnerProtectedRoute';
 
@@ -20,6 +21,7 @@ function OrganizationsPage() {
   const [error, setError] = useState<string | null>(null);
   const [deletingOrganization, setDeletingOrganization] = useState<Organization | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [editingOrganizationId, setEditingOrganizationId] = useState<number | null>(null);
 
   // Универсальная система модалов для организаций
   const organizationModal = useUniversalModal('organization', {
@@ -78,6 +80,7 @@ function OrganizationsPage() {
   const handleEdit = (id: number) => {
     const organization = organizations.find(org => org.id === id);
     if (organization) {
+      setEditingOrganizationId(id);
       organizationModal.openEditModal({
         name: organization.name,
         phone: organization.phone || '',
@@ -86,9 +89,13 @@ function OrganizationsPage() {
     }
   };
 
-  const handleSaveEdit = async (id: number, formData: OrganizationFormData) => {
-    await AuthenticatedApiService.updateOrganization(id.toString(), formData);
+  const handleSaveEdit = async (formData: OrganizationFormData) => {
+    if (!editingOrganizationId) {
+      throw new Error('ID организации не найден');
+    }
+    await AuthenticatedApiService.updateOrganization(editingOrganizationId.toString(), formData);
     await loadOrganizations(); // Reload the list to show updated data
+    setEditingOrganizationId(null);
     organizationModal.closeModal();
   };
 
@@ -101,6 +108,7 @@ function OrganizationsPage() {
   };
 
   const handleCreate = () => {
+    setEditingOrganizationId(null);
     organizationModal.openCreateModal();
   };
 
@@ -275,17 +283,21 @@ function OrganizationsPage() {
         gradientFrom={organizationModal.getConfig().gradientFrom}
         gradientTo={organizationModal.getConfig().gradientTo}
         maxWidth="lg"
-        initialData={organizationModal.editData || {
+        initialData={{
           name: '',
           phone: '',
           address: ''
         }}
-        onClose={organizationModal.closeModal}
+        data={organizationModal.editData || undefined}
+        onClose={() => {
+          setEditingOrganizationId(null);
+          organizationModal.closeModal();
+        }}
         onSave={async (data: OrganizationFormData) => {
           if (organizationModal.mode === 'create') {
             await handleSaveCreate(data);
           } else {
-            await handleSaveEdit(0, data); // ID будет получен из контекста
+            await handleSaveEdit(data);
           }
         }}
         submitText={organizationModal.getConfig().submitText}
@@ -295,7 +307,7 @@ function OrganizationsPage() {
           <div className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Название организации
+                Название организации <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -308,21 +320,19 @@ function OrganizationsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Телефон
-              </label>
-              <input
-                type="tel"
+              <PhoneInput
+                label="Телефон"
                 value={formData.phone || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                onChange={(value) => setFormData(prev => ({ ...prev, phone: value }))}
+                placeholder="+7 (___) ___-__-__"
+                required
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                placeholder="Введите номер телефона"
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Адрес
+                Адрес <span className="text-red-500">*</span>
               </label>
               <textarea
                 value={formData.address || ''}
@@ -330,6 +340,7 @@ function OrganizationsPage() {
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 placeholder="Введите адрес организации"
                 rows={3}
+                required
               />
             </div>
           </div>

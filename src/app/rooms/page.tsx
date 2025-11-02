@@ -29,6 +29,7 @@ export default function RoomsPage() {
   const [tableLoading, setTableLoading] = useState(false);
   const [deletingRoom, setDeletingRoom] = useState<Room | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
 
   // Универсальная система модалов для комнат
   const roomModal = useUniversalModal('room', {
@@ -72,7 +73,7 @@ export default function RoomsPage() {
         setTableLoading(false);
       }
     }
-  }, [currentPage, user?.organizationId]);
+  }, [user?.organizationId]);
 
   useEffect(() => {
     if (isAuthenticated && !rooms.length) {
@@ -110,10 +111,13 @@ export default function RoomsPage() {
   }
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page);
+    if (page !== currentPage && page >= 1 && page <= totalPages) {
+      loadRooms(page, true);
+    }
   };
 
   const handleCreate = () => {
+    setEditingRoomId(null);
     roomModal.openCreateModal();
   };
 
@@ -142,6 +146,7 @@ export default function RoomsPage() {
   const handleEdit = (id: string) => {
     const room = rooms.find(r => r.id === id);
     if (room) {
+      setEditingRoomId(id);
       roomModal.openEditModal({
         name: room.name,
         capacity: room.capacity
@@ -149,10 +154,14 @@ export default function RoomsPage() {
     }
   };
 
-  const handleSaveEdit = async (id: string, formData: RoomFormData) => {
+  const handleSaveEdit = async (formData: RoomFormData) => {
     try {
-      await AuthenticatedApiService.put(`/Room/${id}`, formData);
+      if (!editingRoomId) {
+        throw new Error('ID кабинета не найден');
+      }
+      await AuthenticatedApiService.put(`/Room/${editingRoomId}`, formData);
       await loadRooms(currentPage, true); // Reload only the table
+      setEditingRoomId(null);
       roomModal.closeModal();
     } catch (error) {
       console.error('Error updating room:', error);
@@ -334,7 +343,7 @@ export default function RoomsPage() {
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gradient-to-r from-gray-50 to-green-50 dark:from-gray-700 dark:to-gray-600">
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                    <th className="px-3 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider w-16">
                       №
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
@@ -343,16 +352,16 @@ export default function RoomsPage() {
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
                       Вместимость
                     </th>
-                    <th className="relative px-6 py-4">
-                      <span className="sr-only">Действия</span>
+                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                      Действия
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {rooms.map((room, index) => (
                     <tr key={room.id} className="hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 dark:hover:from-gray-700 dark:hover:to-gray-600 transition-all duration-200">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-sm font-medium rounded-lg shadow-sm">
+                      <td className="px-3 py-4 whitespace-nowrap text-center">
+                        <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-sm font-medium rounded-lg shadow-sm mx-auto">
                           {(currentPage - 1) * pageSize + index + 1}
                         </div>
                       </td>
@@ -478,16 +487,20 @@ export default function RoomsPage() {
         gradientFrom={roomModal.getConfig().gradientFrom}
         gradientTo={roomModal.getConfig().gradientTo}
         maxWidth="md"
-        initialData={roomModal.editData || {
+        initialData={{
           name: '',
           capacity: 1
         }}
-        onClose={roomModal.closeModal}
+        data={roomModal.editData || undefined}
+        onClose={() => {
+          setEditingRoomId(null);
+          roomModal.closeModal();
+        }}
         onSave={async (data: RoomFormData) => {
           if (roomModal.mode === 'create') {
             await handleSaveCreate(data);
           } else {
-            await handleSaveEdit('', data);
+            await handleSaveEdit(data);
           }
         }}
         submitText={roomModal.getConfig().submitText}

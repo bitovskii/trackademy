@@ -20,7 +20,7 @@ const TopBar: React.FC = () => {
   return (
     <>
       {/* Desktop TopBar */}
-      <div className="hidden lg:block bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-200/50 dark:border-gray-700/50 shadow-lg lg:ml-64">
+      <div className="hidden lg:block fixed top-0 right-0 left-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-200/50 dark:border-gray-700/50 shadow-lg lg:ml-64 z-40">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Left side - Theme Toggle and Welcome */}
@@ -62,52 +62,63 @@ const TopBar: React.FC = () => {
 
               {/* Dropdown Menu */}
               {isDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-72 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 py-2 z-50 overflow-hidden">
-                  {/* User Info Header */}
-                  <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 border-b border-gray-200/50 dark:border-gray-700/50">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                        <span className="text-white font-bold">
-                          {user.fullName?.charAt(0)?.toUpperCase() || 'U'}
-                        </span>
-                      </div>
-                      <div>
-                        <div className="font-semibold text-gray-900 dark:text-white">{user.fullName}</div>
-                        <div className="text-sm text-gray-600 dark:text-gray-300">{user.email}</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          {user.role} в {typeof user.organizationNames === 'string' ? user.organizationNames : user.organizationNames?.[0] || 'организации'}
+                <>
+                  {/* Invisible backdrop */}
+                  <div 
+                    className="fixed inset-0 z-[50000]" 
+                    onClick={() => setIsDropdownOpen(false)}
+                  />
+                  
+                  {/* Menu content */}
+                  <div className="absolute right-0 mt-2 w-72 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 py-2 z-[99999] overflow-hidden">
+                    {/* User Info Header */}
+                    <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 border-b border-gray-200/50 dark:border-gray-700/50">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                          <span className="text-white font-bold">
+                            {user.fullName?.charAt(0)?.toUpperCase() || 'U'}
+                          </span>
+                        </div>
+                        <div>
+                          <div className="font-semibold text-gray-900 dark:text-white">{user.fullName}</div>
+                          <div className="text-sm text-gray-600 dark:text-gray-300">{user.email}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            {user.role} в {typeof user.organizationNames === 'string' ? user.organizationNames : user.organizationNames?.[0] || 'организации'}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Menu Items */}
-                  <div className="py-2">
-                    <Link
-                      href="/profile"
-                      onClick={() => setIsDropdownOpen(false)}
-                      className="flex items-center px-6 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 transition-all duration-200 group"
-                    >
-                      <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg mr-3 group-hover:scale-110 transition-transform duration-200">
-                        <UserIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                      </div>
-                      <span className="font-medium">Профиль</span>
-                    </Link>
-                    
-                    <button
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        logout();
-                      }}
-                      className="w-full flex items-center px-6 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 dark:hover:from-red-900/20 dark:hover:to-pink-900/20 transition-all duration-200 group"
-                    >
-                      <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg mr-3 group-hover:scale-110 transition-transform duration-200">
-                        <ArrowRightOnRectangleIcon className="w-4 h-4 text-red-600 dark:text-red-400" />
-                      </div>
-                      <span className="font-medium">Выйти</span>
-                    </button>
+                    {/* Menu Items */}
+                    <div className="py-2">
+                      <Link
+                        href="/profile"
+                        onClick={() => setIsDropdownOpen(false)}
+                        className="flex items-center px-6 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 transition-all duration-200 group"
+                      >
+                        <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg mr-3 group-hover:scale-110 transition-transform duration-200">
+                          <UserIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <span className="font-medium">Профиль</span>
+                      </Link>
+                      
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setIsDropdownOpen(false);
+                          logout();
+                        }}
+                        className="w-full flex items-center px-6 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 dark:hover:from-red-900/20 dark:hover:to-pink-900/20 transition-all duration-200 group cursor-pointer"
+                      >
+                        <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg mr-3 group-hover:scale-110 transition-transform duration-200">
+                          <ArrowRightOnRectangleIcon className="w-4 h-4 text-red-600 dark:text-red-400" />
+                        </div>
+                        <span className="font-medium">Выйти</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
+                </>
               )}
             </div>
           </div>
@@ -115,7 +126,7 @@ const TopBar: React.FC = () => {
       </div>
 
       {/* Mobile TopBar */}
-      <div className="lg:hidden bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border-b border-gray-200/50 dark:border-gray-700/50 shadow-lg">
+      <div className="lg:hidden fixed top-0 right-0 left-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border-b border-gray-200/50 dark:border-gray-700/50 shadow-lg z-40">
         <div className="px-4">
           <div className="flex justify-between items-center h-16">
             {/* Left side - User info for mobile */}
@@ -140,7 +151,9 @@ const TopBar: React.FC = () => {
             <div className="flex items-center space-x-2">
               <ThemeToggle />
               <button
-                onClick={logout}
+                onClick={() => {
+                  logout();
+                }}
                 className="p-3 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all duration-200 hover:scale-110"
                 title="Выйти"
               >
@@ -150,14 +163,6 @@ const TopBar: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Overlay to close dropdown when clicking outside */}
-      {isDropdownOpen && (
-        <div
-          className="fixed inset-0 z-30"
-          onClick={() => setIsDropdownOpen(false)}
-        />
-      )}
     </>
   );
 };

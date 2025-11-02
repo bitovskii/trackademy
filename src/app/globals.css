@@ -296,3 +296,17 @@
 .animate-delay-300 { animation-delay: 0.3s; }
 .animate-delay-400 { animation-delay: 0.4s; }
 .animate-delay-500 { animation-delay: 0.5s; }
+
+/* ===== Z-Index Hierarchy ===== */
+/* 
+  z-index layering structure:
+  - TopBar dropdown menu: 99999 (highest priority)
+  - TopBar dropdown overlay: 99998
+  - Modal overlays: 9999 
+  - Dropdown menus: 9998
+  - Modal content: 50
+  - Fixed navigation (TopBar): 40
+  - Sidebar: 30
+  - Sticky elements: 10
+  - Content: 1
+*/

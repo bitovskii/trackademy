@@ -445,11 +445,24 @@ export default function StudentsPage() {
             <UsersTable
               users={students}
               isLoading={tableLoading}
-              currentUser={undefined}
+              currentUser={user ? {
+                id: user.id,
+                login: user.login,
+                name: user.fullName,
+                email: user.email,
+                phone: '',
+                parentPhone: '',
+                birthday: '',
+                role: user.role === 'Administrator' ? 2 : user.role === 'Teacher' ? 3 : 1,
+                organizationId: user.organizationId || '',
+                groups: []
+              } : undefined}
               onEdit={handleEdit}
               onDelete={handleDelete}
               showColumnControls={false}
               columnVisibility={isColumnVisible}
+              currentPage={currentPage}
+              itemsPerPage={pageSize}
             />
           </div>
 

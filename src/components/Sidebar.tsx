@@ -55,7 +55,7 @@ const Sidebar: React.FC = () => {
   return (
     <>
       {/* Modern Bottom Navigation Bar - Mobile Only */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg border-t border-gray-200/50 dark:border-gray-700/50 shadow-2xl">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg border-t border-gray-200/50 dark:border-gray-700/50 shadow-2xl">
         <div className="flex items-center justify-around py-2">
           {navigation.slice(0, 5).map((item) => {
             const active = isActive(item.href);
@@ -87,7 +87,7 @@ const Sidebar: React.FC = () => {
 
       {/* Modern Desktop Sidebar */}
       <div className="hidden lg:flex lg:fixed lg:left-0 lg:top-0 lg:h-screen lg:w-64 lg:flex-col transition-all duration-300 
-                      bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-lg">
+                      bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-lg z-30">
         
         {/* Logo Section */}
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 dark:border-gray-700">

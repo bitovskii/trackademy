@@ -14,6 +14,8 @@ interface UsersTableProps {
   onDelete: (user: User) => void;
   showColumnControls?: boolean;
   columnVisibility?: (columnKey: string) => boolean;
+  currentPage?: number;
+  itemsPerPage?: number;
 }
 
 export const UsersTable: React.FC<UsersTableProps> = ({
@@ -23,10 +25,13 @@ export const UsersTable: React.FC<UsersTableProps> = ({
   onEdit,
   onDelete,
   showColumnControls = true,
-  columnVisibility
+  columnVisibility,
+  currentPage = 1,
+  itemsPerPage = 10
 }) => {
   // Конфигурация колонок - используется только если нет внешнего управления
   const { columns, toggleColumn, isColumnVisible: internalIsColumnVisible } = useColumnVisibility([
+    { key: 'number', label: '#', required: true },
     { key: 'user', label: 'Пользователь', required: true },
     { key: 'contacts', label: 'Контакты' },
     { key: 'role', label: 'Роль' },
@@ -107,6 +112,11 @@ export const UsersTable: React.FC<UsersTableProps> = ({
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-700/50">
             <tr>
+              {isColumnVisible('number') && (
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16">
+                  #
+                </th>
+              )}
               {isColumnVisible('user') && (
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Пользователь
@@ -135,8 +145,13 @@ export const UsersTable: React.FC<UsersTableProps> = ({
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-            {users.map((user) => (
+            {users.map((user, index) => (
               <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                {isColumnVisible('number') && (
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    {(currentPage - 1) * itemsPerPage + index + 1}
+                  </td>
+                )}
                 {isColumnVisible('user') && (
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
@@ -209,9 +224,16 @@ export const UsersTable: React.FC<UsersTableProps> = ({
 
       {/* Mobile Cards */}
       <div className="lg:hidden space-y-4 p-4">
-        {users.map((user) => (
+        {users.map((user, index) => (
           <div key={user.id} className="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 p-4 shadow-sm">
             <div className="flex items-start space-x-3">
+              {isColumnVisible('number') && (
+                <div className="flex-shrink-0">
+                  <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-600 rounded-full">
+                    {(currentPage - 1) * itemsPerPage + index + 1}
+                  </span>
+                </div>
+              )}
               {isColumnVisible('user') && (
                 <div className="flex-shrink-0">
                   <div className="h-12 w-12 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">

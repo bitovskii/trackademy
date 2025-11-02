@@ -164,7 +164,7 @@ export default function Profile() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6 page-container">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Modern Header Card */}
         <PageHeaderWithStats

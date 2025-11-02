@@ -56,7 +56,7 @@ export default function Home() {
   ];
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gray-50">
+    <div className="min-h-screen relative overflow-hidden bg-gray-50 pt-[84px]">
       
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -65,7 +65,7 @@ export default function Home() {
       </div>
 
       {/* Hero Section */}
-      <section className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 sm:px-6 lg:px-8">
+      <section className="relative z-10 flex flex-col items-center justify-center min-h-[calc(100vh-84px)] px-4 sm:px-6 lg:px-8">
         <div className={`text-center max-w-4xl transition-all duration-1000 ${isVisible ? 'animate-slide-in-up' : 'opacity-0'}`}>
           {/* Logo/Icon */}
           <div className="mb-8 flex justify-center">

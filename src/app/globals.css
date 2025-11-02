@@ -310,3 +310,20 @@
   - Sticky elements: 10
   - Content: 1
 */
+
+/* ===== Layout Utilities ===== */
+/* TopBar height is 64px (h-16) + border, so we need ~72px total offset */
+.page-content {
+  padding-top: 84px; /* Safe offset for fixed TopBar */
+}
+
+.page-container {
+  padding-top: 84px; /* For full-screen page containers */
+}
+
+@media (max-width: 1024px) {
+  .page-content,
+  .page-container {
+    padding-top: 84px; /* Same for mobile since TopBar height is consistent */
+  }
+}

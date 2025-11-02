@@ -23,7 +23,7 @@ export default function RootLayout({
               <TopBar />
               <div className="flex">
                 <Sidebar />
-                <main className="flex-1 lg:ml-64 p-4 md:p-6 pb-20 lg:pb-6 pt-20 min-h-screen">
+                <main className="flex-1 lg:ml-64 p-4 md:p-6 pb-20 lg:pb-6 pt-[84px] min-h-screen">
                   <div className="max-w-full mx-auto">
                     {children}
                   </div>

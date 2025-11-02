@@ -3,7 +3,8 @@
 import React from 'react';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../../contexts/AuthContext';
-import { usePhoneFormatter } from '../../hooks/usePhoneFormatter';
+import { PhoneInput } from '../ui/PhoneInput';
+import { EmailInput } from '../ui/EmailInput';
 import { UserFormData } from '../../types/User';
 
 interface UserFormProps {
@@ -22,7 +23,6 @@ export const UserForm: React.FC<UserFormProps> = ({
   mode
 }) => {
   const { user } = useAuth();
-  const { formatPhoneDisplay, handlePhoneKeyDown } = usePhoneFormatter();
   const [showPassword, setShowPassword] = React.useState(false);
 
   const roleOptions = [
@@ -33,17 +33,10 @@ export const UserForm: React.FC<UserFormProps> = ({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
-    if (name === 'phone' || name === 'parentPhone') {
-      setFormData((prev: UserFormData) => ({
-        ...prev,
-        [name]: formatPhoneDisplay(value)
-      }));
-    } else {
-      setFormData((prev: UserFormData) => ({
-        ...prev,
-        [name]: name === 'role' ? parseInt(value) : value
-      }));
-    }
+    setFormData((prev: UserFormData) => ({
+      ...prev,
+      [name]: name === 'role' ? parseInt(value) : value
+    }));
 
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
@@ -138,26 +131,21 @@ export const UserForm: React.FC<UserFormProps> = ({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Email */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Email *
-          </label>
-          <input
-            type="email"
-            name="email"
-            value={formData.email || ''}
-            onChange={handleInputChange}
-            className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors ${
-              errors.email 
-                ? 'border-red-400 bg-red-50 dark:bg-red-900/20' 
-                : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
-            } text-gray-900 dark:text-white`}
-            placeholder="example@email.com"
-          />
-          {errors.email && (
-            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.email}</p>
-          )}
-        </div>
+        <EmailInput
+          label="Email"
+          name="email"
+          value={formData.email || ''}
+          onChange={(value) => {
+            setFormData(prev => ({ ...prev, email: value }));
+            if (errors.email) {
+              setErrors(prev => ({ ...prev, email: '' }));
+            }
+          }}
+          error={errors.email}
+          required
+          placeholder="example@domain.com"
+          showSuggestions={true}
+        />
 
         {/* Password */}
         <div>
@@ -201,18 +189,10 @@ export const UserForm: React.FC<UserFormProps> = ({
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Телефон *
           </label>
-          <input
-            type="tel"
-            name="phone"
+          <PhoneInput
             value={formData.phone || ''}
-            onChange={handleInputChange}
-            onKeyDown={handlePhoneKeyDown}
-            className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors ${
-              errors.phone 
-                ? 'border-red-400 bg-red-50 dark:bg-red-900/20' 
-                : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
-            } text-gray-900 dark:text-white`}
-            placeholder="+7 (___) ___-__-__"
+            onChange={(value) => setFormData(prev => ({ ...prev, phone: value }))}
+            error={errors.phone}
           />
           {errors.phone && (
             <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.phone}</p>
@@ -225,18 +205,10 @@ export const UserForm: React.FC<UserFormProps> = ({
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Телефон родителя *
             </label>
-            <input
-              type="tel"
-              name="parentPhone"
+            <PhoneInput
               value={formData.parentPhone || ''}
-              onChange={handleInputChange}
-              onKeyDown={handlePhoneKeyDown}
-              className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors ${
-                errors.parentPhone 
-                  ? 'border-red-400 bg-red-50 dark:bg-red-900/20' 
-                  : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
-              } text-gray-900 dark:text-white`}
-              placeholder="+7 (___) ___-__-__"
+              onChange={(value) => setFormData(prev => ({ ...prev, parentPhone: value }))}
+              error={errors.parentPhone}
             />
             {errors.parentPhone && (
               <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.parentPhone}</p>

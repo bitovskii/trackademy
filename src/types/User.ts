@@ -13,6 +13,7 @@ export interface User {
 }
 
 export interface UserFormData {
+  id?: string;
   login: string;
   fullName: string;
   email: string;

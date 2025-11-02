@@ -15,6 +15,9 @@ import { canManageUsers } from '../../types/Role';
 import Link from 'next/link';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import { useColumnVisibility, ColumnVisibilityControl } from '../../components/ui/ColumnVisibilityControl';
+import { UserForm } from '../../components/forms/UserForm';
+import { PhoneInput } from '@/components/ui/PhoneInput';
+import { EmailInput } from '@/components/ui/EmailInput';
 
 export default function StudentsPage() {
   const { isAuthenticated, user } = useAuth();
@@ -49,11 +52,12 @@ export default function StudentsPage() {
   
   // Column visibility management
   const { columns, toggleColumn, isColumnVisible } = useColumnVisibility([
+    { key: 'number', label: '#', required: true },
     { key: 'user', label: 'Пользователь', required: true },
     { key: 'contacts', label: 'Контакты' },
     { key: 'role', label: 'Роль' },
     { key: 'group', label: 'Группа' },
-    { key: 'actions', label: 'Действия', required: !!(user && canManageUsers(user.role)) }
+    { key: 'actions', label: 'Действия', required: true }
   ]);
   
   // Debounce search to avoid too many API calls
@@ -65,6 +69,12 @@ export default function StudentsPage() {
   const pageSize = 10;
 
   const loadStudents = useCallback(async (page: number = currentPage, userFilters: UserFiltersType = filters, isTableOnly: boolean = true) => {
+    // Ранняя проверка аутентификации
+    if (!isAuthenticated) {
+      console.warn('User not authenticated, skipping loadStudents');
+      return;
+    }
+    
     try {
       if (isTableOnly) {
         setTableLoading(true);
@@ -73,10 +83,38 @@ export default function StudentsPage() {
       }
       setError(null);
       
-      const organizationId = user?.organizationId || localStorage.getItem('userOrganizationId');
+      // Более надежное получение organizationId с правильной логикой
+      let organizationId = user?.organizationId;
+      
+      // Если organizationId не найден в контексте, попробуем получить из localStorage
+      if (!organizationId) {
+        try {
+          const userData = localStorage.getItem('user');
+          if (userData) {
+            const userObj = JSON.parse(userData);
+            organizationId = userObj.organizationId;
+            console.log('OrganizationId extracted from localStorage user:', organizationId);
+          }
+        } catch (e) {
+          console.warn('Could not parse user data from localStorage:', e);
+        }
+      }
+      
       const authToken = localStorage.getItem('authToken');
       
       if (!organizationId) {
+        // Получаем данные пользователя из localStorage для логирования ошибки
+        let localStorageUserData = null;
+        try {
+          const userData = localStorage.getItem('user');
+          if (userData) {
+            localStorageUserData = JSON.parse(userData);
+          }
+        } catch (e) {
+          console.warn('Could not parse user data for error logging');
+        }
+
+        console.error('Organization ID not found. User context:', user, 'LocalStorage user data:', localStorageUserData);
         setError('Не удается определить организацию пользователя');
         return;
       }
@@ -117,11 +155,25 @@ export default function StudentsPage() {
         // Не нужно управлять loading, используем только tableLoading
       }
     }
-  }, [currentPage, user?.organizationId, debouncedSearchTerm]);
+  }, [user?.organizationId, debouncedSearchTerm, isAuthenticated, filters]);
 
   const loadGroups = useCallback(async () => {
     try {
-      const organizationId = user?.organizationId || localStorage.getItem('userOrganizationId');
+      let organizationId = user?.organizationId;
+      
+      // Если organizationId не найден в контексте, попробуем получить из localStorage
+      if (!organizationId) {
+        try {
+          const userData = localStorage.getItem('user');
+          if (userData) {
+            const userObj = JSON.parse(userData);
+            organizationId = userObj.organizationId;
+          }
+        } catch (e) {
+          console.warn('Could not parse user data from localStorage in loadGroups:', e);
+        }
+      }
+      
       if (!organizationId) return;
 
       const groupsResponse = await AuthenticatedApiService.getGroups(organizationId, 1000);
@@ -137,9 +189,35 @@ export default function StudentsPage() {
   }, []);
 
   const handlePageChange = useCallback((page: number) => {
+    // Получаем organizationId из localStorage для логирования
+    let localStorageOrgId = null;
+    try {
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const userObj = JSON.parse(userData);
+        localStorageOrgId = userObj.organizationId;
+      }
+    } catch (e) {
+      console.warn('Could not parse user data from localStorage for logging');
+    }
+
+    console.log('handlePageChange called:', { 
+      page, 
+      isAuthenticated, 
+      userId: user?.id, 
+      userOrganizationId: user?.organizationId,
+      localStorageOrganizationId: localStorageOrgId
+    });
+    
+    // Проверяем, что пользователь аутентифицирован перед сменой страницы
+    if (!isAuthenticated) {
+      console.warn('User not authenticated, skipping page change');
+      return;
+    }
+    
     setCurrentPage(page);
     loadStudents(page, filters, true); // Only update table
-  }, [filters]);
+  }, [isAuthenticated, loadStudents]);
 
   const renderPagination = () => {
     if (totalPages <= 1) return null;
@@ -255,6 +333,30 @@ export default function StudentsPage() {
       loadGroups();
     }
   }, [isAuthenticated, students.length]);
+
+  // Debug effect to track user context changes
+  useEffect(() => {
+    // Получаем organizationId из localStorage для логирования
+    let localStorageOrgId = null;
+    try {
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const userObj = JSON.parse(userData);
+        localStorageOrgId = userObj.organizationId;
+      }
+    } catch (e) {
+      console.warn('Could not parse user data from localStorage for debug logging');
+    }
+
+    console.log('User context changed:', {
+      isAuthenticated,
+      userId: user?.id,
+      userOrganizationId: user?.organizationId,
+      userRole: user?.role,
+      localStorageOrganizationId: localStorageOrgId,
+      localStorageAuthToken: !!localStorage.getItem('authToken')
+    });
+  }, [isAuthenticated, user?.id, user?.organizationId]);
 
   // Check authentication after all hooks are called
   if (!isAuthenticated) {
@@ -485,7 +587,7 @@ export default function StudentsPage() {
         gradientFrom={userModal.getConfig().gradientFrom}
         gradientTo={userModal.getConfig().gradientTo}
         maxWidth="2xl"
-        initialData={userModal.editData || {
+        initialData={{
           login: '',
           fullName: '',
           email: '',
@@ -496,6 +598,7 @@ export default function StudentsPage() {
           role: 1,
           organizationId: user?.organizationId || ''
         }}
+        data={userModal.editData || undefined}
         onClose={userModal.closeModal}
         onSave={async (data: Record<string, unknown>) => {
           if (userModal.mode === 'create') {
@@ -590,14 +693,10 @@ export default function StudentsPage() {
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Email
                 </label>
-                <input
-                  id="email"
-                  type="email"
+                <EmailInput
                   value={(formData.email as string) || ''}
-                  onChange={(e) => setFormData((prev: Record<string, unknown>) => ({ ...prev, email: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  placeholder="Введите email"
-                  required
+                  onChange={(value: string) => setFormData((prev: Record<string, unknown>) => ({ ...prev, email: value }))}
+                  error={_errors.email}
                 />
               </div>
 
@@ -606,14 +705,10 @@ export default function StudentsPage() {
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Телефон
                 </label>
-                <input
-                  id="phone"
-                  type="tel"
+                <PhoneInput
                   value={(formData.phone as string) || ''}
-                  onChange={(e) => setFormData((prev: Record<string, unknown>) => ({ ...prev, phone: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  placeholder="+7 (xxx) xxx-xx-xx"
-                  required
+                  onChange={(value: string) => setFormData((prev: Record<string, unknown>) => ({ ...prev, phone: value }))}
+                  error={_errors.phone}
                 />
               </div>
 
@@ -623,14 +718,10 @@ export default function StudentsPage() {
                   <label htmlFor="parentPhone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Телефон родителя
                   </label>
-                  <input
-                    id="parentPhone"
-                    type="tel"
+                  <PhoneInput
                     value={(formData.parentPhone as string) || ''}
-                    onChange={(e) => setFormData((prev: Record<string, unknown>) => ({ ...prev, parentPhone: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="+7 (xxx) xxx-xx-xx"
-                    required={formData.role === 1}
+                    onChange={(value: string) => setFormData((prev: Record<string, unknown>) => ({ ...prev, parentPhone: value }))}
+                    error={_errors.parentPhone}
                   />
                 </div>
               )}

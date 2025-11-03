@@ -80,7 +80,7 @@ export default function LessonDetailModal({ lesson, isOpen, onClose, onUpdate }:
                 : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
-            Посещаемость ({lesson.students.length})
+            Студенты ({lesson.students.length})
           </button>
           <button
             onClick={() => setActiveTab('quick-attendance')}

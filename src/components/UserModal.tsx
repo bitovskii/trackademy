@@ -28,11 +28,11 @@ const UserModal: React.FC<UserModalProps> = ({
   const [formData, setFormData] = useState<UserFormData>({
     login: '',
     fullName: '',
-    email: '',
+    email: null,
     password: '',
-    phone: '',
-    parentPhone: '',
-    birthday: '',
+    phone: null,
+    parentPhone: null,
+    birthday: null,
     role: 1,
     organizationId: currentUser?.organizationId || '',
     isTrial: false
@@ -42,7 +42,7 @@ const UserModal: React.FC<UserModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Role options - only Student and Teacher
+  // Role options - only Student and Teacher (Student first, then Teacher)
   const roleOptions = [
     { value: 1, label: 'Студент', color: 'emerald' },
     { value: 3, label: 'Преподаватель', color: 'blue' }
@@ -54,11 +54,11 @@ const UserModal: React.FC<UserModalProps> = ({
       setFormData({
         login: user.login || '',
         fullName: user.name || '',
-        email: user.email || '',
+        email: user.email || null,
         password: '', // Never pre-fill password
         phone: formatPhoneDisplay(user.phone || ''),
         parentPhone: formatPhoneDisplay(user.parentPhone || ''),
-        birthday: user.birthday ? user.birthday.split('T')[0] : '',
+        birthday: user.birthday ? user.birthday.split('T')[0] : null,
         role: user.role || 1,
         organizationId: user.organizationId || currentUser?.organizationId || '',
         isTrial: user.isTrial || false
@@ -68,11 +68,11 @@ const UserModal: React.FC<UserModalProps> = ({
       setFormData({
         login: '',
         fullName: '',
-        email: '',
+        email: null,
         password: '',
-        phone: '',
-        parentPhone: '',
-        birthday: '',
+        phone: null,
+        parentPhone: null,
+        birthday: null,
         role: 1,
         organizationId: currentUser?.organizationId || '',
         isTrial: false
@@ -86,11 +86,11 @@ const UserModal: React.FC<UserModalProps> = ({
         setFormData({
           login: '',
           fullName: '',
-          email: '',
+          email: null,
           password: '',
-          phone: '',
-          parentPhone: '',
-          birthday: '',
+          phone: null,
+          parentPhone: null,
+          birthday: null,
           role: 1,
           organizationId: currentUser?.organizationId || '',
           isTrial: false
@@ -115,7 +115,7 @@ const UserModal: React.FC<UserModalProps> = ({
       newErrors.fullName = 'Полное имя обязательно';
     }
 
-    if (!formData.email.trim()) {
+    if (!formData.email?.trim()) {
       newErrors.email = 'Email обязателен';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Некорректный формат email';
@@ -130,7 +130,7 @@ const UserModal: React.FC<UserModalProps> = ({
       }
     }
 
-    if (!formData.phone.trim()) {
+    if (!formData.phone?.trim()) {
       newErrors.phone = 'Номер телефона обязателен';
     }
 
@@ -149,11 +149,37 @@ const UserModal: React.FC<UserModalProps> = ({
 
     setIsSubmitting(true);
     try {
-      let dataToSubmit: UserFormData = {
-        ...formData,
-        phone: formatPhoneForApi(formData.phone),
-        parentPhone: formData.parentPhone ? formatPhoneForApi(formData.parentPhone) : undefined
+      // Clean data: convert empty strings to null for optional fields
+      const cleanData = (data: UserFormData): UserFormData => {
+        const cleaned = { ...data };
+        
+        // Convert empty strings to null for optional and nullable fields
+        if (!cleaned.email || cleaned.email.trim() === '') {
+          cleaned.email = null;
+        }
+        if (!cleaned.phone || cleaned.phone.replace(/\D/g, '').length === 0) {
+          cleaned.phone = null;
+        }
+        if (!cleaned.parentPhone || cleaned.parentPhone.trim() === '') {
+          cleaned.parentPhone = null;
+        }
+        // More robust birthday cleaning
+        if (!cleaned.birthday || 
+            cleaned.birthday === '' || 
+            cleaned.birthday.trim() === '' || 
+            cleaned.birthday === 'undefined' || 
+            cleaned.birthday === 'null') {
+          cleaned.birthday = null;
+        }
+        
+        return cleaned;
       };
+
+      let dataToSubmit: UserFormData = cleanData({
+        ...formData,
+        phone: formData.phone ? formatPhoneForApi(formData.phone) : null,
+        parentPhone: formData.parentPhone ? formatPhoneForApi(formData.parentPhone) : null
+      });
 
       // Remove password from edit data if it's empty
       if (mode === 'edit' && !dataToSubmit.password) {
@@ -182,6 +208,12 @@ const UserModal: React.FC<UserModalProps> = ({
       setFormData(prev => ({
         ...prev,
         [name]: formatPhoneDisplay(value)
+      }));
+    } else if (name === 'birthday') {
+      // Special handling for birthday field - convert empty string to null
+      setFormData(prev => ({
+        ...prev,
+        [name]: value === '' ? null : value
       }));
     } else {
       setFormData(prev => ({
@@ -330,7 +362,7 @@ const UserModal: React.FC<UserModalProps> = ({
             <input
               type="email"
               name="email"
-              value={formData.email}
+              value={formData.email || ''}
               onChange={handleInputChange}
               className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-${currentConfig.focusColor}-500 focus:border-transparent transition-colors ${
                 errors.email 
@@ -389,7 +421,7 @@ const UserModal: React.FC<UserModalProps> = ({
             <input
               type="tel"
               name="phone"
-              value={formData.phone}
+              value={formData.phone || ''}
               onChange={handleInputChange}
               onKeyDown={handlePhoneKeyDown}
               className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-${currentConfig.focusColor}-500 focus:border-transparent transition-colors ${
@@ -413,7 +445,7 @@ const UserModal: React.FC<UserModalProps> = ({
               <input
                 type="tel"
                 name="parentPhone"
-                value={formData.parentPhone}
+                value={formData.parentPhone || ''}
                 onChange={handleInputChange}
                 onKeyDown={handlePhoneKeyDown}
                 className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-${currentConfig.focusColor}-500 focus:border-transparent transition-colors ${
@@ -437,7 +469,7 @@ const UserModal: React.FC<UserModalProps> = ({
             <input
               type="date"
               name="birthday"
-              value={formData.birthday}
+              value={formData.birthday || ''}
               onChange={handleInputChange}
               className={`w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-${currentConfig.focusColor}-500 focus:border-transparent transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
             />

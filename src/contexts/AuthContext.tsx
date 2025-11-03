@@ -50,8 +50,8 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     localStorage.removeItem('userLogin'); // Clear saved login
     localStorage.removeItem('userOrganizationId'); // Clear saved org ID
     
-    // Redirect to home page after logout
-    globalThis.location.href = '/';
+    // Redirect to login page after logout
+    globalThis.location.href = '/login';
   };
 
   const register = async (userData: RegisterData) => {

@@ -114,7 +114,7 @@ export const UsersTable: React.FC<UsersTableProps> = ({
             <tr>
               {isColumnVisible('number') && (
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16">
-                  #
+                  №
                 </th>
               )}
               {isColumnVisible('user') && (
@@ -155,8 +155,10 @@ export const UsersTable: React.FC<UsersTableProps> = ({
                 }`}
               >
                 {isColumnVisible('number') && (
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    {(currentPage - 1) * itemsPerPage + index + 1}
+                  <td className="px-3 py-4 whitespace-nowrap text-center">
+                    <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium rounded-lg shadow-sm mx-auto">
+                      {(currentPage - 1) * itemsPerPage + index + 1}
+                    </div>
                   </td>
                 )}
                 {isColumnVisible('user') && (
@@ -250,9 +252,9 @@ export const UsersTable: React.FC<UsersTableProps> = ({
             <div className="flex items-start space-x-3">
               {isColumnVisible('number') && (
                 <div className="flex-shrink-0">
-                  <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-600 rounded-full">
+                  <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium rounded-lg shadow-sm">
                     {(currentPage - 1) * itemsPerPage + index + 1}
-                  </span>
+                  </div>
                 </div>
               )}
               {isColumnVisible('user') && (

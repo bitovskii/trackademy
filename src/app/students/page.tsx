@@ -422,8 +422,30 @@ export default function StudentsPage() {
   const handleSaveEdit = async (id: string, formData: UserFormData) => {
     console.log('Starting user update:', { id, formData, authToken: !!localStorage.getItem('authToken') });
     
+    // Clean data: convert empty strings to null for optional fields
+    const cleanFormData = { ...formData };
+    
+    // Convert empty strings to null for optional and nullable fields
+    if (!cleanFormData.email || cleanFormData.email.trim() === '') {
+      cleanFormData.email = null;
+    }
+    if (!cleanFormData.phone || cleanFormData.phone.replace(/\D/g, '').length === 0) {
+      cleanFormData.phone = null;
+    }
+    if (!cleanFormData.parentPhone || cleanFormData.parentPhone.trim() === '') {
+      cleanFormData.parentPhone = null;
+    }
+    // More robust birthday cleaning
+    if (!cleanFormData.birthday || 
+        cleanFormData.birthday === '' || 
+        cleanFormData.birthday.trim() === '' || 
+        cleanFormData.birthday === 'undefined' || 
+        cleanFormData.birthday === 'null') {
+      cleanFormData.birthday = null;
+    }
+    
     const result = await updateOperation(
-      () => AuthenticatedApiService.updateUser(id, formData),
+      () => AuthenticatedApiService.updateUser(id, cleanFormData),
       'пользователя'
     );
     
@@ -472,6 +494,28 @@ export default function StudentsPage() {
 
   // Create user handlers
   const handleCreateUser = async (userData: UserFormData) => {
+    // Clean data: convert empty strings to null for optional fields
+    const cleanUserData = { ...userData };
+    
+    // Convert empty strings to null for optional and nullable fields
+    if (!cleanUserData.email || cleanUserData.email.trim() === '') {
+      cleanUserData.email = null;
+    }
+    if (!cleanUserData.phone || cleanUserData.phone.replace(/\D/g, '').length === 0) {
+      cleanUserData.phone = null;
+    }
+    if (!cleanUserData.parentPhone || cleanUserData.parentPhone.trim() === '') {
+      cleanUserData.parentPhone = null;
+    }
+    // More robust birthday cleaning
+    if (!cleanUserData.birthday || 
+        cleanUserData.birthday === '' || 
+        cleanUserData.birthday.trim() === '' || 
+        cleanUserData.birthday === 'undefined' || 
+        cleanUserData.birthday === 'null') {
+      cleanUserData.birthday = null;
+    }
+
     await createOperation(
       async () => {
         const response = await fetch('https://trackademy.onrender.com/api/User/create', {
@@ -480,7 +524,7 @@ export default function StudentsPage() {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
           },
-          body: JSON.stringify(userData),
+          body: JSON.stringify(cleanUserData),
         });
 
         if (!response.ok) {
@@ -666,7 +710,7 @@ export default function StudentsPage() {
                     className="sr-only"
                   />
                   <span className={`text-sm font-medium ${formData.role === 1 ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-700 dark:text-gray-300'}`}>
-                    Пользователь
+                    Студент
                   </span>
                   {formData.role === 1 && <div className="absolute top-2 right-2 w-3 h-3 bg-emerald-500 rounded-full"></div>}
                 </label>

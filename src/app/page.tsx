@@ -14,9 +14,8 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useApiToast } from '../hooks/useApiToast';
 import { DashboardApiService } from '../services/DashboardApiService';
-import { DashboardSummary, DashboardFilters, DashboardStats } from '../types/Dashboard';
+import { DashboardSummary, DashboardStats } from '../types/Dashboard';
 import { StatsCard } from '../components/dashboard/StatsCard';
-import { DashboardFiltersComponent } from '../components/dashboard/DashboardFilters';
 import { PageHeaderWithStats } from '../components/ui/PageHeaderWithStats';
 import Link from 'next/link';
 
@@ -27,25 +26,14 @@ export default function Dashboard() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [groups, setGroups] = useState<Array<{ id: string; name: string }>>([]);
-  const [subjects, setSubjects] = useState<Array<{ id: string; name: string }>>([]);
-  
-  const [filters, setFilters] = useState<DashboardFilters>({
-    organizationId: user?.organizationId || '',
-    groupIds: undefined,
-    subjectIds: undefined,
-    includeInactiveStudents: undefined,
-    lowPerformanceThreshold: undefined
-  });
 
-  // Загрузка данных дашборда
+  // Загрузка данных аналитики
   const loadDashboardData = useCallback(async () => {
     if (!isAuthenticated || !user?.organizationId) {
       return;
     }
 
     const currentFilters = {
-      ...filters,
       organizationId: user.organizationId
     };
 
@@ -60,36 +48,13 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, user?.organizationId, filters]);
-
-  // Загрузка справочников
-  const loadReferenceData = useCallback(async () => {
-    if (!user?.organizationId) return;
-
-    try {
-      const [groupsData, subjectsData] = await Promise.all([
-        DashboardApiService.getGroups(user.organizationId),
-        DashboardApiService.getSubjects(user.organizationId)
-      ]);
-      
-      setGroups(groupsData);
-      setSubjects(subjectsData);
-    } catch (error) {
-      console.warn('Failed to load reference data:', error);
-    }
-  }, [user?.organizationId]);
-
-  useEffect(() => {
-    if (isAuthenticated && user?.organizationId) {
-      setFilters(prev => ({ ...prev, organizationId: user.organizationId || '' }));
-      loadDashboardData();
-      loadReferenceData();
-    }
   }, [isAuthenticated, user?.organizationId]);
 
   useEffect(() => {
-    loadDashboardData();
-  }, [filters]);
+    if (isAuthenticated && user?.organizationId) {
+      loadDashboardData();
+    }
+  }, [isAuthenticated, user?.organizationId, loadDashboardData]);
 
   // Подготовка статистики
   const stats: DashboardStats[] = summary ? [
@@ -152,7 +117,7 @@ export default function Dashboard() {
                 Требуется авторизация
               </h3>
               <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Войдите в систему для просмотра дашборда
+                Войдите в систему для просмотра аналитики
               </p>
               <Link
                 href="/login"
@@ -194,11 +159,11 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 px-4 md:px-6 py-4 md:py-6" style={{ marginTop: '80px' }}>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 px-4 md:px-6 py-4 md:py-6 pt-20 md:pt-24">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <PageHeaderWithStats
-          title="Дашборд"
+          title="Аналитика"
           subtitle="Обзор ключевых показателей системы"
           icon={ChartBarIcon}
           gradientFrom="blue-500"
@@ -208,15 +173,6 @@ export default function Dashboard() {
             { label: "Активные группы", value: summary?.activeGroups || 0, color: "green" },
             { label: "Посещаемость", value: `${summary?.averageAttendanceRate || 0}%`, color: "purple" }
           ]}
-        />
-
-        {/* Filters */}
-        <DashboardFiltersComponent
-          filters={filters}
-          onFiltersChange={setFilters}
-          groups={groups}
-          subjects={subjects}
-          isLoading={loading}
         />
 
         {/* Stats Grid */}
@@ -242,7 +198,7 @@ export default function Dashboard() {
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
-              <p className="text-gray-600 dark:text-gray-400">Загрузка данных дашборда...</p>
+              <p className="text-gray-600 dark:text-gray-400">Загрузка данных аналитики...</p>
             </div>
           </div>
         )}

@@ -27,13 +27,13 @@ const EditScheduleModal: React.FC<EditScheduleModalProps> = ({
 }) => {
   const [formData, setFormData] = useState<ScheduleFormData>({
     daysOfWeek: [],
-    startTime: '',
-    endTime: '',
-    effectiveFrom: '',
-    effectiveTo: '',
-    groupId: '',
-    teacherId: '',
-    roomId: '',
+    startTime: null,
+    endTime: null,
+    effectiveFrom: null,
+    effectiveTo: null,
+    groupId: null,
+    teacherId: null,
+    roomId: null,
     organizationId: organizationId
   });
 
@@ -163,12 +163,16 @@ const EditScheduleModal: React.FC<EditScheduleModalProps> = ({
     try {
       setLoading(true);
       
-      // Convert time to HH:MM:SS format
+      // Convert time to HH:MM:SS format and handle null values
       const submitData = {
         ...formData,
-        startTime: formData.startTime + ':00',
-        endTime: formData.endTime + ':00',
-        effectiveTo: formData.effectiveTo || undefined
+        startTime: formData.startTime ? formData.startTime + ':00' : null,
+        endTime: formData.endTime ? formData.endTime + ':00' : null,
+        effectiveFrom: formData.effectiveFrom || null,
+        effectiveTo: formData.effectiveTo || null,
+        groupId: formData.groupId || null,
+        teacherId: formData.teacherId || null,
+        roomId: formData.roomId || null
       };
 
       await onSave(schedule.id, submitData);
@@ -182,9 +186,12 @@ const EditScheduleModal: React.FC<EditScheduleModalProps> = ({
   };
 
   const handleInputChange = (field: keyof ScheduleFormData, value: string | string[]) => {
+    // Convert empty strings to null for nullable fields
+    const processedValue = typeof value === 'string' && value === '' ? null : value;
+    
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: processedValue
     }));
   };
 
@@ -255,7 +262,7 @@ const EditScheduleModal: React.FC<EditScheduleModalProps> = ({
                 <input
                   type="time"
                   id="startTime"
-                  value={formData.startTime}
+                  value={formData.startTime ?? ''}
                   onChange={(e) => handleInputChange('startTime', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   disabled={loading}
@@ -270,7 +277,7 @@ const EditScheduleModal: React.FC<EditScheduleModalProps> = ({
                 <input
                   type="time"
                   id="endTime"
-                  value={formData.endTime}
+                  value={formData.endTime ?? ''}
                   onChange={(e) => handleInputChange('endTime', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   disabled={loading}
@@ -287,7 +294,7 @@ const EditScheduleModal: React.FC<EditScheduleModalProps> = ({
                 <input
                   type="date"
                   id="effectiveFrom"
-                  value={formData.effectiveFrom}
+                  value={formData.effectiveFrom ?? ''}
                   onChange={(e) => handleInputChange('effectiveFrom', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   disabled={loading}
@@ -302,7 +309,7 @@ const EditScheduleModal: React.FC<EditScheduleModalProps> = ({
                 <input
                   type="date"
                   id="effectiveTo"
-                  value={formData.effectiveTo}
+                  value={formData.effectiveTo ?? ''}
                   onChange={(e) => handleInputChange('effectiveTo', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   disabled={loading}
@@ -317,7 +324,7 @@ const EditScheduleModal: React.FC<EditScheduleModalProps> = ({
               </label>
               <select
                 id="group"
-                value={formData.groupId}
+                value={formData.groupId ?? ''}
                 onChange={(e) => handleInputChange('groupId', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 disabled={loading}
@@ -338,7 +345,7 @@ const EditScheduleModal: React.FC<EditScheduleModalProps> = ({
               </label>
               <select
                 id="teacher"
-                value={formData.teacherId}
+                value={formData.teacherId ?? ''}
                 onChange={(e) => handleInputChange('teacherId', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 disabled={loading}
@@ -359,7 +366,7 @@ const EditScheduleModal: React.FC<EditScheduleModalProps> = ({
               </label>
               <select
                 id="room"
-                value={formData.roomId}
+                value={formData.roomId ?? ''}
                 onChange={(e) => handleInputChange('roomId', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 disabled={loading}

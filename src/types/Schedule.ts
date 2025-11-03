@@ -25,13 +25,13 @@ export interface Schedule {
 
 export interface ScheduleFormData {
   daysOfWeek: number[];
-  startTime: string; // "09:00:00" format
-  endTime: string;   // "10:00:00" format
-  effectiveFrom: string; // "2025-10-27" format
-  effectiveTo?: string; // Optional
-  groupId: string;
-  teacherId: string;
-  roomId: string;
+  startTime: string | null; // "09:00:00" format or null
+  endTime: string | null;   // "10:00:00" format or null
+  effectiveFrom: string | null; // "2025-10-27" format or null
+  effectiveTo?: string | null; // Optional or null
+  groupId: string | null;
+  teacherId: string | null;
+  roomId: string | null;
   organizationId: string;
 }
 

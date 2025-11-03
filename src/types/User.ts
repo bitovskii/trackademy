@@ -17,11 +17,11 @@ export interface UserFormData {
   id?: string;
   login: string;
   fullName: string;
-  email: string;
+  email: string | null;
   password?: string;
-  phone: string;
-  parentPhone?: string;
-  birthday?: string;
+  phone: string | null;
+  parentPhone?: string | null;
+  birthday?: string | null;
   role: number;
   organizationId?: string;
   isTrial: boolean;

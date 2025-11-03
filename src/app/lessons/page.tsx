@@ -15,6 +15,7 @@ import ListView from '@/components/calendar/ListView';
 import RangeCalendarView from '@/components/calendar/RangeCalendarView';
 import LessonDetailModal from '@/components/calendar/LessonDetailModal';
 import { PageHeaderWithStats } from '@/components/ui/PageHeaderWithStats';
+import { DateRangePicker } from '@/components/ui/DateRangePicker';
 import { useApiToast } from '@/hooks/useApiToast';
 
 export default function LessonsPage() {
@@ -33,8 +34,8 @@ export default function LessonsPage() {
   const [selectedSchedule, setSelectedSchedule] = useState<string>('');
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [showLessonModal, setShowLessonModal] = useState(false);
-  const [dateFrom, setDateFrom] = useState<Date | null>(null);
-  const [dateTo, setDateTo] = useState<Date | null>(null);
+  const [dateFrom, setDateFrom] = useState<string | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<string | undefined>(undefined);
   const [rangeViewMode, setRangeViewMode] = useState<'list' | 'calendar'>('list');
 
   // Check authorization
@@ -135,8 +136,8 @@ export default function LessonsPage() {
     // If custom date range is set, use it
     if (dateFrom && dateTo) {
       return {
-        fromDate: formatDate(dateFrom),
-        toDate: formatDate(dateTo)
+        fromDate: dateFrom,
+        toDate: dateTo
       };
     }
 
@@ -209,24 +210,24 @@ export default function LessonsPage() {
   const goToToday = () => {
     setCurrentDate(new Date());
     // Clear custom date range when going to today
-    setDateFrom(null);
-    setDateTo(null);
+    setDateFrom(undefined);
+    setDateTo(undefined);
     setRangeViewMode('list');
   };
 
-  const handleDateRangeChange = (from: Date | null, to: Date | null) => {
-    setDateFrom(from);
-    setDateTo(to);
+  const handleDateRangeChange = (startDate?: string, endDate?: string) => {
+    setDateFrom(startDate);
+    setDateTo(endDate);
     // Clear current date navigation when using custom range
-    if (from && to) {
+    if (startDate && endDate) {
       // Set current date to the start of the range for display purposes
-      setCurrentDate(from);
+      setCurrentDate(new Date(startDate));
     }
   };
 
   const clearDateRange = () => {
-    setDateFrom(null);
-    setDateTo(null);
+    setDateFrom(undefined);
+    setDateTo(undefined);
     setRangeViewMode('list');
   };
 
@@ -239,12 +240,12 @@ export default function LessonsPage() {
   const getCurrentDateText = (): string => {
     // If custom date range is selected, show it
     if (dateFrom && dateTo) {
-      const startDate = dateFrom.toLocaleDateString('ru-RU', {
+      const startDate = new Date(dateFrom).toLocaleDateString('ru-RU', {
         day: 'numeric',
         month: 'long',
         year: 'numeric'
       });
-      const endDate = dateTo.toLocaleDateString('ru-RU', {
+      const endDate = new Date(dateTo).toLocaleDateString('ru-RU', {
         day: 'numeric',
         month: 'long',
         year: 'numeric'
@@ -299,7 +300,7 @@ export default function LessonsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6 pt-20 md:pt-24">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Modern Header with Gradient */}
         <PageHeaderWithStats
@@ -385,43 +386,20 @@ export default function LessonsPage() {
           {/* Navigation */}
           <div className="p-6 bg-gradient-to-r from-gray-50 to-violet-50 dark:from-gray-700/50 dark:to-gray-600/50 border-b border-gray-200 dark:border-gray-700">
             {/* Date Range Selection */}
-            <div className="mb-4 p-4 bg-white/70 dark:bg-gray-700/70 backdrop-blur-sm rounded-lg border border-gray-200/50 dark:border-gray-600/50">
+            <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Выбор диапазона дат</label>
-              <div className="flex flex-wrap items-center gap-3 mb-3">
-                <div className="flex items-center gap-2">
-                  <label className="text-sm text-gray-600 dark:text-gray-400">С:</label>
-                  <input
-                    type="date"
-                    value={dateFrom ? dateFrom.toISOString().split('T')[0] : ''}
-                    onChange={(e) => {
-                      if (e.target.value) {
-                        const newDateFrom = new Date(e.target.value);
-                        handleDateRangeChange(newDateFrom, dateTo);
-                      }
-                    }}
-                    className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-                  />
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <label className="text-sm text-gray-600 dark:text-gray-400">До:</label>
-                  <input
-                    type="date"
-                    value={dateTo ? dateTo.toISOString().split('T')[0] : ''}
-                    onChange={(e) => {
-                      if (e.target.value) {
-                        const newDateTo = new Date(e.target.value);
-                        handleDateRangeChange(dateFrom, newDateTo);
-                      }
-                    }}
-                    className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-                  />
-                </div>
+              <div className="flex items-center gap-3">
+                <DateRangePicker
+                  startDate={dateFrom}
+                  endDate={dateTo}
+                  onDateChange={handleDateRangeChange}
+                  placeholder="Выберите период занятий"
+                />
                 
                 {(dateFrom || dateTo) && (
                   <button
                     onClick={clearDateRange}
-                    className="px-3 py-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 rounded-md text-sm transition-colors"
+                    className="px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 rounded-md text-sm transition-colors"
                   >
                     Очистить
                   </button>
@@ -430,7 +408,7 @@ export default function LessonsPage() {
               
               {/* Range View Mode Selector */}
               {(dateFrom && dateTo) && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mt-3">
                   <label className="text-sm text-gray-600 dark:text-gray-400">Режим просмотра:</label>
                   <div className="flex bg-gray-100 dark:bg-gray-600 rounded-lg p-1">
                     <button
@@ -518,8 +496,8 @@ export default function LessonsPage() {
                   />
                 ) : (
                   <RangeCalendarView
-                    dateFrom={dateFrom}
-                    dateTo={dateTo}
+                    dateFrom={new Date(dateFrom)}
+                    dateTo={new Date(dateTo)}
                     lessons={lessons}
                     onLessonClick={handleLessonClick}
                   />

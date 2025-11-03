@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
+import { getRoleName } from '../types/Role';
 import { ChevronDownIcon, UserIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
 import ThemeToggle from './ThemeToggle';
 
@@ -48,7 +49,7 @@ const TopBar: React.FC = () => {
                 <div className="text-left hidden sm:block">
                   <div className="text-gray-900 dark:text-white font-semibold">{user.fullName}</div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {user.role} • {typeof user.organizationNames === 'string' ? user.organizationNames : user.organizationNames?.[0] || 'Организация'}
+                    {getRoleName(user.role)} • {typeof user.organizationNames === 'string' ? user.organizationNames : user.organizationNames?.[0] || 'Организация'}
                   </div>
                 </div>
                 
@@ -83,7 +84,7 @@ const TopBar: React.FC = () => {
                           <div className="font-semibold text-gray-900 dark:text-white">{user.fullName}</div>
                           <div className="text-sm text-gray-600 dark:text-gray-300">{user.email}</div>
                           <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            {user.role} в {typeof user.organizationNames === 'string' ? user.organizationNames : user.organizationNames?.[0] || 'организации'}
+                            {getRoleName(user.role)} в {typeof user.organizationNames === 'string' ? user.organizationNames : user.organizationNames?.[0] || 'организации'}
                           </div>
                         </div>
                       </div>
@@ -142,7 +143,7 @@ const TopBar: React.FC = () => {
               <div className="flex-1 min-w-0">
                 <div className="text-gray-900 dark:text-white font-semibold text-sm truncate">{user.fullName}</div>
                 <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                  {user.role} • {typeof user.organizationNames === 'string' ? user.organizationNames : user.organizationNames?.[0] || 'Организация'}
+                  {getRoleName(user.role)} • {typeof user.organizationNames === 'string' ? user.organizationNames : user.organizationNames?.[0] || 'Организация'}
                 </div>
               </div>
             </Link>

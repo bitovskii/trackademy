@@ -1,4 +1,5 @@
 // Utility functions for API error handling and toast notifications
+import { UserFormData } from '../types/User';
 
 export const handleApiError = async (response: Response): Promise<never> => {
   let errorMessage;
@@ -40,4 +41,30 @@ export const getSuccessMessage = (action: string, entity?: string): string => {
     default:
       return 'Операция выполнена успешно';
   }
+};
+
+// Clean user form data: convert empty strings to null for optional fields
+export const cleanUserFormData = (formData: UserFormData): UserFormData => {
+  const cleaned = { ...formData };
+  
+  // Convert empty strings to null for optional and nullable fields
+  if (!cleaned.email || cleaned.email.trim() === '') {
+    cleaned.email = null;
+  }
+  if (!cleaned.phone || cleaned.phone.replace(/\D/g, '').length === 0) {
+    cleaned.phone = null;
+  }
+  if (!cleaned.parentPhone || cleaned.parentPhone.trim() === '') {
+    cleaned.parentPhone = null;
+  }
+  // More robust birthday cleaning
+  if (!cleaned.birthday || 
+      cleaned.birthday === '' || 
+      cleaned.birthday.trim() === '' || 
+      cleaned.birthday === 'undefined' || 
+      cleaned.birthday === 'null') {
+    cleaned.birthday = null;
+  }
+  
+  return cleaned;
 };

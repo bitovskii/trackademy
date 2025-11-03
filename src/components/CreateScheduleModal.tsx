@@ -25,13 +25,13 @@ const CreateScheduleModal: React.FC<CreateScheduleModalProps> = ({
 }) => {
   const [formData, setFormData] = useState<ScheduleFormData>({
     daysOfWeek: [],
-    startTime: '',
-    endTime: '',
+    startTime: null,
+    endTime: null,
     effectiveFrom: new Date().toISOString().split('T')[0], // Today's date
-    effectiveTo: '',
-    groupId: '',
-    teacherId: '',
-    roomId: '',
+    effectiveTo: null,
+    groupId: null,
+    teacherId: null,
+    roomId: null,
     organizationId: organizationId
   });
 
@@ -154,12 +154,16 @@ const CreateScheduleModal: React.FC<CreateScheduleModalProps> = ({
     try {
       setLoading(true);
       
-      // Convert time to HH:MM:SS format
+      // Convert time to HH:MM:SS format and handle null values
       const submitData = {
         ...formData,
-        startTime: formData.startTime + ':00',
-        endTime: formData.endTime + ':00',
-        effectiveTo: formData.effectiveTo || undefined
+        startTime: formData.startTime ? formData.startTime + ':00' : null,
+        endTime: formData.endTime ? formData.endTime + ':00' : null,
+        effectiveFrom: formData.effectiveFrom || null,
+        effectiveTo: formData.effectiveTo || null,
+        groupId: formData.groupId || null,
+        teacherId: formData.teacherId || null,
+        roomId: formData.roomId || null
       };
 
       await onSave(submitData);
@@ -173,9 +177,12 @@ const CreateScheduleModal: React.FC<CreateScheduleModalProps> = ({
   };
 
   const handleInputChange = (field: keyof ScheduleFormData, value: string | string[]) => {
+    // Convert empty strings to null for nullable fields
+    const processedValue = typeof value === 'string' && value === '' ? null : value;
+    
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: processedValue
     }));
   };
 
@@ -246,7 +253,7 @@ const CreateScheduleModal: React.FC<CreateScheduleModalProps> = ({
                 <input
                   type="time"
                   id="startTime"
-                  value={formData.startTime}
+                  value={formData.startTime ?? ''}
                   onChange={(e) => handleInputChange('startTime', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   disabled={loading}
@@ -261,7 +268,7 @@ const CreateScheduleModal: React.FC<CreateScheduleModalProps> = ({
                 <input
                   type="time"
                   id="endTime"
-                  value={formData.endTime}
+                  value={formData.endTime ?? ''}
                   onChange={(e) => handleInputChange('endTime', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   disabled={loading}
@@ -278,7 +285,7 @@ const CreateScheduleModal: React.FC<CreateScheduleModalProps> = ({
                 <input
                   type="date"
                   id="effectiveFrom"
-                  value={formData.effectiveFrom}
+                  value={formData.effectiveFrom ?? ''}
                   onChange={(e) => handleInputChange('effectiveFrom', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   disabled={loading}
@@ -293,7 +300,7 @@ const CreateScheduleModal: React.FC<CreateScheduleModalProps> = ({
                 <input
                   type="date"
                   id="effectiveTo"
-                  value={formData.effectiveTo}
+                  value={formData.effectiveTo ?? ''}
                   onChange={(e) => handleInputChange('effectiveTo', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   disabled={loading}
@@ -307,8 +314,8 @@ const CreateScheduleModal: React.FC<CreateScheduleModalProps> = ({
                 Группа *
               </label>
               <select
-                id="group"
-                value={formData.groupId}
+                id="groupId"
+                value={formData.groupId ?? ''}
                 onChange={(e) => handleInputChange('groupId', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 disabled={loading}
@@ -328,8 +335,8 @@ const CreateScheduleModal: React.FC<CreateScheduleModalProps> = ({
                 Преподаватель *
               </label>
               <select
-                id="teacher"
-                value={formData.teacherId}
+                id="teacherId"
+                value={formData.teacherId ?? ''}
                 onChange={(e) => handleInputChange('teacherId', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 disabled={loading}
@@ -349,8 +356,8 @@ const CreateScheduleModal: React.FC<CreateScheduleModalProps> = ({
                 Кабинет *
               </label>
               <select
-                id="room"
-                value={formData.roomId}
+                id="roomId"
+                value={formData.roomId ?? ''}
                 onChange={(e) => handleInputChange('roomId', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 disabled={loading}

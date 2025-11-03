@@ -26,6 +26,8 @@ import { ScheduleCalendar } from '../../components/ui/ScheduleCalendar';
 import { ViewToggle, ViewMode } from '../../components/ui/ViewToggle';
 import UniversalModal from '../../components/ui/UniversalModal';
 import { useUniversalModal } from '../../hooks/useUniversalModal';
+import { TimeInput } from '../../components/ui/TimeInput';
+import { DaysOfWeekSelector } from '../../components/ui/DaysOfWeekSelector';
 import Link from 'next/link';
 
 export default function SchedulesPage() {
@@ -77,7 +79,7 @@ export default function SchedulesPage() {
 
   // Управление видимостью колонок
   const { columns, toggleColumn, isColumnVisible } = useColumnVisibility([
-    { key: 'number', label: '№', required: false },
+    { key: 'number', label: '№', required: true },
     { key: 'group', label: 'Группа', required: true },
     { key: 'subject', label: 'Предмет' },
     { key: 'teacher', label: 'Преподаватель' },
@@ -85,7 +87,7 @@ export default function SchedulesPage() {
     { key: 'days', label: 'Дни недели' },
     { key: 'time', label: 'Время' },
     { key: 'period', label: 'Окончание' },
-    { key: 'actions', label: 'Действия' }
+    { key: 'actions', label: 'Действия', required: true }
   ]);
 
   const loadSchedules = useCallback(async (page: number = currentPage, isTableOnly: boolean = true) => {
@@ -240,38 +242,55 @@ export default function SchedulesPage() {
   // Validation function for schedule forms
   const validateScheduleForm = (data: Record<string, unknown>): Record<string, string> => {
     const errors: Record<string, string> = {};
-    const scheduleData = data as unknown as ScheduleFormData;
     
-    if (!scheduleData.daysOfWeek || scheduleData.daysOfWeek.length === 0) {
-      errors.daysOfWeek = 'Дни недели обязательны';
+    // Validate days of week
+    const daysOfWeekStr = data.daysOfWeek as string;
+    if (!daysOfWeekStr || daysOfWeekStr.trim() === '') {
+      errors.daysOfWeek = 'Необходимо выбрать хотя бы один день недели';
+    } else {
+      const daysArray = daysOfWeekStr.split(',').map(day => parseInt(day.trim())).filter(day => !isNaN(day));
+      if (daysArray.length === 0) {
+        errors.daysOfWeek = 'Необходимо выбрать хотя бы один день недели';
+      }
     }
     
-    if (!scheduleData.startTime) {
-      errors.startTime = 'Время начала обязательно';
+    // Validate start time
+    if (!data.startTime || (typeof data.startTime === 'string' && data.startTime.trim() === '')) {
+      errors.startTime = 'Время начала обязательно для заполнения';
     }
     
-    if (!scheduleData.endTime) {
-      errors.endTime = 'Время окончания обязательно';
+    // Validate end time
+    if (!data.endTime || (typeof data.endTime === 'string' && data.endTime.trim() === '')) {
+      errors.endTime = 'Время окончания обязательно для заполнения';
     }
     
-    if (scheduleData.startTime && scheduleData.endTime && scheduleData.startTime >= scheduleData.endTime) {
-      errors.endTime = 'Время окончания должно быть больше времени начала';
+    // Validate time range
+    if (data.startTime && data.endTime && 
+        typeof data.startTime === 'string' && typeof data.endTime === 'string' &&
+        data.startTime.trim() !== '' && data.endTime.trim() !== '') {
+      if (data.startTime >= data.endTime) {
+        errors.endTime = 'Время окончания должно быть позже времени начала';
+      }
     }
     
-    if (!scheduleData.effectiveFrom) {
-      errors.effectiveFrom = 'Дата начала действия обязательна';
+    // Validate effective from date
+    if (!data.effectiveFrom || (typeof data.effectiveFrom === 'string' && data.effectiveFrom.trim() === '')) {
+      errors.effectiveFrom = 'Дата начала действия обязательна для заполнения';
     }
     
-    if (!scheduleData.groupId) {
-      errors.groupId = 'Группа обязательна';
+    // Validate group
+    if (!data.groupId || (typeof data.groupId === 'string' && data.groupId.trim() === '')) {
+      errors.groupId = 'Необходимо выбрать группу';
     }
     
-    if (!scheduleData.teacherId) {
-      errors.teacherId = 'Преподаватель обязателен';
+    // Validate teacher
+    if (!data.teacherId || (typeof data.teacherId === 'string' && data.teacherId.trim() === '')) {
+      errors.teacherId = 'Необходимо выбрать преподавателя';
     }
     
-    if (!scheduleData.roomId) {
-      errors.roomId = 'Аудитория обязательна';
+    // Validate room
+    if (!data.roomId || (typeof data.roomId === 'string' && data.roomId.trim() === '')) {
+      errors.roomId = 'Необходимо выбрать аудиторию';
     }
     
     return errors;
@@ -282,13 +301,24 @@ export default function SchedulesPage() {
     scheduleModal.openCreateModal();
   };
 
+  // Функция для удаления секунд из времени (для отображения в форме)
+  const formatTimeForDisplay = (time: string): string => {
+    if (!time) return '';
+    // Если время в формате ЧЧ:ММ:СС, убираем секунды
+    const parts = time.split(':');
+    if (parts.length === 3) {
+      return `${parts[0]}:${parts[1]}`;
+    }
+    return time;
+  };
+
   const handleEditUniversal = (id: string) => {
     const schedule = schedules.find(s => s.id === id);
     if (schedule) {
       scheduleModal.openEditModal({
         daysOfWeek: schedule.daysOfWeek.join(','), // Convert array to string for form
-        startTime: schedule.startTime,
-        endTime: schedule.endTime,
+        startTime: formatTimeForDisplay(schedule.startTime),
+        endTime: formatTimeForDisplay(schedule.endTime),
         effectiveFrom: schedule.effectiveFrom,
         effectiveTo: schedule.effectiveTo || '',
         groupId: schedule.group.id,
@@ -299,17 +329,35 @@ export default function SchedulesPage() {
     }
   };
 
+  // Функция для преобразования времени в формат ЧЧ:ММ:СС
+  const formatTimeWithSeconds = (time: string | null): string | null => {
+    if (!time || time.trim() === '') return null;
+    // Если время уже содержит секунды, возвращаем как есть
+    if (time.includes(':') && time.split(':').length === 3) {
+      return time;
+    }
+    // Если время в формате ЧЧ:ММ, добавляем :00
+    if (time.includes(':') && time.split(':').length === 2) {
+      return `${time}:00`;
+    }
+    return time;
+  };
+
   // Handlers for Universal Modal save operations
   const handleSaveCreate = async (formData: Record<string, unknown>) => {
+    const daysOfWeekStr = formData.daysOfWeek as string;
+    const daysOfWeekArray = daysOfWeekStr ? 
+      daysOfWeekStr.split(',').map(day => parseInt(day.trim())).filter(day => !isNaN(day)) : [];
+    
     const scheduleData: ScheduleFormData = {
-      daysOfWeek: formData.daysOfWeek ? (formData.daysOfWeek as string).split(',').map((day: string) => parseInt(day.trim())) : [],
-      startTime: formData.startTime as string,
-      endTime: formData.endTime as string,
-      effectiveFrom: formData.effectiveFrom as string,
-      effectiveTo: (formData.effectiveTo as string) || undefined,
-      groupId: formData.groupId as string,
-      teacherId: formData.teacherId as string,
-      roomId: formData.roomId as string,
+      daysOfWeek: daysOfWeekArray,
+      startTime: formatTimeWithSeconds(formData.startTime && (formData.startTime as string).trim() !== '' ? formData.startTime as string : null),
+      endTime: formatTimeWithSeconds(formData.endTime && (formData.endTime as string).trim() !== '' ? formData.endTime as string : null),
+      effectiveFrom: formData.effectiveFrom && (formData.effectiveFrom as string).trim() !== '' ? formData.effectiveFrom as string : null,
+      effectiveTo: formData.effectiveTo && (formData.effectiveTo as string).trim() !== '' ? formData.effectiveTo as string : null,
+      groupId: formData.groupId && (formData.groupId as string).trim() !== '' ? formData.groupId as string : null,
+      teacherId: formData.teacherId && (formData.teacherId as string).trim() !== '' ? formData.teacherId as string : null,
+      roomId: formData.roomId && (formData.roomId as string).trim() !== '' ? formData.roomId as string : null,
       organizationId: user?.organizationId || ''
     };
     
@@ -323,15 +371,19 @@ export default function SchedulesPage() {
   };
 
   const handleSaveEdit = async (formData: Record<string, unknown>) => {
+    const daysOfWeekStr = formData.daysOfWeek as string;
+    const daysOfWeekArray = daysOfWeekStr ? 
+      daysOfWeekStr.split(',').map(day => parseInt(day.trim())).filter(day => !isNaN(day)) : [];
+    
     const updateData = {
-      daysOfWeek: formData.daysOfWeek ? (formData.daysOfWeek as string).split(',').map((day: string) => parseInt(day.trim())) : [],
-      startTime: formData.startTime as string,
-      endTime: formData.endTime as string,
-      effectiveFrom: formData.effectiveFrom as string,
-      effectiveTo: (formData.effectiveTo as string) || null,
-      groupId: formData.groupId as string,
-      teacherId: formData.teacherId as string,
-      roomId: formData.roomId as string
+      daysOfWeek: daysOfWeekArray,
+      startTime: formatTimeWithSeconds(formData.startTime && (formData.startTime as string).trim() !== '' ? formData.startTime as string : null),
+      endTime: formatTimeWithSeconds(formData.endTime && (formData.endTime as string).trim() !== '' ? formData.endTime as string : null),
+      effectiveFrom: formData.effectiveFrom && (formData.effectiveFrom as string).trim() !== '' ? formData.effectiveFrom as string : null,
+      effectiveTo: formData.effectiveTo && (formData.effectiveTo as string).trim() !== '' ? formData.effectiveTo as string : null,
+      groupId: formData.groupId && (formData.groupId as string).trim() !== '' ? formData.groupId as string : null,
+      teacherId: formData.teacherId && (formData.teacherId as string).trim() !== '' ? formData.teacherId as string : null,
+      roomId: formData.roomId && (formData.roomId as string).trim() !== '' ? formData.roomId as string : null
     };
     
     if (scheduleModal.editData) {
@@ -522,7 +574,7 @@ export default function SchedulesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6 page-content">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Modern Header Card */}
         <PageHeaderWithStats
@@ -936,17 +988,18 @@ export default function SchedulesPage() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Дни недели
                 </label>
-                <input
-                  type="text"
-                  value={formData.daysOfWeek || ''}
-                  onChange={(e) => setFormData({ ...formData, daysOfWeek: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                  placeholder="Пн, Вт, Ср..."
-                  required
-                />
-                {errors.daysOfWeek && (
-                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.daysOfWeek}</p>
-                )}
+                <div data-field="daysOfWeek">
+                  <DaysOfWeekSelector
+                    value={formData.daysOfWeek ? 
+                      (typeof formData.daysOfWeek === 'string' 
+                        ? formData.daysOfWeek.split(',').map(day => parseInt(day.trim())).filter(day => !isNaN(day))
+                        : formData.daysOfWeek as number[]
+                      ) : []
+                    }
+                    onChange={(days) => setFormData({ ...formData, daysOfWeek: days.join(',') })}
+                    error={errors.daysOfWeek}
+                  />
+                </div>
               </div>
 
               {/* Start Time */}
@@ -954,16 +1007,14 @@ export default function SchedulesPage() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Время начала
                 </label>
-                <input
-                  type="time"
+                <TimeInput
                   value={formData.startTime || ''}
-                  onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  onChange={(value) => setFormData({ ...formData, startTime: value || '' })}
+                  placeholder="ЧЧ:ММ"
                   required
+                  error={errors.startTime}
+                  data-field="startTime"
                 />
-                {errors.startTime && (
-                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.startTime}</p>
-                )}
               </div>
 
               {/* End Time */}
@@ -971,16 +1022,14 @@ export default function SchedulesPage() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Время окончания
                 </label>
-                <input
-                  type="time"
+                <TimeInput
                   value={formData.endTime || ''}
-                  onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  onChange={(value) => setFormData({ ...formData, endTime: value || '' })}
+                  placeholder="ЧЧ:ММ"
                   required
+                  error={errors.endTime}
+                  data-field="endTime"
                 />
-                {errors.endTime && (
-                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.endTime}</p>
-                )}
               </div>
 
               {/* Effective From */}
@@ -992,7 +1041,12 @@ export default function SchedulesPage() {
                   type="date"
                   value={formData.effectiveFrom || ''}
                   onChange={(e) => setFormData({ ...formData, effectiveFrom: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent dark:bg-gray-700 dark:text-white ${
+                    errors.effectiveFrom 
+                      ? 'border-red-500 dark:border-red-400' 
+                      : 'border-gray-300 dark:border-gray-600'
+                  }`}
+                  data-field="effectiveFrom"
                   required
                 />
                 {errors.effectiveFrom && (
@@ -1010,6 +1064,7 @@ export default function SchedulesPage() {
                   value={formData.effectiveTo || ''}
                   onChange={(e) => setFormData({ ...formData, effectiveTo: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  data-field="effectiveTo"
                 />
                 {errors.effectiveTo && (
                   <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.effectiveTo}</p>
@@ -1024,7 +1079,12 @@ export default function SchedulesPage() {
                 <select
                   value={formData.groupId || ''}
                   onChange={(e) => setFormData({ ...formData, groupId: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent dark:bg-gray-700 dark:text-white ${
+                    errors.groupId 
+                      ? 'border-red-500 dark:border-red-400' 
+                      : 'border-gray-300 dark:border-gray-600'
+                  }`}
+                  data-field="groupId"
                   required
                 >
                   <option value="">Выберите группу</option>
@@ -1047,7 +1107,12 @@ export default function SchedulesPage() {
                 <select
                   value={formData.teacherId || ''}
                   onChange={(e) => setFormData({ ...formData, teacherId: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent dark:bg-gray-700 dark:text-white ${
+                    errors.teacherId 
+                      ? 'border-red-500 dark:border-red-400' 
+                      : 'border-gray-300 dark:border-gray-600'
+                  }`}
+                  data-field="teacherId"
                   required
                 >
                   <option value="">Выберите преподавателя</option>
@@ -1070,7 +1135,12 @@ export default function SchedulesPage() {
                 <select
                   value={formData.roomId || ''}
                   onChange={(e) => setFormData({ ...formData, roomId: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent dark:bg-gray-700 dark:text-white ${
+                    errors.roomId 
+                      ? 'border-red-500 dark:border-red-400' 
+                      : 'border-gray-300 dark:border-gray-600'
+                  }`}
+                  data-field="roomId"
                   required
                 >
                   <option value="">Выберите аудиторию</option>

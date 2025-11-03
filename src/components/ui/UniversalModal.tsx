@@ -74,7 +74,29 @@ const UniversalModal = <T extends Record<string, unknown>>({
     if (validate) {
       const newErrors = validate(formData);
       setErrors(newErrors);
-      return Object.keys(newErrors).length === 0;
+      
+      const hasErrors = Object.keys(newErrors).length > 0;
+      
+      // Если есть ошибки, прокручиваем к первому полю с ошибкой
+      if (hasErrors) {
+        setTimeout(() => {
+          const firstErrorField = Object.keys(newErrors)[0];
+          const errorElement = document.querySelector(`[name="${firstErrorField}"], [data-field="${firstErrorField}"]`);
+          if (errorElement) {
+            errorElement.scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'center' 
+            });
+            // Подсвечиваем поле с ошибкой
+            errorElement.classList.add('shake-animation');
+            setTimeout(() => {
+              errorElement.classList.remove('shake-animation');
+            }, 600);
+          }
+        }, 100);
+      }
+      
+      return !hasErrors;
     }
     return true;
   };

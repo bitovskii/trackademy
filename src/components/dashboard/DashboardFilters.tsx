@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { FunnelIcon } from '@heroicons/react/24/outline';
 import { MultiSelect } from '../ui/MultiSelect';
-import { DateRangePicker } from '../ui/DateRangePicker';
 import { DashboardFilters } from '../../types/Dashboard';
 
 interface DashboardFiltersProps {
@@ -20,14 +19,6 @@ export const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = ({
   isLoading = false
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-
-  const handleDateRangeChange = (startDate?: string, endDate?: string) => {
-    onFiltersChange({
-      ...filters,
-      startDate,
-      endDate
-    });
-  };
 
   const handleGroupChange = (groupIds: string[]) => {
     onFiltersChange({
@@ -61,8 +52,6 @@ export const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = ({
   const clearFilters = () => {
     onFiltersChange({
       organizationId: filters.organizationId,
-      startDate: undefined,
-      endDate: undefined,
       groupIds: undefined,
       subjectIds: undefined,
       includeInactiveStudents: undefined,
@@ -71,8 +60,6 @@ export const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = ({
   };
 
   const hasActiveFilters = 
-    filters.startDate || 
-    filters.endDate || 
     (filters.groupIds && filters.groupIds.length > 0) ||
     (filters.subjectIds && filters.subjectIds.length > 0) ||
     filters.includeInactiveStudents !== undefined ||
@@ -87,7 +74,9 @@ export const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = ({
           <h3 className="text-lg font-medium text-gray-900 dark:text-white">Фильтры дашборда</h3>
           {hasActiveFilters && (
             <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300 rounded-full">
-              Активны
+              {(filters.groupIds?.length || 0) + (filters.subjectIds?.length || 0) + 
+               (filters.includeInactiveStudents !== undefined ? 1 : 0) + 
+               (filters.lowPerformanceThreshold !== undefined ? 1 : 0)}
             </span>
           )}
         </div>
@@ -107,19 +96,6 @@ export const DashboardFiltersComponent: React.FC<DashboardFiltersProps> = ({
             {isExpanded ? 'Скрыть' : 'Показать'} фильтры
           </button>
         </div>
-      </div>
-
-      {/* Date Range Picker */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Период
-        </label>
-        <DateRangePicker
-          startDate={filters.startDate}
-          endDate={filters.endDate}
-          onDateChange={handleDateRangeChange}
-          placeholder="Выберите период для анализа"
-        />
       </div>
 
       {/* Expanded Filters */}

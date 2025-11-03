@@ -34,7 +34,8 @@ const UserModal: React.FC<UserModalProps> = ({
     parentPhone: '',
     birthday: '',
     role: 1,
-    organizationId: currentUser?.organizationId || ''
+    organizationId: currentUser?.organizationId || '',
+    isTrial: false
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -59,7 +60,8 @@ const UserModal: React.FC<UserModalProps> = ({
         parentPhone: formatPhoneDisplay(user.parentPhone || ''),
         birthday: user.birthday ? user.birthday.split('T')[0] : '',
         role: user.role || 1,
-        organizationId: user.organizationId || currentUser?.organizationId || ''
+        organizationId: user.organizationId || currentUser?.organizationId || '',
+        isTrial: user.isTrial || false
       });
     } else if (mode === 'create') {
       // Reset form for create mode
@@ -72,7 +74,8 @@ const UserModal: React.FC<UserModalProps> = ({
         parentPhone: '',
         birthday: '',
         role: 1,
-        organizationId: currentUser?.organizationId || ''
+        organizationId: currentUser?.organizationId || '',
+        isTrial: false
       });
     }
   }, [mode, user, formatPhoneDisplay, currentUser?.organizationId]);
@@ -89,7 +92,8 @@ const UserModal: React.FC<UserModalProps> = ({
           parentPhone: '',
           birthday: '',
           role: 1,
-          organizationId: currentUser?.organizationId || ''
+          organizationId: currentUser?.organizationId || '',
+          isTrial: false
         });
       }
       setErrors({});
@@ -438,6 +442,36 @@ const UserModal: React.FC<UserModalProps> = ({
               className={`w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-${currentConfig.focusColor}-500 focus:border-transparent transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
             />
           </div>
+
+          {/* Trial Student Toggle (for students) */}
+          {formData.role === 1 && (
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                На пробный урок
+              </label>
+              <div 
+                className="relative cursor-pointer"
+                onClick={() => setFormData(prev => ({ ...prev, isTrial: !prev.isTrial }))}
+              >
+                <input
+                  type="checkbox"
+                  name="isTrial"
+                  checked={formData.isTrial}
+                  onChange={(e) => setFormData(prev => ({ ...prev, isTrial: e.target.checked }))}
+                  className="sr-only"
+                />
+                <div className={`block w-14 h-8 rounded-full transition-colors duration-200 ease-in-out ${
+                  formData.isTrial 
+                    ? `bg-${currentConfig.focusColor}-500` 
+                    : 'bg-gray-300 dark:bg-gray-600'
+                }`}>
+                  <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform duration-200 ease-in-out transform ${
+                    formData.isTrial ? 'translate-x-6' : 'translate-x-0'
+                  } shadow-md`}></div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Action Buttons */}

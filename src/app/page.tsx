@@ -32,8 +32,6 @@ export default function Dashboard() {
   
   const [filters, setFilters] = useState<DashboardFilters>({
     organizationId: user?.organizationId || '',
-    startDate: undefined,
-    endDate: undefined,
     groupIds: undefined,
     subjectIds: undefined,
     includeInactiveStudents: undefined,

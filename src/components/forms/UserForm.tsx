@@ -229,6 +229,36 @@ export const UserForm: React.FC<UserFormProps> = ({
             className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           />
         </div>
+
+        {/* Trial Student Toggle (for students) */}
+        {formData.role === 1 && (
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              На пробный урок
+            </label>
+            <div 
+              className="relative cursor-pointer"
+              onClick={() => setFormData(prev => ({ ...prev, isTrial: !prev.isTrial }))}
+            >
+              <input
+                type="checkbox"
+                name="isTrial"
+                checked={formData.isTrial}
+                onChange={(e) => setFormData(prev => ({ ...prev, isTrial: e.target.checked }))}
+                className="sr-only"
+              />
+              <div className={`block w-14 h-8 rounded-full transition-colors duration-200 ease-in-out ${
+                formData.isTrial 
+                  ? 'bg-emerald-500' 
+                  : 'bg-gray-300 dark:bg-gray-600'
+              }`}>
+                <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform duration-200 ease-in-out transform ${
+                  formData.isTrial ? 'translate-x-6' : 'translate-x-0'
+                } shadow-md`}></div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

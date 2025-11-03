@@ -15,8 +15,6 @@ export interface DashboardSummary {
 
 export interface DashboardFilters {
   organizationId: string;
-  startDate?: string;
-  endDate?: string;
   groupIds?: string[];
   subjectIds?: string[];
   includeInactiveStudents?: boolean;

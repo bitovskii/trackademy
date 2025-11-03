@@ -146,7 +146,14 @@ export const UsersTable: React.FC<UsersTableProps> = ({
           </thead>
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             {users.map((user, index) => (
-              <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+              <tr 
+                key={user.id} 
+                className={`transition-colors ${
+                  user.isTrial 
+                    ? 'bg-yellow-50 dark:bg-yellow-900/20 hover:bg-yellow-100 dark:hover:bg-yellow-900/30' 
+                    : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                }`}
+              >
                 {isColumnVisible('number') && (
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                     {(currentPage - 1) * itemsPerPage + index + 1}
@@ -161,8 +168,15 @@ export const UsersTable: React.FC<UsersTableProps> = ({
                         </div>
                       </div>
                       <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {user.name}
+                        <div className="flex items-center space-x-2">
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">
+                            {user.name}
+                          </div>
+                          {user.isTrial && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200">
+                              ПРОБНЫЙ
+                            </span>
+                          )}
                         </div>
                         <div className="text-sm text-gray-500 dark:text-gray-400">
                           @{user.login}
@@ -225,7 +239,14 @@ export const UsersTable: React.FC<UsersTableProps> = ({
       {/* Mobile Cards */}
       <div className="lg:hidden space-y-4 p-4">
         {users.map((user, index) => (
-          <div key={user.id} className="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 p-4 shadow-sm">
+          <div 
+            key={user.id} 
+            className={`rounded-lg border p-4 shadow-sm ${
+              user.isTrial 
+                ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800' 
+                : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600'
+            }`}
+          >
             <div className="flex items-start space-x-3">
               {isColumnVisible('number') && (
                 <div className="flex-shrink-0">
@@ -245,9 +266,16 @@ export const UsersTable: React.FC<UsersTableProps> = ({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   {isColumnVisible('user') && (
-                    <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                      {user.name}
-                    </h4>
+                    <div className="flex items-center space-x-2 min-w-0">
+                      <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                        {user.name}
+                      </h4>
+                      {user.isTrial && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200 flex-shrink-0">
+                          ПРОБНЫЙ
+                        </span>
+                      )}
+                    </div>
                   )}
                   {isColumnVisible('role') && (
                     <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getRoleBadgeClass(user.role)}`}>

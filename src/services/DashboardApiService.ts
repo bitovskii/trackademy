@@ -10,12 +10,6 @@ export class DashboardApiService {
     });
 
     // Добавляем опциональные параметры
-    if (filters.startDate) {
-      params.append('StartDate', filters.startDate);
-    }
-    if (filters.endDate) {
-      params.append('EndDate', filters.endDate);
-    }
     if (filters.groupIds && filters.groupIds.length > 0) {
       filters.groupIds.forEach(groupId => params.append('GroupIds', groupId));
     }

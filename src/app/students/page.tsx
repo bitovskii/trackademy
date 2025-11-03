@@ -42,7 +42,8 @@ export default function StudentsPage() {
     parentPhone: '',
     birthday: '',
     role: 1,
-    organizationId: ''
+    organizationId: '',
+    isTrial: false
   });
   
   // Toast уведомления для API операций
@@ -413,7 +414,8 @@ export default function StudentsPage() {
       parentPhone: editUser.parentPhone || '',
       birthday: editUser.birthday || '',
       role: editUser.role,
-      organizationId: editUser.organizationId || ''
+      organizationId: editUser.organizationId || '',
+      isTrial: editUser.isTrial || false
     });
   };
 
@@ -586,7 +588,8 @@ export default function StudentsPage() {
                 birthday: '',
                 role: user.role === 'Administrator' ? 2 : user.role === 'Owner' ? 4 : user.role === 'Teacher' ? 3 : 1,
                 organizationId: user.organizationId || '',
-                groups: []
+                groups: [],
+                isTrial: false
               } : undefined}
               onEdit={handleEdit}
               onDelete={handleDelete}
@@ -759,6 +762,7 @@ export default function StudentsPage() {
               )}
 
               {/* Birthday */}
+              {/* Birthday */}
               <div>
                 <label htmlFor="birthday" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Дата рождения
@@ -772,8 +776,52 @@ export default function StudentsPage() {
                 />
               </div>
 
-              {/* Password - только при создании */}
-              {userModal.mode === 'create' && (
+              {/* Password и Trial Student Toggle для студентов при создании */}
+              {userModal.mode === 'create' && formData.role === 1 && (
+                <>
+                  {/* Password - на всю ширину */}
+                  <div>
+                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Пароль *
+                    </label>
+                    <PasswordInput
+                      value={(formData.password as string) || ''}
+                      onChange={(value: string) => setFormData((prev: Record<string, unknown>) => ({ ...prev, password: value }))}
+                      required
+                    />
+                  </div>
+                  
+                  {/* Trial Student Toggle - отдельно с отступом */}
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      На пробный урок
+                    </label>
+                    <div 
+                      className="relative cursor-pointer"
+                      onClick={() => setFormData((prev: Record<string, unknown>) => ({ ...prev, isTrial: !(prev.isTrial as boolean) }))}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={(formData.isTrial as boolean) || false}
+                        onChange={(e) => setFormData((prev: Record<string, unknown>) => ({ ...prev, isTrial: e.target.checked }))}
+                        className="sr-only"
+                      />
+                      <div className={`block w-14 h-8 rounded-full transition-colors duration-200 ease-in-out ${
+                        (formData.isTrial as boolean) 
+                          ? 'bg-emerald-500' 
+                          : 'bg-gray-300 dark:bg-gray-600'
+                      }`}>
+                        <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform duration-200 ease-in-out transform ${
+                          (formData.isTrial as boolean) ? 'translate-x-6' : 'translate-x-0'
+                        } shadow-md`}></div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Password - для не студентов при создании */}
+              {userModal.mode === 'create' && formData.role !== 1 && (
                 <div>
                   <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Пароль *
@@ -783,6 +831,35 @@ export default function StudentsPage() {
                     onChange={(value: string) => setFormData((prev: Record<string, unknown>) => ({ ...prev, password: value }))}
                     required
                   />
+                </div>
+              )}
+
+              {/* Trial Student Toggle - только при редактировании студента */}
+              {userModal.mode === 'edit' && formData.role === 1 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    На пробный урок
+                  </label>
+                  <div 
+                    className="relative cursor-pointer"
+                    onClick={() => setFormData((prev: Record<string, unknown>) => ({ ...prev, isTrial: !(prev.isTrial as boolean) }))}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={(formData.isTrial as boolean) || false}
+                      onChange={(e) => setFormData((prev: Record<string, unknown>) => ({ ...prev, isTrial: e.target.checked }))}
+                      className="sr-only"
+                    />
+                    <div className={`block w-14 h-8 rounded-full transition-colors duration-200 ease-in-out ${
+                      (formData.isTrial as boolean) 
+                        ? 'bg-emerald-500' 
+                        : 'bg-gray-300 dark:bg-gray-600'
+                    }`}>
+                      <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform duration-200 ease-in-out transform ${
+                        (formData.isTrial as boolean) ? 'translate-x-6' : 'translate-x-0'
+                      } shadow-md`}></div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

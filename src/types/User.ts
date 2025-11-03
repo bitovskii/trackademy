@@ -10,6 +10,7 @@ export interface User {
   role: number;
   organizationId?: string;
   organizationName?: string;
+  isTrial: boolean;
 }
 
 export interface UserFormData {
@@ -23,4 +24,5 @@ export interface UserFormData {
   birthday?: string;
   role: number;
   organizationId?: string;
+  isTrial: boolean;
 }

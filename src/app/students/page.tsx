@@ -553,17 +553,26 @@ export default function StudentsPage() {
 
         {/* Content Card */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-          {/* Filters Section */}
+          {/* Filters Section - ВСЕГДА доступна */}
           <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
             <UserFilters
               onFilterChange={handleFilterChange}
               groups={groups}
-              isLoading={tableLoading}
+              isLoading={false} // Фильтры НИКОГДА не блокируются
             />
           </div>
 
           {/* Users Table */}
           <div className="overflow-hidden">
+            {/* Индикатор загрузки таблицы - НЕ блокирует фильтры */}
+            {tableLoading && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-800 px-6 py-2">
+                <div className="flex items-center space-x-2 text-sm text-blue-700 dark:text-blue-300">
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
+                  <span>Обновление данных...</span>
+                </div>
+              </div>
+            )}
             <UsersTable
               users={students}
               isLoading={tableLoading}

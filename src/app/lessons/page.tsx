@@ -15,10 +15,14 @@ import ListView from '@/components/calendar/ListView';
 import RangeCalendarView from '@/components/calendar/RangeCalendarView';
 import LessonDetailModal from '@/components/calendar/LessonDetailModal';
 import { PageHeaderWithStats } from '@/components/ui/PageHeaderWithStats';
+import { useApiToast } from '@/hooks/useApiToast';
 
 export default function LessonsPage() {
   const { user } = useAuth();
   const router = useRouter();
+
+  // Toast уведомления для API операций
+  const { createOperation, updateOperation, deleteOperation, loadOperation } = useApiToast();
 
   // State management
   const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -67,7 +71,10 @@ export default function LessonsPage() {
         organizationId: user.organizationId
       };
 
-      const response = await AuthenticatedApiService.post<{ items: Schedule[] }>('/Schedule/get-all-schedules', requestBody);
+      const response = await loadOperation(
+        () => AuthenticatedApiService.post<{ items: Schedule[] }>('/Schedule/get-all-schedules', requestBody),
+        'расписания'
+      );
       setSchedules(response.items);
     } catch (error) {
       console.error('Error loading schedules:', error);
@@ -103,7 +110,10 @@ export default function LessonsPage() {
         organizationId: user.organizationId
       };
 
-      const response = await AuthenticatedApiService.post<LessonsResponse>('/Lesson/by-schedule', requestBody);
+      const response = await loadOperation(
+        () => AuthenticatedApiService.post<LessonsResponse>('/Lesson/by-schedule', requestBody),
+        'уроки'
+      );
 
       setLessons(response.items);
     } catch (error) {

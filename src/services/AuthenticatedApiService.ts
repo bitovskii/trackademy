@@ -93,16 +93,33 @@ export class AuthenticatedApiService {
         
         // Try to get error details from response
         let errorMessage = `HTTP error! status: ${response.status}`;
+        let parsedError = null;
+        
         try {
           const errorData = await response.text();
           if (errorData) {
-            errorMessage += ` - ${errorData}`;
+            try {
+              parsedError = JSON.parse(errorData);
+              // Если есть структурированная ошибка с понятным сообщением
+              if (parsedError && parsedError.error) {
+                errorMessage = parsedError.error;
+              } else {
+                errorMessage += ` - ${errorData}`;
+              }
+            } catch (parseError) {
+              errorMessage += ` - ${errorData}`;
+            }
           }
         } catch (e) {
           // Ignore error parsing errors
         }
         
-        throw new Error(errorMessage);
+        // Создаем структурированную ошибку для лучшей обработки
+        const structuredError = new Error(errorMessage);
+        (structuredError as any).status = response.status;
+        (structuredError as any).parsedError = parsedError;
+        
+        throw structuredError;
       }
       
       const contentLength = response.headers.get('content-length');
@@ -114,7 +131,8 @@ export class AuthenticatedApiService {
       
       return await response.json();
     } catch (error) {
-      console.error(`API request failed for ${endpoint}:`, error);
+      // Не выводим в консоль ошибки, которые уже обработаны toast системой
+      // console.error(`API request failed for ${endpoint}:`, error);
       throw error;
     }
   }

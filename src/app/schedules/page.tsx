@@ -18,6 +18,7 @@ import { canManageUsers } from '../../types/Role';
 import { Group } from '../../types/Group';
 import { Subject } from '../../types/Subject';
 import { User } from '../../types/User';
+import { useApiToast } from '../../hooks/useApiToast';
 import { Room } from '../../types/Room';
 import { DeleteConfirmationModal } from '../../components/ui/DeleteConfirmationModal';
 import { DaysOfWeekDisplay } from '../../components/ui/DaysOfWeekDisplay';
@@ -68,6 +69,9 @@ export default function SchedulesPage() {
     roomId: '',
     organizationId: ''
   });
+  
+  // Toast уведомления для API операций
+  const { createOperation, updateOperation, deleteOperation, loadOperation } = useApiToast();
 
   const pageSize = 10;
 
@@ -85,11 +89,11 @@ export default function SchedulesPage() {
   ]);
 
   const loadSchedules = useCallback(async (page: number = currentPage, isTableOnly: boolean = true) => {
-    try {
-      if (isTableOnly) {
-        setTableLoading(true);
-      }
+    if (isTableOnly) {
+      setTableLoading(true);
+    }
 
+    try {
       const requestBody: ScheduleFilters = {
         ...filters,
         pageNumber: page,
@@ -104,7 +108,10 @@ export default function SchedulesPage() {
         }
       });
 
-      const data = await AuthenticatedApiService.post<SchedulesResponse>('/Schedule/get-all-schedules', requestBody);
+      const data = await loadOperation(
+        () => AuthenticatedApiService.post<SchedulesResponse>('/Schedule/get-all-schedules', requestBody),
+        'расписания'
+      );
       
       setSchedules(data.items);
       setTotalPages(data.totalPages);
@@ -294,58 +301,56 @@ export default function SchedulesPage() {
 
   // Handlers for Universal Modal save operations
   const handleSaveCreate = async (formData: Record<string, unknown>) => {
-    try {
-      const scheduleData: ScheduleFormData = {
-        daysOfWeek: formData.daysOfWeek ? (formData.daysOfWeek as string).split(',').map((day: string) => parseInt(day.trim())) : [],
-        startTime: formData.startTime as string,
-        endTime: formData.endTime as string,
-        effectiveFrom: formData.effectiveFrom as string,
-        effectiveTo: (formData.effectiveTo as string) || undefined,
-        groupId: formData.groupId as string,
-        teacherId: formData.teacherId as string,
-        roomId: formData.roomId as string,
-        organizationId: user?.organizationId || ''
-      };
-      
-      await AuthenticatedApiService.post('/Schedule/create-schedule', scheduleData);
-      await loadSchedules(currentPage, true);
-      scheduleModal.closeModal();
-    } catch (error) {
-      console.error('Error creating schedule:', error);
-      throw error;
-    }
+    const scheduleData: ScheduleFormData = {
+      daysOfWeek: formData.daysOfWeek ? (formData.daysOfWeek as string).split(',').map((day: string) => parseInt(day.trim())) : [],
+      startTime: formData.startTime as string,
+      endTime: formData.endTime as string,
+      effectiveFrom: formData.effectiveFrom as string,
+      effectiveTo: (formData.effectiveTo as string) || undefined,
+      groupId: formData.groupId as string,
+      teacherId: formData.teacherId as string,
+      roomId: formData.roomId as string,
+      organizationId: user?.organizationId || ''
+    };
+    
+    await createOperation(
+      () => AuthenticatedApiService.post('/Schedule/create-schedule', scheduleData),
+      'расписание'
+    );
+    
+    await loadSchedules(currentPage, true);
+    scheduleModal.closeModal();
   };
 
   const handleSaveEdit = async (formData: Record<string, unknown>) => {
-    try {
-      const updateData = {
-        daysOfWeek: formData.daysOfWeek ? (formData.daysOfWeek as string).split(',').map((day: string) => parseInt(day.trim())) : [],
-        startTime: formData.startTime as string,
-        endTime: formData.endTime as string,
-        effectiveFrom: formData.effectiveFrom as string,
-        effectiveTo: (formData.effectiveTo as string) || null,
-        groupId: formData.groupId as string,
-        teacherId: formData.teacherId as string,
-        roomId: formData.roomId as string
-      };
+    const updateData = {
+      daysOfWeek: formData.daysOfWeek ? (formData.daysOfWeek as string).split(',').map((day: string) => parseInt(day.trim())) : [],
+      startTime: formData.startTime as string,
+      endTime: formData.endTime as string,
+      effectiveFrom: formData.effectiveFrom as string,
+      effectiveTo: (formData.effectiveTo as string) || null,
+      groupId: formData.groupId as string,
+      teacherId: formData.teacherId as string,
+      roomId: formData.roomId as string
+    };
+    
+    if (scheduleModal.editData) {
+      // Find the schedule to get its ID
+      const scheduleToEdit = schedules.find(s => 
+        s.group.id === scheduleModal.editData?.groupId &&
+        s.teacher.id === scheduleModal.editData?.teacherId &&
+        s.room.id === scheduleModal.editData?.roomId
+      );
       
-      if (scheduleModal.editData) {
-        // Find the schedule to get its ID
-        const scheduleToEdit = schedules.find(s => 
-          s.group.id === scheduleModal.editData?.groupId &&
-          s.teacher.id === scheduleModal.editData?.teacherId &&
-          s.room.id === scheduleModal.editData?.roomId
+      if (scheduleToEdit) {
+        await updateOperation(
+          () => AuthenticatedApiService.put(`/Schedule/update-schedule/${scheduleToEdit.id}`, updateData),
+          'расписание'
         );
         
-        if (scheduleToEdit) {
-          await AuthenticatedApiService.put(`/Schedule/update-schedule/${scheduleToEdit.id}`, updateData);
-          await loadSchedules(currentPage, true);
-          scheduleModal.closeModal();
-        }
+        await loadSchedules(currentPage, true);
+        scheduleModal.closeModal();
       }
-    } catch (error) {
-      console.error('Error updating schedule:', error);
-      throw error;
     }
   };
 
@@ -360,14 +365,13 @@ export default function SchedulesPage() {
   const handleConfirmDelete = async () => {
     if (!deletingSchedule) return;
     
-    try {
-      await AuthenticatedApiService.delete(`/Schedule/${deletingSchedule.id}`);
-      await loadSchedules(currentPage, true);
-      handleCloseDeleteModal();
-    } catch (error) {
-      console.error('Error deleting schedule:', error);
-      throw error;
-    }
+    await deleteOperation(
+      () => AuthenticatedApiService.delete(`/Schedule/${deletingSchedule.id}`),
+      'расписание'
+    );
+    
+    await loadSchedules(currentPage, true);
+    handleCloseDeleteModal();
   };
 
   const handleCloseDeleteModal = () => {

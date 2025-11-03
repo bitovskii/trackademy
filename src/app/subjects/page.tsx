@@ -9,6 +9,7 @@ import { UniversalModal, useUniversalModal, SubjectForm, createSubjectValidator 
 import { DeleteConfirmationModal } from '../../components/ui/DeleteConfirmationModal';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import { useColumnVisibility, ColumnVisibilityControl } from '../../components/ui/ColumnVisibilityControl';
+import { useApiToast } from '../../hooks/useApiToast';
 import Link from 'next/link';
 
 interface SubjectsResponse {
@@ -37,6 +38,9 @@ export default function SubjectsPage() {
     description: ''
   });
 
+  // API Toast уведомления
+  const { createOperation, updateOperation, deleteOperation, loadOperation } = useApiToast();
+
   // Управление видимостью колонок
   const { columns, toggleColumn, isColumnVisible } = useColumnVisibility([
     { key: 'number', label: '№', required: false },
@@ -46,12 +50,12 @@ export default function SubjectsPage() {
   ]);
 
   const loadSubjects = useCallback(async (page: number = currentPage, isTableOnly: boolean = true) => {
+    if (isTableOnly) {
+      setTableLoading(true);
+    }
+    setError(null);
+    
     try {
-      if (isTableOnly) {
-        setTableLoading(true);
-      }
-      setError(null);
-      
       const organizationId = user?.organizationId || localStorage.getItem('userOrganizationId');
       
       if (!organizationId) {
@@ -65,7 +69,10 @@ export default function SubjectsPage() {
         organizationId: organizationId
       };
 
-      const data = await AuthenticatedApiService.post<SubjectsResponse>('/Subject/GetAllSubjects', requestBody);
+      const data = await loadOperation(
+        () => AuthenticatedApiService.post<SubjectsResponse>('/Subject/GetAllSubjects', requestBody),
+        'предметы'
+      );
       
       setSubjects(data.items);
       setTotalPages(data.totalPages);
@@ -126,24 +133,28 @@ export default function SubjectsPage() {
   };
 
   const handleSaveCreate = async (formData: SubjectFormData) => {
-    try {
-      const organizationId = user?.organizationId || localStorage.getItem('userOrganizationId');
-      
-      if (!organizationId) {
-        throw new Error('Не удается определить организацию пользователя');
-      }
-
-      const dataToSend = {
-        ...formData,
-        organizationId: organizationId,
-      };
-
-      await AuthenticatedApiService.post('/Subject/create', dataToSend);
-      await loadSubjects(currentPage, true); // Reload only the table
-    } catch (error) {
-      console.error('Error creating subject:', error);
-      throw error; // Re-throw to let the modal handle the error display
+    const organizationId = user?.organizationId || localStorage.getItem('userOrganizationId');
+    
+    if (!organizationId) {
+      throw new Error('Не удается определить организацию пользователя');
     }
+
+    const dataToSend = {
+      ...formData,
+      organizationId: organizationId,
+    };
+
+    const result = await createOperation(
+      () => AuthenticatedApiService.post('/Subject/create', dataToSend),
+      'Предмет'
+    );
+    
+    // Только если операция успешна - перезагружаем и закрываем модал
+    if (result.success) {
+      await loadSubjects(currentPage, true);
+      subjectModal.closeModal();
+    }
+    // Если ошибка - модал остается открытым, toast уже показан
   };
 
   const handleEdit = (id: string) => {
@@ -156,13 +167,17 @@ export default function SubjectsPage() {
   const handleSaveEdit = async (formData: SubjectFormData, subjectId?: string) => {
     if (!subjectId) return;
     
-    try {
-      await AuthenticatedApiService.put(`/Subject/${subjectId}`, formData);
-      await loadSubjects(currentPage, true); // Reload only the table
-    } catch (error) {
-      console.error('Error updating subject:', error);
-      throw error; // Re-throw to let the modal handle the error display
+    const result = await updateOperation(
+      () => AuthenticatedApiService.put(`/Subject/${subjectId}`, formData),
+      'Предмет'
+    );
+    
+    // Только если операция успешна - перезагружаем и закрываем модал
+    if (result.success) {
+      await loadSubjects(currentPage, true);
+      subjectModal.closeModal();
     }
+    // Если ошибка - модал остается открытым, toast уже показан
   };
 
   const handleDelete = (id: string) => {
@@ -176,14 +191,17 @@ export default function SubjectsPage() {
   const handleConfirmDelete = async () => {
     if (!deletingSubject) return;
     
-    try {
-      await AuthenticatedApiService.delete(`/Subject/${deletingSubject.id}`);
-      await loadSubjects(currentPage, true); // Reload only the table
+    const result = await deleteOperation(
+      () => AuthenticatedApiService.delete(`/Subject/${deletingSubject.id}`),
+      'Предмет'
+    );
+    
+    // Только если операция успешна - перезагружаем и закрываем модал
+    if (result.success) {
+      await loadSubjects(currentPage, true);
       handleCloseDeleteModal();
-    } catch (error) {
-      console.error('Error deleting subject:', error);
-      throw error; // Re-throw to let the modal handle the error display
     }
+    // Если ошибка - модал остается открытым, toast уже показан
   };
 
   const handleCloseDeleteModal = () => {

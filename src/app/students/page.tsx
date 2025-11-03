@@ -18,6 +18,7 @@ import { useColumnVisibility, ColumnVisibilityControl } from '../../components/u
 import { UserForm } from '../../components/forms/UserForm';
 import { PhoneInput } from '@/components/ui/PhoneInput';
 import { EmailInput } from '@/components/ui/EmailInput';
+import { useApiToast } from '../../hooks/useApiToast';
 import { PasswordInput } from '@/components/ui/PasswordInput';
 
 export default function StudentsPage() {
@@ -43,6 +44,9 @@ export default function StudentsPage() {
     role: 1,
     organizationId: ''
   });
+  
+  // Toast уведомления для API операций
+  const { createOperation, updateOperation, deleteOperation, loadOperation } = useApiToast();
 
   const [filters, setFilters] = useState<UserFiltersType>({
     search: '',
@@ -414,28 +418,22 @@ export default function StudentsPage() {
   };
 
   const handleSaveEdit = async (id: string, formData: UserFormData) => {
-    try {
-      console.log('Starting user update:', { id, formData, authToken: !!localStorage.getItem('authToken') });
-      
-      const result = await AuthenticatedApiService.updateUser(id, formData);
-      
-      console.log('Update result:', result);
-      
-      // Check if the update was successful
-      if (!result.success) {
-        throw new Error('Не удалось обновить пользователя. Попробуйте еще раз.');
-      }
-      
-  await loadStudents(currentPage, filters, true); // Reload only the table
-  setEditingUserId(null); // Очищаем ID после успешного обновления
-    } catch (error) {
-      console.error('Error updating user:', error);
-      console.log('Auth state after error:', { 
-        authToken: !!localStorage.getItem('authToken'),
-        user: !!localStorage.getItem('user')
-      });
-      throw error; // Re-throw to let the modal handle the error display
+    console.log('Starting user update:', { id, formData, authToken: !!localStorage.getItem('authToken') });
+    
+    const result = await updateOperation(
+      () => AuthenticatedApiService.updateUser(id, formData),
+      'пользователя'
+    );
+    
+    console.log('Update result:', result);
+    
+    // Check if the update was successful
+    if (!result.success) {
+      throw new Error('Не удалось обновить пользователя. Попробуйте еще раз.');
     }
+    
+    await loadStudents(currentPage, filters, true);
+    setEditingUserId(null);
   };
 
   const handleDelete = (user: User) => {
@@ -446,20 +444,18 @@ export default function StudentsPage() {
   const handleConfirmDelete = async () => {
     if (!deletingUser) return;
     
-    try {
-      const result = await AuthenticatedApiService.deleteUser(deletingUser.id);
-      
-      // Check if the deletion was successful
-      if (!result.success) {
-        throw new Error('Не удалось удалить пользователя. Попробуйте еще раз.');
-      }
-      
-      await loadStudents(currentPage, filters, true); // Reload only the table
-      handleCloseDeleteModal();
-    } catch (error) {
-      console.error('Error deleting user:', error);
-      throw error; // Re-throw to let the modal handle the error display
+    const result = await deleteOperation(
+      () => AuthenticatedApiService.deleteUser(deletingUser.id),
+      'пользователя'
+    );
+    
+    // Check if the deletion was successful
+    if (!result.success) {
+      throw new Error('Не удалось удалить пользователя. Попробуйте еще раз.');
     }
+    
+    await loadStudents(currentPage, filters, true);
+    handleCloseDeleteModal();
   };
 
   const handleCloseDeleteModal = () => {
@@ -474,28 +470,29 @@ export default function StudentsPage() {
 
   // Create user handlers
   const handleCreateUser = async (userData: UserFormData) => {
-    try {
-      const response = await fetch('https://trackademy.onrender.com/api/User/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-        },
-        body: JSON.stringify(userData),
-      });
+    await createOperation(
+      async () => {
+        const response = await fetch('https://trackademy.onrender.com/api/User/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          },
+          body: JSON.stringify(userData),
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Не удалось создать пользователя');
-      }
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Не удалось создать пользователя');
+        }
 
-      // Reload only the table to show the new user
-      await loadStudents(currentPage, filters, true);
-      userModal.closeModal();
-    } catch (error) {
-      console.error('Error creating user:', error);
-      throw error; // Re-throw to let the modal handle the error display
-    }
+        return response.json();
+      },
+      'пользователя'
+    );
+
+    await loadStudents(currentPage, filters, true);
+    userModal.closeModal();
   };
 
   if (error) {
@@ -533,12 +530,12 @@ export default function StudentsPage() {
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Modern Header with Gradient */}
         <PageHeaderWithStats
-          title="Студенты"
+          title="Пользователи"
           subtitle="Управление пользователями системы"
           icon={AcademicCapIcon}
           gradientFrom="emerald-500"
           gradientTo="lime-600"
-          actionLabel={user && canManageUsers(user.role) ? "Добавить студента" : undefined}
+          actionLabel={user && canManageUsers(user.role) ? "Добавить пользователя" : undefined}
           onAction={user && canManageUsers(user.role) ? () => userModal.openCreateModal() : undefined}
           extraActions={
             <ColumnVisibilityControl
@@ -548,7 +545,7 @@ export default function StudentsPage() {
             />
           }
           stats={[
-            { label: "Всего студентов", value: totalCount, color: "emerald" },
+            { label: "Всего пользователей", value: totalCount, color: "emerald" },
             { label: "На странице", value: students.length, color: "lime" },
             { label: "Страниц", value: totalPages, color: "green" }
           ]}
@@ -578,7 +575,7 @@ export default function StudentsPage() {
                 phone: '',
                 parentPhone: '',
                 birthday: '',
-                role: user.role === 'Administrator' ? 2 : user.role === 'Teacher' ? 3 : 1,
+                role: user.role === 'Administrator' ? 2 : user.role === 'Owner' ? 4 : user.role === 'Teacher' ? 3 : 1,
                 organizationId: user.organizationId || '',
                 groups: []
               } : undefined}
@@ -657,7 +654,7 @@ export default function StudentsPage() {
                     className="sr-only"
                   />
                   <span className={`text-sm font-medium ${formData.role === 1 ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-700 dark:text-gray-300'}`}>
-                    Студент
+                    Пользователь
                   </span>
                   {formData.role === 1 && <div className="absolute top-2 right-2 w-3 h-3 bg-emerald-500 rounded-full"></div>}
                 </label>

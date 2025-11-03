@@ -93,7 +93,8 @@ const UniversalModal = <T extends Record<string, unknown>>({
       }
       handleClose();
     } catch (error) {
-      console.error(`Error ${mode === 'create' ? 'creating' : 'updating'}:`, error);
+      // Ошибка уже обработана toast системой, не выводим в консоль
+      // console.error(`Error ${mode === 'create' ? 'creating' : 'updating'}:`, error);
     } finally {
       setIsSubmitting(false);
     }

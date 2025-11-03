@@ -9,6 +9,7 @@ import UniversalModal from '../../components/ui/UniversalModal';
 import { useUniversalModal } from '../../hooks/useUniversalModal';
 import { DeleteConfirmationModal } from '../../components/ui/DeleteConfirmationModal';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
+import { useApiToast } from '../../hooks/useApiToast';
 import Link from 'next/link';
 
 interface RoomsResponse {
@@ -37,15 +38,18 @@ export default function RoomsPage() {
     capacity: 0
   });
 
+  // API Toast уведомления
+  const { createOperation, updateOperation, deleteOperation, loadOperation } = useApiToast();
+
   const pageSize = 10;
 
   const loadRooms = useCallback(async (page: number = currentPage, isTableOnly: boolean = true) => {
+    if (isTableOnly) {
+      setTableLoading(true);
+    }
+    setError(null);
+    
     try {
-      if (isTableOnly) {
-        setTableLoading(true);
-      }
-      setError(null);
-      
       const organizationId = user?.organizationId || localStorage.getItem('userOrganizationId');
       
       if (!organizationId) {
@@ -59,7 +63,10 @@ export default function RoomsPage() {
         organizationId: organizationId
       };
 
-      const data = await AuthenticatedApiService.post<RoomsResponse>('/Room/GetAllRooms', requestBody);
+      const data = await loadOperation(
+        () => AuthenticatedApiService.post<RoomsResponse>('/Room/GetAllRooms', requestBody),
+        'кабинеты'
+      );
       
       setRooms(data.items);
       setTotalPages(data.totalPages);
@@ -122,25 +129,24 @@ export default function RoomsPage() {
   };
 
   const handleSaveCreate = async (formData: RoomFormData) => {
-    try {
-      const organizationId = user?.organizationId || localStorage.getItem('userOrganizationId');
-      
-      if (!organizationId) {
-        throw new Error('Не удается определить организацию пользователя');
-      }
-
-      const dataToSend = {
-        ...formData,
-        organizationId: organizationId,
-      };
-
-      await AuthenticatedApiService.post('/Room/create', dataToSend);
-      await loadRooms(currentPage, true); // Reload only the table
-      roomModal.closeModal();
-    } catch (error) {
-      console.error('Error creating room:', error);
-      throw error; // Re-throw to let the modal handle the error display
+    const organizationId = user?.organizationId || localStorage.getItem('userOrganizationId');
+    
+    if (!organizationId) {
+      throw new Error('Не удается определить организацию пользователя');
     }
+
+    const dataToSend = {
+      ...formData,
+      organizationId: organizationId,
+    };
+
+    await createOperation(
+      () => AuthenticatedApiService.post('/Room/create', dataToSend),
+      'кабинет'
+    );
+    
+    await loadRooms(currentPage, true);
+    roomModal.closeModal();
   };
 
   const handleEdit = (id: string) => {
@@ -155,18 +161,18 @@ export default function RoomsPage() {
   };
 
   const handleSaveEdit = async (formData: RoomFormData) => {
-    try {
-      if (!editingRoomId) {
-        throw new Error('ID кабинета не найден');
-      }
-      await AuthenticatedApiService.put(`/Room/${editingRoomId}`, formData);
-      await loadRooms(currentPage, true); // Reload only the table
-      setEditingRoomId(null);
-      roomModal.closeModal();
-    } catch (error) {
-      console.error('Error updating room:', error);
-      throw error; // Re-throw to let the modal handle the error display
+    if (!editingRoomId) {
+      throw new Error('ID кабинета не найден');
     }
+    
+    await updateOperation(
+      () => AuthenticatedApiService.put(`/Room/${editingRoomId}`, formData),
+      'кабинет'
+    );
+    
+    await loadRooms(currentPage, true);
+    setEditingRoomId(null);
+    roomModal.closeModal();
   };
 
   const handleDelete = (id: string) => {
@@ -180,14 +186,13 @@ export default function RoomsPage() {
   const handleConfirmDelete = async () => {
     if (!deletingRoom) return;
     
-    try {
-      await AuthenticatedApiService.delete(`/Room/${deletingRoom.id}`);
-      await loadRooms(currentPage, true); // Reload only the table
-      handleCloseDeleteModal();
-    } catch (error) {
-      console.error('Error deleting room:', error);
-      throw error; // Re-throw to let the modal handle the error display
-    }
+    await deleteOperation(
+      () => AuthenticatedApiService.delete(`/Room/${deletingRoom.id}`),
+      'кабинет'
+    );
+    
+    await loadRooms(currentPage, true);
+    handleCloseDeleteModal();
   };
 
   const handleCloseDeleteModal = () => {

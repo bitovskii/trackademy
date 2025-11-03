@@ -7,10 +7,15 @@ import { ClipboardDocumentCheckIcon } from '@heroicons/react/24/outline';
 import { PageHeaderWithStats } from '@/components/ui/PageHeaderWithStats';
 import { attendanceApi } from '@/services/AttendanceApiService';
 import { AttendanceRecord, AttendanceFilters, AttendanceStatus, getAttendanceStatusText, getAttendanceStatusColor, getAttendanceStatusIcon } from '@/types/Attendance';
+import { useApiToast } from '@/hooks/useApiToast';
 
 export default function AttendancePage() {
   const { user } = useAuth();
   const router = useRouter();
+  
+  // Toast уведомления для API операций
+  const { createOperation, updateOperation, deleteOperation, loadOperation } = useApiToast();
+  
   const [loading, setLoading] = useState(false);
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -40,10 +45,13 @@ export default function AttendancePage() {
 
     setLoading(true);
     try {
-      const response = await attendanceApi.getAllAttendances({
-        ...filters,
-        organizationId: user.organizationId
-      });
+      const response = await loadOperation(
+        () => attendanceApi.getAllAttendances({
+          ...filters,
+          organizationId: user.organizationId!
+        }),
+        'данные посещаемости'
+      );
       
       setAttendanceRecords(response.items);
       setTotalCount(response.totalCount);

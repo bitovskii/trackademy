@@ -11,6 +11,7 @@ import { GroupFormUniversal } from '../../components/forms/GroupFormUniversal';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import { useColumnVisibility, ColumnVisibilityControl } from '../../components/ui/ColumnVisibilityControl';
+import { useApiToast } from '../../hooks/useApiToast';
 
 export default function GroupsPage() {
   const { isAuthenticated, user } = useAuth();
@@ -34,6 +35,10 @@ export default function GroupsPage() {
     studentIds: [] as string[],
     organizationId: ''
   });
+  
+  // Toast уведомления для API операций
+  const { createOperation, updateOperation, deleteOperation, loadOperation } = useApiToast();
+  
   const pageSize = 10;
 
   // Управление видимостью колонок
@@ -48,12 +53,12 @@ export default function GroupsPage() {
   ]);
 
   const loadGroups = useCallback(async (page: number = currentPage, isTableOnly: boolean = true) => {
+    if (isTableOnly) {
+      setTableLoading(true);
+    }
+    setError(null);
+    
     try {
-      if (isTableOnly) {
-        setTableLoading(true);
-      }
-      setError(null);
-      
       const organizationId = user?.organizationId || localStorage.getItem('userOrganizationId');
       
       if (!organizationId) {
@@ -67,7 +72,10 @@ export default function GroupsPage() {
         organizationId: organizationId
       };
 
-      const response = await AuthenticatedApiService.post<GroupsResponse>('/Group/get-groups', requestBody);
+      const response = await loadOperation(
+        () => AuthenticatedApiService.post<GroupsResponse>('/Group/get-groups', requestBody),
+        'группы'
+      );
       
       if (response && response.items) {
         setGroups(response.items);
@@ -134,54 +142,52 @@ export default function GroupsPage() {
   };
 
   const handleCreateGroup = async (formData: GroupFormData) => {
-    try {
-      const organizationId = user?.organizationId || localStorage.getItem('userOrganizationId');
-      
-      if (!organizationId) {
-        throw new Error('Не удается определить организацию пользователя');
-      }
-
-      const dataToSend = {
-        ...formData,
-        organizationId: organizationId,
-      };
-
-      await AuthenticatedApiService.post('/Group/create-group', dataToSend);
-      await loadGroups(currentPage, true);
-      groupModal.closeModal();
-    } catch (error) {
-      console.error('Error creating group:', error);
-      throw error;
+    const organizationId = user?.organizationId || localStorage.getItem('userOrganizationId');
+    
+    if (!organizationId) {
+      throw new Error('Не удается определить организацию пользователя');
     }
+
+    const dataToSend = {
+      ...formData,
+      organizationId: organizationId,
+    };
+
+    await createOperation(
+      () => AuthenticatedApiService.post('/Group/create-group', dataToSend),
+      'группу'
+    );
+    
+    await loadGroups(currentPage, true);
+    groupModal.closeModal();
   };
 
   const handleEditGroup = async (formData: GroupFormData) => {
-    try {
-      if (!editingGroupId) {
-        throw new Error('ID группы не найден');
-      }
-      await AuthenticatedApiService.put(`/Group/${editingGroupId}`, formData);
-      await loadGroups(currentPage, true);
-      setEditingGroupId(null);
-      groupModal.closeModal();
-    } catch (error) {
-      console.error('Error updating group:', error);
-      throw error;
+    if (!editingGroupId) {
+      throw new Error('ID группы не найден');
     }
+    
+    await updateOperation(
+      () => AuthenticatedApiService.put(`/Group/${editingGroupId}`, formData),
+      'группу'
+    );
+    
+    await loadGroups(currentPage, true);
+    setEditingGroupId(null);
+    groupModal.closeModal();
   };
 
   const handleDeleteGroup = async () => {
     if (!deletingGroup) return;
     
-    try {
-      await AuthenticatedApiService.delete(`/Group/${deletingGroup.id}`);
-      await loadGroups(currentPage, true);
-      setIsDeleteModalOpen(false);
-      setDeletingGroup(null);
-    } catch (error) {
-      console.error('Error deleting group:', error);
-      throw error;
-    }
+    await deleteOperation(
+      () => AuthenticatedApiService.delete(`/Group/${deletingGroup.id}`),
+      'группу'
+    );
+    
+    await loadGroups(currentPage, true);
+    setIsDeleteModalOpen(false);
+    setDeletingGroup(null);
   };
 
   const renderPagination = () => {

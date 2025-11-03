@@ -13,6 +13,7 @@ import { DeleteConfirmationModal } from '../../components/ui/DeleteConfirmationM
 import { PhoneInput } from '../../components/ui/PhoneInput';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import OwnerProtectedRoute from '../../components/OwnerProtectedRoute';
+import { useApiToast } from '../../hooks/useApiToast';
 
 function OrganizationsPage() {
   const { isAuthenticated } = useAuth();
@@ -29,6 +30,9 @@ function OrganizationsPage() {
     phone: '',
     address: ''
   });
+  
+  // Toast уведомления для API операций
+  const { createOperation, updateOperation, deleteOperation, loadOperation } = useApiToast();
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -64,10 +68,14 @@ function OrganizationsPage() {
   }
 
   const loadOrganizations = async () => {
+    setLoading(true);
+    setError(null);
+    
     try {
-      setLoading(true);
-      setError(null);
-      const data = await AuthenticatedApiService.getOrganizations();
+      const data = await loadOperation(
+        () => AuthenticatedApiService.getOrganizations(),
+        'организации'
+      );
       setOrganizations(data);
     } catch (err) {
       setError('Не удалось загрузить организации. Попробуйте еще раз.');
@@ -93,8 +101,13 @@ function OrganizationsPage() {
     if (!editingOrganizationId) {
       throw new Error('ID организации не найден');
     }
-    await AuthenticatedApiService.updateOrganization(editingOrganizationId.toString(), formData);
-    await loadOrganizations(); // Reload the list to show updated data
+    
+    await updateOperation(
+      () => AuthenticatedApiService.updateOrganization(editingOrganizationId.toString(), formData),
+      'организацию'
+    );
+    
+    await loadOrganizations();
     setEditingOrganizationId(null);
     organizationModal.closeModal();
   };
@@ -113,21 +126,25 @@ function OrganizationsPage() {
   };
 
   const handleSaveCreate = async (formData: OrganizationFormData) => {
-    await AuthenticatedApiService.createOrganization(formData);
-    await loadOrganizations(); // Reload the list to show new data
+    await createOperation(
+      () => AuthenticatedApiService.createOrganization(formData),
+      'организацию'
+    );
+    
+    await loadOrganizations();
     organizationModal.closeModal();
   };
 
   const handleConfirmDelete = async () => {
     if (!deletingOrganization) return;
     
-    try {
-      await AuthenticatedApiService.deleteOrganization(deletingOrganization.id.toString());
-      await loadOrganizations(); // Reload the list to show updated data
-      handleCloseDeleteModal();
-    } catch (error) {
-      console.error('Error deleting organization:', error);
-    }
+    await deleteOperation(
+      () => AuthenticatedApiService.deleteOrganization(deletingOrganization.id.toString()),
+      'организацию'
+    );
+    
+    await loadOrganizations();
+    handleCloseDeleteModal();
   };
 
   const handleCloseDeleteModal = () => {

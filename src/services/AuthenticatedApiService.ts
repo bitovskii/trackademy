@@ -33,6 +33,11 @@ interface RoomsResponse {
   hasPreviousPage: boolean;
 }
 
+interface StructuredError extends Error {
+  status?: number;
+  parsedError?: unknown;
+}
+
 export class AuthenticatedApiService {
   private static getAuthToken(): string | null {
     return localStorage.getItem('authToken');
@@ -115,9 +120,9 @@ export class AuthenticatedApiService {
         }
         
         // Создаем структурированную ошибку для лучшей обработки
-        const structuredError = new Error(errorMessage);
-        (structuredError as any).status = response.status;
-        (structuredError as any).parsedError = parsedError;
+  const structuredError = new Error(errorMessage) as StructuredError;
+  structuredError.status = response.status;
+  structuredError.parsedError = parsedError;
         
         throw structuredError;
       }

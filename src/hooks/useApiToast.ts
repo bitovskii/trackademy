@@ -29,29 +29,36 @@ export const useApiToast = () => {
       }
       
       return { success: true, data: result };
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (shouldShowError) {
         // Извлекаем сообщение об ошибке из API ответа
         let message = errorMessage || 'Произошла ошибка';
-        
+
+        // Уточнённая типизация для возможных форм ошибок
+        const apiError = error as {
+          parsedError?: { error?: string };
+          response?: { data?: { error?: string; message?: string } };
+          message?: string;
+        };
+
         // Попробуем извлечь понятное сообщение из разных форматов ошибки
-        if (error?.parsedError?.error) {
+        if (apiError?.parsedError?.error) {
           // Структурированная ошибка из нашего API сервиса
-          message = error.parsedError.error;
-        } else if (error?.response?.data?.error) {
+          message = apiError.parsedError.error!;
+        } else if (apiError?.response?.data?.error) {
           // Axios формат
-          message = error.response.data.error;
-        } else if (error?.response?.data?.message) {
+          message = apiError.response.data.error!;
+        } else if (apiError?.response?.data?.message) {
           // Альтернативный Axios формат
-          message = error.response.data.message;
-        } else if (error?.message && !error.message.startsWith('HTTP error!')) {
+          message = apiError.response.data.message!;
+        } else if (apiError?.message && !apiError.message.startsWith('HTTP error!')) {
           // Простое сообщение об ошибке (но не техническое HTTP сообщение)
-          message = error.message;
+          message = apiError.message;
         }
-        
+
         showError(message);
       }
-      
+
       return { success: false };
     }
   };

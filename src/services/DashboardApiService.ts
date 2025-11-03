@@ -38,7 +38,7 @@ export class DashboardApiService {
       };
       
       const response = await AuthenticatedApiService.post<{
-        items: Array<{ id: string; name: string; [key: string]: any }>;
+        items: Array<{ id: string; name: string; [key: string]: unknown }>;
         totalCount: number;
         pageNumber: number;
         pageSize: number;
@@ -70,7 +70,7 @@ export class DashboardApiService {
       };
       
       const response = await AuthenticatedApiService.post<{
-        items: Array<{ id: string; name: string; [key: string]: any }>;
+        items: Array<{ id: string; name: string; [key: string]: unknown }>;
         totalCount: number;
         pageNumber: number;
         pageSize: number;

@@ -1,0 +1,339 @@
+'use client';
+
+import React, { useState, useRef, useEffect } from 'react';
+import { CalendarIcon, XMarkIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+
+interface DateRangePickerProps {
+  startDate?: string;
+  endDate?: string;
+  onDateChange: (startDate?: string, endDate?: string) => void;
+  placeholder?: string;
+  disabled?: boolean;
+}
+
+export const DateRangePicker: React.FC<DateRangePickerProps> = ({
+  startDate,
+  endDate,
+  onDateChange,
+  placeholder = "Выберите период",
+  disabled = false
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectingStart, setSelectingStart] = useState(true);
+  const [hoverDate, setHoverDate] = useState<Date | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  const getDisplayText = () => {
+    if (startDate && endDate) {
+      return `${formatDate(startDate)} - ${formatDate(endDate)}`;
+    }
+    if (startDate) {
+      return `С ${formatDate(startDate)}`;
+    }
+    if (endDate) {
+      return `До ${formatDate(endDate)}`;
+    }
+    return placeholder;
+  };
+
+  const clearDates = () => {
+    onDateChange(undefined, undefined);
+    setSelectingStart(true);
+  };
+
+  const handleDateClick = (date: Date) => {
+    const dateString = date.toISOString().split('T')[0];
+    
+    if (selectingStart || !startDate) {
+      onDateChange(dateString, undefined);
+      setSelectingStart(false);
+    } else {
+      const startDateTime = new Date(startDate).getTime();
+      const selectedDateTime = date.getTime();
+      
+      if (selectedDateTime < startDateTime) {
+        // If selected date is before start date, make it the new start date
+        onDateChange(dateString, startDate);
+      } else {
+        // Normal case: set end date
+        onDateChange(startDate, dateString);
+        setIsOpen(false);
+        setSelectingStart(true);
+      }
+    }
+  };
+
+  const isDateInRange = (date: Date) => {
+    if (!startDate) return false;
+    
+    const dateTime = date.getTime();
+    const startTime = new Date(startDate).getTime();
+    
+    if (!endDate && hoverDate && !selectingStart) {
+      const hoverTime = hoverDate.getTime();
+      return dateTime >= Math.min(startTime, hoverTime) && dateTime <= Math.max(startTime, hoverTime);
+    }
+    
+    if (endDate) {
+      const endTime = new Date(endDate).getTime();
+      return dateTime >= startTime && dateTime <= endTime;
+    }
+    
+    return false;
+  };
+
+  const isDateSelected = (date: Date) => {
+    const dateString = date.toISOString().split('T')[0];
+    return dateString === startDate || dateString === endDate;
+  };
+
+  const generateCalendarDays = () => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDate = new Date(firstDay);
+    
+    // Начинаем с понедельника
+    const startDayOfWeek = (firstDay.getDay() + 6) % 7;
+    startDate.setDate(firstDay.getDate() - startDayOfWeek);
+    
+    const days = [];
+    for (let i = 0; i < 42; i++) {
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + i);
+      days.push(date);
+    }
+    
+    return days;
+  };
+
+  const goToPreviousMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
+  };
+
+  const goToNextMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
+  };
+
+  const monthNames = [
+    'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+  ];
+
+  const weekDays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      {/* Input Field */}
+      <button
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        disabled={disabled}
+        className={`w-full flex items-center justify-between px-4 py-3 border border-gray-300 dark:border-gray-600 
+                   rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white
+                   focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                   disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200
+                   hover:border-gray-400 dark:hover:border-gray-500 ${isOpen ? 'ring-2 ring-blue-500 border-blue-500' : ''}`}
+      >
+        <div className="flex items-center space-x-3">
+          <CalendarIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+          <span className={`${(!startDate && !endDate) ? 'text-gray-500 dark:text-gray-400' : ''}`}>
+            {getDisplayText()}
+          </span>
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          {(startDate || endDate) && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                clearDates();
+              }}
+              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+            >
+              <XMarkIcon className="h-4 w-4 text-gray-400" />
+            </button>
+          )}
+        </div>
+      </button>
+
+      {/* Calendar Dropdown */}
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 
+                       rounded-xl shadow-xl z-50 p-4 min-w-[320px]">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={goToPreviousMonth}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            >
+              <ChevronLeftIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+            </button>
+            
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
+            </h3>
+            
+            <button
+              onClick={goToNextMonth}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            >
+              <ChevronRightIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+            </button>
+          </div>
+
+          {/* Selection Info */}
+          <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+            {selectingStart ? 'Выберите дату начала' : 'Выберите дату окончания'}
+          </div>
+
+          {/* Week Days */}
+          <div className="grid grid-cols-7 gap-1 mb-2">
+            {weekDays.map(day => (
+              <div key={day} className="text-center text-sm font-medium text-gray-600 dark:text-gray-400 py-2">
+                {day}
+              </div>
+            ))}
+          </div>
+
+          {/* Calendar Days */}
+          <div className="grid grid-cols-7 gap-1">
+            {generateCalendarDays().map((date, index) => {
+              const isCurrentMonth = date.getMonth() === currentMonth.getMonth();
+              const isToday = date.toDateString() === new Date().toDateString();
+              const isSelected = isDateSelected(date);
+              const isInRange = isDateInRange(date);
+              const isPast = date < new Date(new Date().setHours(0, 0, 0, 0));
+
+              return (
+                <button
+                  key={index}
+                  onClick={() => handleDateClick(date)}
+                  onMouseEnter={() => setHoverDate(date)}
+                  onMouseLeave={() => setHoverDate(null)}
+                  className={`
+                    relative h-10 w-10 text-sm rounded-lg transition-all duration-200 hover:scale-105
+                    ${isCurrentMonth 
+                      ? isSelected 
+                        ? 'bg-blue-600 text-white font-bold shadow-lg' 
+                        : isInRange
+                          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                          : isToday
+                            ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-semibold border border-blue-300'
+                            : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
+                      : 'text-gray-400 dark:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800'
+                    }
+                    ${isPast && isCurrentMonth ? 'opacity-60' : ''}
+                  `}
+                >
+                  {date.getDate()}
+                  {isToday && (
+                    <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-blue-600 rounded-full" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Quick Actions */}
+          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              <button
+                onClick={() => {
+                  const today = new Date().toISOString().split('T')[0];
+                  onDateChange(today, today);
+                  setIsOpen(false);
+                  setSelectingStart(true);
+                }}
+                className="px-3 py-2 text-sm bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 
+                         rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+              >
+                Сегодня
+              </button>
+              
+              <button
+                onClick={() => {
+                  const today = new Date();
+                  const weekAgo = new Date(today);
+                  weekAgo.setDate(today.getDate() - 7);
+                  onDateChange(weekAgo.toISOString().split('T')[0], today.toISOString().split('T')[0]);
+                  setIsOpen(false);
+                  setSelectingStart(true);
+                }}
+                className="px-3 py-2 text-sm bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 
+                         rounded-lg hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors"
+              >
+                7 дней
+              </button>
+              
+              <button
+                onClick={() => {
+                  const today = new Date();
+                  const monthAgo = new Date(today);
+                  monthAgo.setMonth(today.getMonth() - 1);
+                  onDateChange(monthAgo.toISOString().split('T')[0], today.toISOString().split('T')[0]);
+                  setIsOpen(false);
+                  setSelectingStart(true);
+                }}
+                className="px-3 py-2 text-sm bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 
+                         rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-colors"
+              >
+                Месяц
+              </button>
+              
+              <button
+                onClick={() => {
+                  const today = new Date();
+                  const yearStart = new Date(today.getFullYear(), 0, 1);
+                  onDateChange(yearStart.toISOString().split('T')[0], today.toISOString().split('T')[0]);
+                  setIsOpen(false);
+                  setSelectingStart(true);
+                }}
+                className="px-3 py-2 text-sm bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 
+                         rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/40 transition-colors"
+              >
+                Год
+              </button>
+            </div>
+            
+            <div className="flex justify-center">
+              <button
+                onClick={() => {
+                  clearDates();
+                  setIsOpen(false);
+                  setSelectingStart(true);
+                }}
+                className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 
+                         px-4 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                Очистить
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

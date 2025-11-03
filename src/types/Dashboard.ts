@@ -22,3 +22,13 @@ export interface DashboardFilters {
   includeInactiveStudents?: boolean;
   lowPerformanceThreshold?: number;
 }
+
+export interface DashboardStats {
+  label: string;
+  value: number | string;
+  change?: number;
+  changeType?: 'increase' | 'decrease' | 'neutral';
+  icon: React.ComponentType<{ className?: string }>;
+  color: 'blue' | 'green' | 'yellow' | 'red' | 'purple' | 'indigo' | 'emerald' | 'orange';
+  description?: string;
+}

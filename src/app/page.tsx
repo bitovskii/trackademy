@@ -1,200 +1,254 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { AcademicCapIcon, BuildingOfficeIcon, HomeModernIcon, BookOpenIcon, UserGroupIcon, ChartBarIcon } from '@heroicons/react/24/outline';
+import { useState, useEffect, useCallback } from 'react';
+import { 
+  AcademicCapIcon, 
+  UserGroupIcon, 
+  BookOpenIcon, 
+  CalendarDaysIcon,
+  ChartBarIcon,
+  ExclamationTriangleIcon,
+  CurrencyDollarIcon,
+  ClockIcon
+} from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
+import { useApiToast } from '../hooks/useApiToast';
+import { DashboardApiService } from '../services/DashboardApiService';
+import { DashboardSummary, DashboardFilters, DashboardStats } from '../types/Dashboard';
+import { StatsCard } from '../components/dashboard/StatsCard';
+import { DashboardFiltersComponent } from '../components/dashboard/DashboardFilters';
+import { PageHeaderWithStats } from '../components/ui/PageHeaderWithStats';
 import Link from 'next/link';
 
-export default function Home() {
+export default function Dashboard() {
   const { isAuthenticated, user } = useAuth();
-  const [isVisible, setIsVisible] = useState(false);
+  const { loadOperation } = useApiToast();
+  
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [groups, setGroups] = useState<Array<{ id: string; name: string }>>([]);
+  const [subjects, setSubjects] = useState<Array<{ id: string; name: string }>>([]);
+  
+  const [filters, setFilters] = useState<DashboardFilters>({
+    organizationId: user?.organizationId || '',
+    startDate: undefined,
+    endDate: undefined,
+    groupIds: undefined,
+    subjectIds: undefined,
+    includeInactiveStudents: undefined,
+    lowPerformanceThreshold: undefined
+  });
+
+  // Загрузка данных дашборда
+  const loadDashboardData = useCallback(async () => {
+    if (!isAuthenticated || !user?.organizationId) {
+      return;
+    }
+
+    const currentFilters = {
+      ...filters,
+      organizationId: user.organizationId
+    };
+
+    setLoading(true);
+    try {
+      const result = await DashboardApiService.getSummary(currentFilters);
+      setSummary(result);
+      setError(null);
+    } catch (err) {
+      console.error('Error loading dashboard data:', err);
+      setError(err instanceof Error ? err.message : 'Ошибка загрузки данных');
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated, user?.organizationId, filters]);
+
+  // Загрузка справочников
+  const loadReferenceData = useCallback(async () => {
+    if (!user?.organizationId) return;
+
+    try {
+      const [groupsData, subjectsData] = await Promise.all([
+        DashboardApiService.getGroups(user.organizationId),
+        DashboardApiService.getSubjects(user.organizationId)
+      ]);
+      
+      setGroups(groupsData);
+      setSubjects(subjectsData);
+    } catch (error) {
+      console.warn('Failed to load reference data:', error);
+    }
+  }, [user?.organizationId]);
 
   useEffect(() => {
-    setIsVisible(true);
-  }, []);
-
-  const features = [
-    {
-      icon: BuildingOfficeIcon,
-      title: 'Управление организациями',
-      description: 'Создавайте и управляйте образовательными организациями',
-      href: '/organizations',
-      color: 'from-sky-500 to-blue-600',
-      delay: '0.1s'
-    },
-    {
-      icon: HomeModernIcon,
-      title: 'Кабинеты и аудитории',
-      description: 'Организуйте пространство для эффективного обучения',
-      href: '/rooms',
-      color: 'from-blue-500 to-purple-500',
-      delay: '0.2s'
-    },
-    {
-      icon: BookOpenIcon,
-      title: 'Предметы и курсы',
-      description: 'Структурируйте учебные программы и дисциплины',
-      href: '/subjects',
-      color: 'from-purple-500 to-violet-500',
-      delay: '0.3s'
-    },
-    {
-      icon: UserGroupIcon,
-      title: 'Студенты и преподаватели',
-      description: 'Управляйте участниками образовательного процесса',
-      href: '/students',
-      color: 'from-violet-500 to-cyan-500',
-      delay: '0.4s'
+    if (isAuthenticated && user?.organizationId) {
+      setFilters(prev => ({ ...prev, organizationId: user.organizationId || '' }));
+      loadDashboardData();
+      loadReferenceData();
     }
-  ];
+  }, [isAuthenticated, user?.organizationId]);
 
-  const stats = [
-    { label: 'Активных организаций', value: '25+', icon: BuildingOfficeIcon },
-    { label: 'Учебных кабинетов', value: '150+', icon: HomeModernIcon },
-    { label: 'Предметов', value: '80+', icon: BookOpenIcon },
-    { label: 'Пользователей', value: '500+', icon: UserGroupIcon }
-  ];
+  useEffect(() => {
+    loadDashboardData();
+  }, [filters]);
 
-  return (
-    <div className="min-h-screen relative overflow-hidden bg-gray-50 pt-[84px]">
-      
-      {/* Background decoration */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-10 -right-10 w-64 h-64 rounded-full opacity-20 animate-float bg-gradient-to-br from-blue-500 to-purple-600"></div>
-        <div className="absolute -bottom-10 -left-10 w-48 h-48 rounded-full opacity-15 animate-float bg-gradient-to-br from-blue-500 to-purple-600"></div>
-      </div>
+  // Подготовка статистики
+  const stats: DashboardStats[] = summary ? [
+    {
+      label: 'Всего студентов',
+      value: summary.totalStudents,
+      icon: AcademicCapIcon,
+      color: 'blue',
+      description: `Активных: ${summary.activeStudents}`
+    },
+    {
+      label: 'Группы',
+      value: summary.totalGroups,
+      icon: UserGroupIcon,
+      color: 'green',
+      description: `Активных: ${summary.activeGroups}`
+    },
+    {
+      label: 'Уроки сегодня',
+      value: summary.lessonsToday,
+      icon: CalendarDaysIcon,
+      color: 'purple',
+      description: `Завершено: ${summary.completedLessonsToday}`
+    },
+    {
+      label: 'Посещаемость',
+      value: `${summary.averageAttendanceRate}%`,
+      icon: ChartBarIcon,
+      color: summary.averageAttendanceRate >= 80 ? 'green' : summary.averageAttendanceRate >= 60 ? 'yellow' : 'red'
+    },
+    {
+      label: 'Неоплаченные',
+      value: summary.unpaidStudentsCount,
+      icon: CurrencyDollarIcon,
+      color: summary.unpaidStudentsCount > 0 ? 'red' : 'green',
+      description: `Общий долг: ${summary.totalDebt}₸`
+    },
+    {
+      label: 'Пробный период',
+      value: summary.trialStudentsCount,
+      icon: ClockIcon,
+      color: 'orange'
+    },
+    {
+      label: 'Проблемные группы',
+      value: summary.lowPerformanceGroupsCount,
+      icon: ExclamationTriangleIcon,
+      color: summary.lowPerformanceGroupsCount > 0 ? 'red' : 'green'
+    }
+  ] : [];
 
-      {/* Hero Section */}
-      <section className="relative z-10 flex flex-col items-center justify-center min-h-[calc(100vh-84px)] px-4 sm:px-6 lg:px-8">
-        <div className={`text-center max-w-4xl transition-all duration-1000 ${isVisible ? 'animate-slide-in-up' : 'opacity-0'}`}>
-          {/* Logo/Icon */}
-          <div className="mb-8 flex justify-center">
-            <div className="relative">
-              <div className="w-20 h-20 rounded-2xl flex items-center justify-center shadow-2xl hover-lift bg-gradient-to-br from-blue-500 to-purple-600">
-                <AcademicCapIcon className="w-10 h-10 text-white" />
-              </div>
-            </div>
-          </div>
-
-          {/* Heading */}
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-            <span className="gradient-text">TrackAcademy</span>
-          </h1>
-          
-          <p className="text-xl md:text-2xl mb-8 leading-relaxed text-gray-600">
-            Современная система управления образовательным учреждением
-          </p>
-
-          {/* Auth Status */}
-          {isAuthenticated ? (
-            <div className="mb-8 p-4 rounded-lg glass-card inline-block">
-              <p className="text-lg">
-                Добро пожаловать, <span className="font-semibold gradient-text">{user?.fullName}</span>!
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 px-6 py-6 mt-20">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 max-w-md">
+              <div className="text-blue-500 text-4xl mb-4">🔒</div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                Требуется авторизация
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Войдите в систему для просмотра дашборда
               </p>
-            </div>
-          ) : (
-            <div className="mb-8">
-              <Link href="/login" className="btn-primary mr-4 inline-block">
+              <Link
+                href="/login"
+                className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 
+                         text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all 
+                         duration-200 transform hover:-translate-y-0.5"
+              >
                 Войти в систему
               </Link>
             </div>
-          )}
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Link href="/organizations" className="btn-primary hover-lift">
-              Начать работу
-            </Link>
-            <Link href="/students" className="btn-secondary hover-lift">
-              Просмотреть демо
-            </Link>
           </div>
         </div>
+      </div>
+    );
+  }
 
-        {/* Features Grid */}
-        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-6xl transition-all duration-1000 ${isVisible ? 'animate-fade-in' : 'opacity-0'}`}
-             style={{ animationDelay: '0.5s' }}>
-          {features.map((feature, index) => {
-            const Icon = feature.icon;
-            return (
-              <Link
-                key={feature.title}
-                href={feature.href}
-                className="card hover-lift group transition-all duration-300"
-                style={{ animationDelay: feature.delay }}
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 px-6 py-6 mt-20">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-red-200 dark:border-red-700 p-8 max-w-md">
+              <div className="text-red-500 text-4xl mb-4">⚠️</div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                Ошибка загрузки
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">{error}</p>
+              <button
+                onClick={loadDashboardData}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
               >
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                  <Icon className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2 text-gray-900">
-                  {feature.title}
-                </h3>
-                <p className="text-gray-600">
-                  {feature.description}
-                </p>
-              </Link>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Stats Section */}
-      <section className="relative z-10 py-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-6xl mx-auto">
-          <div className={`text-center mb-12 transition-all duration-1000 ${isVisible ? 'animate-slide-in-up' : 'opacity-0'}`}
-               style={{ animationDelay: '0.8s' }}>
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              <span className="gradient-text">Цифры говорят за нас</span>
-            </h2>
-            <p className="text-lg text-gray-600">
-              Доверие образовательных учреждений по всей стране
-            </p>
-          </div>
-
-          <div className={`grid grid-cols-2 md:grid-cols-4 gap-6 transition-all duration-1000 ${isVisible ? 'animate-fade-in' : 'opacity-0'}`}
-               style={{ animationDelay: '1s' }}>
-            {stats.map((stat, index) => {
-              const Icon = stat.icon;
-              return (
-                <div key={stat.label} className="text-center card hover-lift">
-                  <div className="w-12 h-12 mx-auto mb-4 rounded-xl flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600">
-                    <Icon className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="text-2xl md:text-3xl font-bold mb-2 gradient-text">
-                    {stat.value}
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    {stat.label}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="relative z-10 py-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className={`card glass-card transition-all duration-1000 ${isVisible ? 'animate-slide-in-up' : 'opacity-0'}`}
-               style={{ animationDelay: '1.2s' }}>
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Готовы начать?
-            </h2>
-            <p className="text-lg mb-8 text-gray-600">
-              Присоединяйтесь к сотням образовательных учреждений, которые доверяют TrackAcademy
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/organizations" className="btn-primary hover-lift">
-                Начать бесплатно
-              </Link>
-              <Link href="/login" className="btn-secondary hover-lift">
-                Войти в аккаунт
-              </Link>
+                Попробовать снова
+              </button>
             </div>
           </div>
         </div>
-      </section>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 px-4 md:px-6 py-4 md:py-6" style={{ marginTop: '80px' }}>
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <PageHeaderWithStats
+          title="Дашборд"
+          subtitle="Обзор ключевых показателей системы"
+          icon={ChartBarIcon}
+          gradientFrom="blue-500"
+          gradientTo="purple-600"
+          stats={[
+            { label: "Всего студентов", value: summary?.totalStudents || 0, color: "blue" },
+            { label: "Активные группы", value: summary?.activeGroups || 0, color: "green" },
+            { label: "Посещаемость", value: `${summary?.averageAttendanceRate || 0}%`, color: "purple" }
+          ]}
+        />
+
+        {/* Filters */}
+        <DashboardFiltersComponent
+          filters={filters}
+          onFiltersChange={setFilters}
+          groups={groups}
+          subjects={subjects}
+          isLoading={loading}
+        />
+
+        {/* Stats Grid */}
+        {summary && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {stats.map((stat, index) => (
+              <StatsCard key={index} stat={stat} />
+            ))}
+          </div>
+        )}
+
+        {/* Last Updated */}
+        {summary && (
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+            <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+              Последнее обновление: {new Date(summary.lastUpdated).toLocaleString('ru-RU')}
+            </p>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading && !summary && (
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
+              <p className="text-gray-600 dark:text-gray-400">Загрузка данных дашборда...</p>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

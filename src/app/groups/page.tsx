@@ -43,7 +43,7 @@ export default function GroupsPage() {
 
   // Управление видимостью колонок
   const { columns, toggleColumn, isColumnVisible } = useColumnVisibility([
-    { key: 'number', label: '№', required: false },
+    { key: 'number', label: '№', required: true },
     { key: 'name', label: 'Название группы', required: true },
     { key: 'code', label: 'Код', required: false },
     { key: 'level', label: 'Уровень', required: false },
@@ -153,12 +153,15 @@ export default function GroupsPage() {
       organizationId: organizationId,
     };
 
-    await createOperation(
+    const result = await createOperation(
       () => AuthenticatedApiService.post('/Group/create-group', dataToSend),
       'группу'
     );
     
-    await loadGroups(currentPage, true);
+    // Always reload data and close modal regardless of result
+    if (result.success) {
+      await loadGroups(currentPage, true);
+    }
     groupModal.closeModal();
   };
 
@@ -167,12 +170,15 @@ export default function GroupsPage() {
       throw new Error('ID группы не найден');
     }
     
-    await updateOperation(
+    const result = await updateOperation(
       () => AuthenticatedApiService.put(`/Group/${editingGroupId}`, formData),
       'группу'
     );
     
-    await loadGroups(currentPage, true);
+    // Always reload data and close modal regardless of result
+    if (result.success) {
+      await loadGroups(currentPage, true);
+    }
     setEditingGroupId(null);
     groupModal.closeModal();
   };

@@ -102,12 +102,15 @@ function OrganizationsPage() {
       throw new Error('ID организации не найден');
     }
     
-    await updateOperation(
+    const result = await updateOperation(
       () => AuthenticatedApiService.updateOrganization(editingOrganizationId.toString(), formData),
       'организацию'
     );
     
-    await loadOrganizations();
+    // Always reload data and close modal regardless of result
+    if (result.success) {
+      await loadOrganizations();
+    }
     setEditingOrganizationId(null);
     organizationModal.closeModal();
   };
@@ -126,12 +129,15 @@ function OrganizationsPage() {
   };
 
   const handleSaveCreate = async (formData: OrganizationFormData) => {
-    await createOperation(
+    const result = await createOperation(
       () => AuthenticatedApiService.createOrganization(formData),
       'организацию'
     );
     
-    await loadOrganizations();
+    // Always reload data and close modal regardless of result
+    if (result.success) {
+      await loadOrganizations();
+    }
     organizationModal.closeModal();
   };
 

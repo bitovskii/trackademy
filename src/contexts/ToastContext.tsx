@@ -66,7 +66,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       
       {/* Toast Container - отображаем уведомления в правом нижнем углу */}
-      <div className="fixed bottom-4 right-4 z-50 space-y-2">
+      <div className="fixed bottom-4 right-4 z-[99999] space-y-2">
         {toasts.map((toast) => (
           <div
             key={toast.id}

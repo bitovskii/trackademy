@@ -109,19 +109,14 @@ export const GroupForm: React.FC<GroupFormProps> = ({
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Уровень
           </label>
-          <select
+          <input
+            type="text"
             value={formData.level}
             onChange={(e) => setFormData(prev => ({ ...prev, level: e.target.value }))}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            placeholder="Введите уровень (например, начальный, продвинутый)"
             required
-          >
-            <option value="">Выберите уровень</option>
-            <option value="Beginner">Начальный</option>
-            <option value="Elementary">Элементарный</option>
-            <option value="Intermediate">Средний</option>
-            <option value="Upper-Intermediate">Выше среднего</option>
-            <option value="Advanced">Продвинутый</option>
-          </select>
+          />
         </div>
 
         <div>

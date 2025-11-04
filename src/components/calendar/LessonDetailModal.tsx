@@ -238,7 +238,7 @@ function DetailsTab({ lesson, subjectColor }: DetailsTabProps) {
           
           {lesson.cancelReason && (
             <div>
-              <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Причина отмены</label>
+              <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Причина</label>
               <p className="text-red-600 dark:text-red-400 mt-1 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
                 {lesson.cancelReason}
               </p>

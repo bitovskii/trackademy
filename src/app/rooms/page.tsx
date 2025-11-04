@@ -140,12 +140,15 @@ export default function RoomsPage() {
       organizationId: organizationId,
     };
 
-    await createOperation(
+    const result = await createOperation(
       () => AuthenticatedApiService.post('/Room/create', dataToSend),
       'кабинет'
     );
     
-    await loadRooms(currentPage, true);
+    // Always reload data and close modal regardless of result
+    if (result.success) {
+      await loadRooms(currentPage, true);
+    }
     roomModal.closeModal();
   };
 
@@ -165,12 +168,15 @@ export default function RoomsPage() {
       throw new Error('ID кабинета не найден');
     }
     
-    await updateOperation(
+    const result = await updateOperation(
       () => AuthenticatedApiService.put(`/Room/${editingRoomId}`, formData),
       'кабинет'
     );
     
-    await loadRooms(currentPage, true);
+    // Always reload data and close modal regardless of result
+    if (result.success) {
+      await loadRooms(currentPage, true);
+    }
     setEditingRoomId(null);
     roomModal.closeModal();
   };

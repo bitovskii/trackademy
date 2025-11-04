@@ -69,7 +69,7 @@ export const useApiToast = () => {
     entityName: string = 'данные'
   ) => {
     return handleApiOperation(operation, {
-      successMessage: `${entityName} успешно созданы`,
+      successMessage: `Запись успешно создана`,
       errorMessage: `Не удалось создать ${entityName.toLowerCase()}`
     });
   };
@@ -79,7 +79,7 @@ export const useApiToast = () => {
     entityName: string = 'данные'
   ) => {
     return handleApiOperation(operation, {
-      successMessage: `${entityName} успешно обновлены`,
+      successMessage: `Запись успешно обновлена`,
       errorMessage: `Не удалось обновить ${entityName.toLowerCase()}`
     });
   };
@@ -89,7 +89,7 @@ export const useApiToast = () => {
     entityName: string = 'данные'
   ) => {
     return handleApiOperation(operation, {
-      successMessage: `${entityName} успешно удалены`,
+      successMessage: `Запись успешно удалена`,
       errorMessage: `Не удалось удалить ${entityName.toLowerCase()}`
     });
   };

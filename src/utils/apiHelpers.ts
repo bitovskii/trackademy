@@ -27,17 +27,15 @@ export const handleApiError = async (response: Response): Promise<never> => {
 };
 
 export const getSuccessMessage = (action: string, entity?: string): string => {
-  const entityText = entity || 'элемент';
-  
   switch (action) {
     case 'create':
-      return `${entityText} успешно создан`;
+      return `Запись успешно создана`;
     case 'update':
-      return `${entityText} успешно обновлен`;
+      return `Запись успешно обновлена`;
     case 'delete':
-      return `${entityText} успешно удален`;
+      return `Запись успешно удалена`;
     case 'save':
-      return `${entityText} успешно сохранен`;
+      return `Запись успешно сохранена`;
     default:
       return 'Операция выполнена успешно';
   }

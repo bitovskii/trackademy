@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { UserPlusIcon, UserIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import { Modal } from './ui/Modal';
 import { usePhoneFormatter } from '../hooks/usePhoneFormatter';
 import { User, UserFormData } from '../types/User';
+import { cleanUserFormData } from '../utils/apiHelpers';
 
 interface UserModalProps {
   isOpen: boolean;
@@ -17,10 +18,10 @@ interface UserModalProps {
 
 const UserModal: React.FC<UserModalProps> = ({ 
   isOpen, 
-  onClose, 
-  mode, 
-  user, 
-  onSave 
+  onClose,
+  mode,
+  user,
+  onSave
 }) => {
   const { user: currentUser } = useAuth();
   const { formatPhoneDisplay, formatPhoneForApi, handlePhoneKeyDown } = usePhoneFormatter();
@@ -41,6 +42,8 @@ const UserModal: React.FC<UserModalProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const formResetRef = useRef(false); // Track if form should be reset
+  const hasInitialized = useRef(false); // Track if form has been initialized
 
   // Role options - only Student and Teacher (Student first, then Teacher)
   const roleOptions = [
@@ -48,7 +51,7 @@ const UserModal: React.FC<UserModalProps> = ({
     { value: 3, label: 'Преподаватель', color: 'blue' }
   ];
 
-  // Update form data when user changes (for edit mode)
+  // ONLY update form data for edit mode - NEVER reset create mode
   useEffect(() => {
     if (mode === 'edit' && user) {
       setFormData({
@@ -63,41 +66,45 @@ const UserModal: React.FC<UserModalProps> = ({
         organizationId: user.organizationId || currentUser?.organizationId || '',
         isTrial: user.isTrial || false
       });
-    } else if (mode === 'create') {
-      // Reset form for create mode
-      setFormData({
-        login: '',
-        fullName: '',
-        email: null,
-        password: '',
-        phone: null,
-        parentPhone: null,
-        birthday: null,
-        role: 1,
-        organizationId: currentUser?.organizationId || '',
-        isTrial: false
-      });
     }
+    // Create mode: NEVER auto-reset, keep user data even on errors
   }, [mode, user, formatPhoneDisplay, currentUser?.organizationId]);
+
+  const resetCreateForm = () => {
+    setFormData({
+      login: '',
+      fullName: '',
+      email: null,
+      password: '',
+      phone: null,
+      parentPhone: null,
+      birthday: null,
+      role: 1,
+      organizationId: currentUser?.organizationId || '',
+      isTrial: false
+    });
+  };
 
   const handleClose = () => {
     if (!isSubmitting) {
-      if (mode === 'create') {
-        setFormData({
-          login: '',
-          fullName: '',
-          email: null,
-          password: '',
-          phone: null,
-          parentPhone: null,
-          birthday: null,
-          role: 1,
-          organizationId: currentUser?.organizationId || '',
-          isTrial: false
-        });
-      }
       setErrors({});
       setShowPassword(false);
+      // Reset form when closing
+      if (mode === 'create') {
+        resetCreateForm();
+      }
+      onClose();
+    }
+  };
+
+  const handleSuccessfulClose = () => {
+    if (!isSubmitting) {
+      setErrors({});
+      setShowPassword(false);
+      // Reset form on successful close for create mode
+      if (mode === 'create') {
+        resetCreateForm();
+      }
       onClose();
     }
   };
@@ -149,33 +156,7 @@ const UserModal: React.FC<UserModalProps> = ({
 
     setIsSubmitting(true);
     try {
-      // Clean data: convert empty strings to null for optional fields
-      const cleanData = (data: UserFormData): UserFormData => {
-        const cleaned = { ...data };
-        
-        // Convert empty strings to null for optional and nullable fields
-        if (!cleaned.email || cleaned.email.trim() === '') {
-          cleaned.email = null;
-        }
-        if (!cleaned.phone || cleaned.phone.replace(/\D/g, '').length === 0) {
-          cleaned.phone = null;
-        }
-        if (!cleaned.parentPhone || cleaned.parentPhone.trim() === '') {
-          cleaned.parentPhone = null;
-        }
-        // More robust birthday cleaning
-        if (!cleaned.birthday || 
-            cleaned.birthday === '' || 
-            cleaned.birthday.trim() === '' || 
-            cleaned.birthday === 'undefined' || 
-            cleaned.birthday === 'null') {
-          cleaned.birthday = null;
-        }
-        
-        return cleaned;
-      };
-
-      let dataToSubmit: UserFormData = cleanData({
+      let dataToSubmit: UserFormData = cleanUserFormData({
         ...formData,
         phone: formData.phone ? formatPhoneForApi(formData.phone) : null,
         parentPhone: formData.parentPhone ? formatPhoneForApi(formData.parentPhone) : null
@@ -193,9 +174,12 @@ const UserModal: React.FC<UserModalProps> = ({
         await onSave(dataToSubmit);
       }
       
-      handleClose();
+      // Always close modal after save attempt
+      handleSuccessfulClose();
     } catch (error) {
       console.error(`Error ${mode === 'create' ? 'creating' : 'updating'} user:`, error);
+      // Close modal even on error
+      handleClose();
     } finally {
       setIsSubmitting(false);
     }

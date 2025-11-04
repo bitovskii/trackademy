@@ -38,6 +38,13 @@ export default function LessonsPage() {
   const [dateTo, setDateTo] = useState<string | undefined>(undefined);
   const [rangeViewMode, setRangeViewMode] = useState<'list' | 'calendar'>('list');
 
+  // Функция для получения названия текущего дня недели
+  const getCurrentDayName = () => {
+    const today = new Date();
+    const days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+    return days[today.getDay()];
+  };
+
   // Check authorization
   useEffect(() => {
     if (!user) {
@@ -316,7 +323,7 @@ export default function LessonsPage() {
             color: "violet" as const
           },
           { 
-            label: "Сегодня", 
+            label: getCurrentDayName(), 
             value: lessons.filter(lesson => {
               const today = new Date();
               const lessonDate = new Date(lesson.date);
@@ -437,6 +444,15 @@ export default function LessonsPage() {
             </div>
             
             <div className="flex items-center justify-between">
+              <div className="bg-white/70 dark:bg-gray-700/70 backdrop-blur-sm rounded-lg px-4 py-2 border border-gray-200/50 dark:border-gray-600/50 shadow-lg">
+                <div className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {getCurrentDateText()}
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                  {getViewTitle()}
+                </div>
+              </div>
+
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => navigateDate('prev')}
@@ -451,7 +467,7 @@ export default function LessonsPage() {
                   disabled={!!(dateFrom || dateTo)}
                   className="bg-gradient-to-r from-violet-500 to-purple-600 text-white px-6 py-2 rounded-lg font-medium hover:shadow-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                 >
-                  Сегодня
+                  {getCurrentDayName()}
                 </button>
                 
                 <button
@@ -461,15 +477,6 @@ export default function LessonsPage() {
                 >
                   <ChevronRightIcon className="w-5 h-5" />
                 </button>
-              </div>
-
-              <div className="bg-white/70 dark:bg-gray-700/70 backdrop-blur-sm rounded-lg px-4 py-2 border border-gray-200/50 dark:border-gray-600/50 shadow-lg">
-                <div className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {getCurrentDateText()}
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                  {getViewTitle()}
-                </div>
               </div>
             </div>
           </div>

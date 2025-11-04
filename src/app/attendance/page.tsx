@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { ClipboardDocumentCheckIcon } from '@heroicons/react/24/outline';
 import { PageHeaderWithStats } from '@/components/ui/PageHeaderWithStats';
+import { DateRangePicker } from '@/components/ui/DateRangePicker';
 import { attendanceApi } from '@/services/AttendanceApiService';
 import { AttendanceRecord, AttendanceFilters, AttendanceStatus, getAttendanceStatusText, getAttendanceStatusColor, getAttendanceStatusIcon } from '@/types/Attendance';
 import { useApiToast } from '@/hooks/useApiToast';
@@ -111,7 +112,7 @@ export default function AttendancePage() {
   const stats = getAttendanceStats();
 
   return (
-    <div className="space-y-6">
+    <div className="mt-20 space-y-6">
       {/* Page Header */}
       <PageHeaderWithStats
         title="Посещаемость"
@@ -250,29 +251,16 @@ export default function AttendancePage() {
                 </select>
               </div>
 
-              {/* Date From */}
+              {/* Date Range */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  С даты
+                  Период
                 </label>
-                <input
-                  type="date"
-                  value={filters.fromDate || ''}
-                  onChange={(e) => updateFilters({ fromDate: e.target.value })}
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm text-gray-900 dark:text-white"
-                />
-              </div>
-
-              {/* Date To */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  До даты
-                </label>
-                <input
-                  type="date"
-                  value={filters.toDate || ''}
-                  onChange={(e) => updateFilters({ toDate: e.target.value })}
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm text-gray-900 dark:text-white"
+                <DateRangePicker
+                  startDate={filters.fromDate}
+                  endDate={filters.toDate}
+                  onDateChange={(startDate, endDate) => updateFilters({ fromDate: startDate, toDate: endDate })}
+                  placeholder="Выберите период"
                 />
               </div>
             </div>
@@ -303,6 +291,9 @@ export default function AttendancePage() {
               <table className="w-full">
                 <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
+                    <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16">
+                      №
+                    </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Студент
                     </th>
@@ -327,8 +318,13 @@ export default function AttendancePage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {attendanceRecords.map((record) => (
+                  {attendanceRecords.map((record, index) => (
                     <tr key={record.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                      <td className="px-6 py-4 whitespace-nowrap text-center w-16">
+                        <div className="inline-flex items-center justify-center w-8 h-8 text-white text-sm font-semibold rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600">
+                          {(filters.pageNumber! - 1) * filters.pageSize! + index + 1}
+                        </div>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="font-medium text-gray-900 dark:text-white">
                           {record.studentName}

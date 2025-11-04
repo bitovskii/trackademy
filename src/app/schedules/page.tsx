@@ -203,6 +203,21 @@ export default function SchedulesPage() {
     loadSchedulesWithFilters(1, updatedFilters);
   };
 
+  const handleResetFilters = () => {
+    const resetFilters: ScheduleFilters = {
+      pageNumber: 1,
+      pageSize: 10,
+      organizationId: user?.organizationId || '',
+      groupId: '',
+      teacherId: '',
+      roomId: '',
+      subjectId: ''
+    };
+    setFilters(resetFilters);
+    setCurrentPage(1);
+    loadSchedulesWithFilters(1, resetFilters);
+  };
+
   const loadSchedulesWithFilters = async (page: number, currentFilters: ScheduleFilters) => {
     try {
       setTableLoading(true);
@@ -361,12 +376,15 @@ export default function SchedulesPage() {
       organizationId: user?.organizationId || ''
     };
     
-    await createOperation(
+    const result = await createOperation(
       () => AuthenticatedApiService.post('/Schedule/create-schedule', scheduleData),
       'расписание'
     );
     
-    await loadSchedules(currentPage, true);
+    // Always reload data and close modal regardless of result
+    if (result.success) {
+      await loadSchedules(currentPage, true);
+    }
     scheduleModal.closeModal();
   };
 
@@ -395,12 +413,15 @@ export default function SchedulesPage() {
       );
       
       if (scheduleToEdit) {
-        await updateOperation(
+        const result = await updateOperation(
           () => AuthenticatedApiService.put(`/Schedule/update-schedule/${scheduleToEdit.id}`, updateData),
           'расписание'
         );
         
-        await loadSchedules(currentPage, true);
+        // Always reload data and close modal regardless of result
+        if (result.success) {
+          await loadSchedules(currentPage, true);
+        }
         scheduleModal.closeModal();
       }
     }
@@ -672,6 +693,19 @@ export default function SchedulesPage() {
                   ))}
                 </select>
               </div>
+            </div>
+
+            {/* Reset Filters Button */}
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={handleResetFilters}
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all duration-200"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Сбросить фильтры
+              </button>
             </div>
           </div>
 

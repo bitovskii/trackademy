@@ -43,7 +43,7 @@ export default function SubjectsPage() {
 
   // Управление видимостью колонок
   const { columns, toggleColumn, isColumnVisible } = useColumnVisibility([
-    { key: 'number', label: '№', required: false },
+    { key: 'number', label: '№', required: true },
     { key: 'name', label: 'Название предмета', required: true },
     { key: 'description', label: 'Описание', required: false },
     { key: 'actions', label: 'Действия', required: true }

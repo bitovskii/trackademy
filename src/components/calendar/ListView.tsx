@@ -10,7 +10,7 @@ interface ListViewProps {
 }
 
 export default function ListView({ date, lessons, onLessonClick }: ListViewProps) {
-  const [sortBy, setSortBy] = useState<'date' | 'time' | 'subject' | 'group'>('date');
+  const [sortBy, setSortBy] = useState<'date'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [filterStatus, setFilterStatus] = useState<string>('all');
 
@@ -35,22 +35,10 @@ export default function ListView({ date, lessons, onLessonClick }: ListViewProps
     return lessons.filter(lesson => lesson.lessonStatus === filterStatus);
   };
 
-  // Sort lessons within each day
+  // Sort lessons within each day (by time by default)
   const sortLessonsInDay = (lessons: Lesson[]): Lesson[] => {
     return [...lessons].sort((a, b) => {
-      switch (sortBy) {
-        case 'time':
-          const timeComparison = a.startTime.localeCompare(b.startTime);
-          return sortOrder === 'asc' ? timeComparison : -timeComparison;
-        case 'subject':
-          const subjectComparison = a.subject.subjectName.localeCompare(b.subject.subjectName);
-          return sortOrder === 'asc' ? subjectComparison : -subjectComparison;
-        case 'group':
-          const groupComparison = a.group.name.localeCompare(b.group.name);
-          return sortOrder === 'asc' ? groupComparison : -groupComparison;
-        default:
-          return a.startTime.localeCompare(b.startTime);
-      }
+      return a.startTime.localeCompare(b.startTime);
     });
   };
 
@@ -90,29 +78,15 @@ export default function ListView({ date, lessons, onLessonClick }: ListViewProps
 
             {/* Sort controls */}
             <div className="flex gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-              {[
-                { key: 'date' as const, label: 'Дата' },
-                { key: 'time' as const, label: 'Время' },
-                { key: 'subject' as const, label: 'Предмет' },
-                { key: 'group' as const, label: 'Группа' },
-              ].map(({ key, label }) => (
-                <button
-                  key={key}
-                  onClick={() => handleSort(key)}
-                  className={`px-3 py-1 rounded text-sm font-medium transition-all ${
-                    sortBy === key
-                      ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                      : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
-                  }`}
-                >
-                  {label}
-                  {sortBy === key && (
-                    <span className="ml-1">
-                      {sortOrder === 'asc' ? '↑' : '↓'}
-                    </span>
-                  )}
-                </button>
-              ))}
+              <button
+                onClick={() => handleSort('date')}
+                className="px-3 py-1 rounded text-sm font-medium transition-all bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm"
+              >
+                Дата
+                <span className="ml-1">
+                  {sortOrder === 'asc' ? '↑' : '↓'}
+                </span>
+              </button>
             </div>
           </div>
         </div>
@@ -241,7 +215,7 @@ function ListLessonCard({ lesson, onClick }: ListLessonCardProps) {
 
           {lesson.cancelReason && (
             <div className="mt-2 text-sm text-red-600 dark:text-red-400">
-              <span className="font-medium">Причина отмены:</span> {lesson.cancelReason}
+              <span className="font-medium">Причина:</span> {lesson.cancelReason}
             </div>
           )}
         </div>

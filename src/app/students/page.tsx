@@ -20,6 +20,7 @@ import { PhoneInput } from '@/components/ui/PhoneInput';
 import { EmailInput } from '@/components/ui/EmailInput';
 import { useApiToast } from '../../hooks/useApiToast';
 import { PasswordInput } from '@/components/ui/PasswordInput';
+import { cleanUserFormData } from '../../utils/apiHelpers';
 
 export default function StudentsPage() {
   const { isAuthenticated, user } = useAuth();
@@ -422,27 +423,8 @@ export default function StudentsPage() {
   const handleSaveEdit = async (id: string, formData: UserFormData) => {
     console.log('Starting user update:', { id, formData, authToken: !!localStorage.getItem('authToken') });
     
-    // Clean data: convert empty strings to null for optional fields
-    const cleanFormData = { ...formData };
-    
-    // Convert empty strings to null for optional and nullable fields
-    if (!cleanFormData.email || cleanFormData.email.trim() === '') {
-      cleanFormData.email = null;
-    }
-    if (!cleanFormData.phone || cleanFormData.phone.replace(/\D/g, '').length === 0) {
-      cleanFormData.phone = null;
-    }
-    if (!cleanFormData.parentPhone || cleanFormData.parentPhone.trim() === '') {
-      cleanFormData.parentPhone = null;
-    }
-    // More robust birthday cleaning
-    if (!cleanFormData.birthday || 
-        cleanFormData.birthday === '' || 
-        cleanFormData.birthday.trim() === '' || 
-        cleanFormData.birthday === 'undefined' || 
-        cleanFormData.birthday === 'null') {
-      cleanFormData.birthday = null;
-    }
+    // Clean data using utility function
+    const cleanFormData = cleanUserFormData(formData);
     
     const result = await updateOperation(
       () => AuthenticatedApiService.updateUser(id, cleanFormData),
@@ -451,12 +433,10 @@ export default function StudentsPage() {
     
     console.log('Update result:', result);
     
-    // Check if the update was successful
-    if (!result.success) {
-      throw new Error('Не удалось обновить пользователя. Попробуйте еще раз.');
+    // Always reload data and close modal regardless of result
+    if (result.success) {
+      await loadStudents(currentPage, filters, true);
     }
-    
-    await loadStudents(currentPage, filters, true);
     setEditingUserId(null);
   };
 
@@ -494,29 +474,10 @@ export default function StudentsPage() {
 
   // Create user handlers
   const handleCreateUser = async (userData: UserFormData) => {
-    // Clean data: convert empty strings to null for optional fields
-    const cleanUserData = { ...userData };
-    
-    // Convert empty strings to null for optional and nullable fields
-    if (!cleanUserData.email || cleanUserData.email.trim() === '') {
-      cleanUserData.email = null;
-    }
-    if (!cleanUserData.phone || cleanUserData.phone.replace(/\D/g, '').length === 0) {
-      cleanUserData.phone = null;
-    }
-    if (!cleanUserData.parentPhone || cleanUserData.parentPhone.trim() === '') {
-      cleanUserData.parentPhone = null;
-    }
-    // More robust birthday cleaning
-    if (!cleanUserData.birthday || 
-        cleanUserData.birthday === '' || 
-        cleanUserData.birthday.trim() === '' || 
-        cleanUserData.birthday === 'undefined' || 
-        cleanUserData.birthday === 'null') {
-      cleanUserData.birthday = null;
-    }
+    // Clean data using utility function
+    const cleanUserData = cleanUserFormData(userData);
 
-    await createOperation(
+    const result = await createOperation(
       async () => {
         const response = await fetch('https://trackademy.onrender.com/api/User/create', {
           method: 'POST',
@@ -529,7 +490,9 @@ export default function StudentsPage() {
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.message || 'Не удалось создать пользователя');
+          const error = new Error(errorData.error || errorData.message || 'Не удалось создать пользователя');
+          (error as any).status = response.status;
+          throw error;
         }
 
         return response.json();
@@ -537,7 +500,10 @@ export default function StudentsPage() {
       'пользователя'
     );
 
-    await loadStudents(currentPage, filters, true);
+    // Always reload data and close modal regardless of result
+    if (result.success) {
+      await loadStudents(currentPage, filters, true);
+    }
     userModal.closeModal();
   };
 

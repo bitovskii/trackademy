@@ -112,9 +112,10 @@ export default function AttendancePage() {
   const stats = getAttendanceStats();
 
   return (
-    <div className="mt-20 space-y-6">
-      {/* Page Header */}
-      <PageHeaderWithStats
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6 page-container pt-20 md:pt-24">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Page Header */}
+        <PageHeaderWithStats
         title="Посещаемость"
         subtitle="Отслеживание и анализ посещаемости студентов"
         icon={ClipboardDocumentCheckIcon}
@@ -267,7 +268,7 @@ export default function AttendancePage() {
           </div>
 
           {/* Attendance Table */}
-          <div className="overflow-x-auto">
+          <div className="w-full">
             {loading ? (
               <div className="flex justify-center items-center h-64 p-8">
                 <div className="text-center">
@@ -291,28 +292,28 @@ export default function AttendancePage() {
               <table className="w-full">
                 <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
-                    <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16">
+                    <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-12">
                       №
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Студент
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Предмет
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Группа
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-24">
                       Дата
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-20">
                       Время
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-24">
                       Статус
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Преподаватель
                     </th>
                   </tr>
@@ -320,45 +321,51 @@ export default function AttendancePage() {
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {attendanceRecords.map((record, index) => (
                     <tr key={record.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                      <td className="px-6 py-4 whitespace-nowrap text-center w-16">
-                        <div className="inline-flex items-center justify-center w-8 h-8 text-white text-sm font-semibold rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600">
+                      <td className="px-2 py-4 whitespace-nowrap text-center w-12">
+                        <div className="inline-flex items-center justify-center w-7 h-7 text-white text-xs font-semibold rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600">
                           {(filters.pageNumber! - 1) * filters.pageSize! + index + 1}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="font-medium text-gray-900 dark:text-white">
+                      <td className="px-3 py-4">
+                        <div className="font-medium text-gray-900 dark:text-white text-sm">
                           {record.studentName}
                         </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
                           {record.studentLogin}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {record.subjectName}
+                      <td className="px-2 py-4 text-sm text-gray-900 dark:text-white">
+                        <div className="truncate max-w-24" title={record.subjectName}>
+                          {record.subjectName}
+                        </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {record.groupName}
+                      <td className="px-2 py-4 text-sm text-gray-900 dark:text-white">
+                        <div className="truncate max-w-20" title={record.groupName}>
+                          {record.groupName}
+                        </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                      <td className="px-2 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">
                         {new Date(record.date).toLocaleDateString('ru-RU')}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {record.startTime.slice(0, 5)} - {record.endTime.slice(0, 5)}
+                      <td className="px-2 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">
+                        {record.startTime.slice(0, 5)}-{record.endTime.slice(0, 5)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-2 py-4 whitespace-nowrap">
                         <span
-                          className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium"
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium"
                           style={{
                             backgroundColor: getAttendanceStatusColor(record.status) + '20',
                             color: getAttendanceStatusColor(record.status)
                           }}
                         >
                           <span>{getAttendanceStatusIcon(record.status)}</span>
-                          <span>{getAttendanceStatusText(record.status)}</span>
+                          <span className="hidden sm:inline">{getAttendanceStatusText(record.status)}</span>
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {record.teacherName}
+                      <td className="px-3 py-4 text-sm text-gray-900 dark:text-white">
+                        <div className="truncate max-w-32" title={record.teacherName}>
+                          {record.teacherName}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -396,6 +403,7 @@ export default function AttendancePage() {
               </div>
             </div>
           )}
+        </div>
         </div>
       </div>
     </div>

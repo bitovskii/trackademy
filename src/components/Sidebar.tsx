@@ -14,6 +14,11 @@ const Sidebar: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
   const [showRegisterModal, setShowRegisterModal] = useState(false);
 
+  // Don't show sidebar on login page
+  if (pathname === '/login') {
+    return null;
+  }
+
   const allNavigation = [
     { name: 'Аналитика', href: '/', icon: HomeIcon, activeIcon: HomeIconSolid, requireAuth: false, requireOwner: false, requireAdmin: false },
     { name: 'Организации', href: '/organizations', icon: BuildingOfficeIcon, activeIcon: BuildingOfficeIconSolid, requireAuth: true, requireOwner: true, requireAdmin: false },

@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { EyeIcon, EyeSlashIcon, AcademicCapIcon, BuildingOfficeIcon, UserGroupIcon } from '@heroicons/react/24/outline';
-import Link from 'next/link';
+import { EyeIcon, EyeSlashIcon, AcademicCapIcon } from '@heroicons/react/24/outline';
 
 interface Organization {
   id: string;
@@ -11,7 +10,7 @@ interface Organization {
 }
 
 export default function LoginPage() {
-  const { loginWithCredentials } = useAuth();
+  const { loginWithCredentials, isAuthenticated } = useAuth();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [formData, setFormData] = useState({
     login: '',
@@ -22,6 +21,14 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+
+  // Redirect to home if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      globalThis.location.href = '/';
+      return;
+    }
+  }, [isAuthenticated]);
 
   // Pre-fill login and organizationId if available in localStorage
   useEffect(() => {
@@ -80,7 +87,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-all duration-500">
       
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -97,32 +104,26 @@ export default function LoginPage() {
                style={{ background: 'var(--gradient-cool)' }}>
             <AcademicCapIcon className="w-8 h-8 text-white" />
           </div>
-          <h2 className="text-4xl font-bold mb-3 animate-fade-in animate-delay-100">
+          <h2 className="text-4xl font-bold mb-3 animate-fade-in animate-delay-100 text-gray-900 dark:text-white">
             <span className="gradient-text">Добро пожаловать</span>
           </h2>
-          <p className="text-lg mb-4 animate-fade-in animate-delay-200" style={{ color: 'var(--muted-foreground)' }}>
+          <p className="text-lg mb-4 animate-fade-in animate-delay-200 text-gray-600 dark:text-gray-300">
             Войдите в TrackAcademy для продолжения
           </p>
-          <div className="animate-fade-in animate-delay-300">
-            <Link href="/" className="text-sm hover:underline transition-all duration-300 hover:scale-105 inline-block"
-                  style={{ color: 'var(--primary)' }}>
-              ← Вернуться на главную
-            </Link>
-          </div>
         </div>
         
         {/* Login Form */}
-        <div className="card glass-card animate-scale-in animate-delay-200">
+        <div className="card glass-card animate-scale-in animate-delay-200 bg-white/10 dark:bg-black/10 backdrop-blur-xl border border-white/30 dark:border-gray-600/30 shadow-2xl">
           <form className="space-y-6" onSubmit={handleSubmit}>
             {error && (
-              <div className="error-message">
+              <div className="error-message bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded-lg border border-red-200 dark:border-red-800">
                 {error}
               </div>
             )}
 
             {/* Login Field */}
             <div className="form-group animate-fade-in animate-delay-300">
-              <label htmlFor="login" className="form-label">
+              <label htmlFor="login" className="form-label text-gray-700 dark:text-gray-300">
                 Логин
               </label>
               <input
@@ -132,14 +133,14 @@ export default function LoginPage() {
                 required
                 value={formData.login}
                 onChange={handleChange}
-                className="input-field"
+                className="input-field bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                 placeholder="Введите ваш логин"
               />
             </div>
 
             {/* Password Field */}
             <div className="form-group animate-fade-in animate-delay-400">
-              <label htmlFor="password" className="form-label">
+              <label htmlFor="password" className="form-label text-gray-700 dark:text-gray-300">
                 Пароль
               </label>
               <div className="password-container">
@@ -150,13 +151,13 @@ export default function LoginPage() {
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  className="input-field"
+                  className="input-field bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                   placeholder="Введите ваш пароль"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="password-toggle"
+                  className="password-toggle text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                 >
                   {showPassword ? (
                     <EyeSlashIcon className="h-5 w-5" />
@@ -169,7 +170,7 @@ export default function LoginPage() {
 
             {/* Organization Selection */}
             <div className="form-group animate-fade-in animate-delay-500">
-              <label htmlFor="organizationId" className="form-label">
+              <label htmlFor="organizationId" className="form-label text-gray-700 dark:text-gray-300">
                 Организация
               </label>
               <select
@@ -177,7 +178,7 @@ export default function LoginPage() {
                 name="organizationId"
                 value={formData.organizationId}
                 onChange={handleChange}
-                className="input-field"
+                className="input-field bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
               >
                 <option value="">Выберите организацию</option>
                 {organizations.map((org) => (
@@ -205,40 +206,7 @@ export default function LoginPage() {
                 )}
               </button>
             </div>
-
-            {/* Additional Links */}
-            <div className="text-center space-y-2 animate-fade-in animate-delay-500">
-              <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-                Нет аккаунта?{' '}
-                <button
-                  type="button"
-                  onClick={() => {/* Open register modal if needed */}}
-                  className="font-medium hover:underline transition-all duration-300"
-                  style={{ color: 'var(--primary)' }}
-                >
-                  Зарегистрироваться
-                </button>
-              </p>
-            </div>
           </form>
-        </div>
-
-        {/* Features Preview */}
-        <div className="grid grid-cols-2 gap-4 mt-8 animate-fade-in animate-delay-500">
-          <div className="text-center p-4 rounded-2xl hover-lift transition-all duration-300 bg-white/80 backdrop-blur-sm border border-white/20 shadow-lg">
-            <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-              <BuildingOfficeIcon className="w-6 h-6 text-white" />
-            </div>
-            <p className="text-sm font-semibold text-gray-800 mb-1">Управление организациями</p>
-            <p className="text-xs text-gray-600">Эффективное управление учебными заведениями</p>
-          </div>
-          <div className="text-center p-4 rounded-2xl hover-lift transition-all duration-300 bg-white/80 backdrop-blur-sm border border-white/20 shadow-lg">
-            <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center">
-              <UserGroupIcon className="w-6 h-6 text-white" />
-            </div>
-            <p className="text-sm font-semibold text-gray-800 mb-1">Работа со студентами</p>
-            <p className="text-xs text-gray-600">Контроль успеваемости и посещаемости</p>
-          </div>
         </div>
       </div>
     </div>

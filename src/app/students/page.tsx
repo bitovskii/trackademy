@@ -491,7 +491,7 @@ export default function StudentsPage() {
         if (!response.ok) {
           const errorData = await response.json();
           const error = new Error(errorData.error || errorData.message || 'Не удалось создать пользователя');
-          (error as any).status = response.status;
+          (error as Error & { status: number }).status = response.status;
           throw error;
         }
 

@@ -8,6 +8,7 @@ import { AuthProvider } from '../contexts/AuthContext';
 import { ThemeProvider } from '../contexts/ThemeContext';
 import { ToastProvider } from '../contexts/ToastContext';
 import { useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -16,6 +17,9 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const pathname = usePathname();
+  const isLoginPage = pathname === '/login';
+
   useEffect(() => {
     // Подавляем показ технических ошибок в консоли браузера
     // для ошибок, которые уже обработаны нашей toast системой
@@ -58,7 +62,11 @@ export default function RootLayout({
                 <TopBar />
                 <div className="flex">
                   <Sidebar />
-                  <main className="flex-1 lg:ml-64 p-4 md:p-6 pb-20 lg:pb-6 pt-[84px] min-h-screen">
+                  <main className={`flex-1 min-h-screen ${
+                    isLoginPage 
+                      ? 'p-0' 
+                      : 'lg:ml-64 p-4 md:p-6 pb-20 lg:pb-6 pt-[84px]'
+                  }`}>
                     <div className="max-w-full mx-auto">
                       {children}
                     </div>

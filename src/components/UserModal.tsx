@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { UserPlusIcon, UserIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import { Modal } from './ui/Modal';
@@ -42,8 +42,6 @@ const UserModal: React.FC<UserModalProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const formResetRef = useRef(false); // Track if form should be reset
-  const hasInitialized = useRef(false); // Track if form has been initialized
 
   // Role options - only Student and Teacher (Student first, then Teacher)
   const roleOptions = [
@@ -164,7 +162,7 @@ const UserModal: React.FC<UserModalProps> = ({
 
       // Remove password from edit data if it's empty
       if (mode === 'edit' && !dataToSubmit.password) {
-        const { password, ...dataWithoutPassword } = dataToSubmit;
+        const { password: _, ...dataWithoutPassword } = dataToSubmit;
         dataToSubmit = dataWithoutPassword;
       }
       

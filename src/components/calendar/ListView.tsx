@@ -1,15 +1,14 @@
 'use client';
 
-import { Lesson, formatDate, formatTimeRange, generateSubjectColor, getLessonStatusColor, getLessonStatusText, getAttendanceStatusText } from '@/types/Lesson';
+import { Lesson, formatDate, formatTimeRange, generateSubjectColor, getLessonStatusColor, getLessonStatusText } from '@/types/Lesson';
 import { useState } from 'react';
 
 interface ListViewProps {
-  date: Date;
   lessons: Lesson[];
   onLessonClick: (lesson: Lesson) => void;
 }
 
-export default function ListView({ date, lessons, onLessonClick }: ListViewProps) {
+export default function ListView({ lessons, onLessonClick }: ListViewProps) {
   const [sortBy, setSortBy] = useState<'date'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [filterStatus, setFilterStatus] = useState<string>('all');

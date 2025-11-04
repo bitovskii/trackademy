@@ -1,6 +1,6 @@
 'use client';
 
-import { Lesson, getTimeSlots, getLessonsForDay, getWeekDays, formatTime, generateSubjectColor, getLessonStatusColor, formatDateShort } from '@/types/Lesson';
+import { Lesson, getTimeSlots, getLessonsForDay, getWeekDays, formatTime, generateSubjectColor, getLessonStatusColor } from '@/types/Lesson';
 
 interface WeekViewProps {
   date: Date;

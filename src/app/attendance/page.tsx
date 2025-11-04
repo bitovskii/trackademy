@@ -15,7 +15,7 @@ export default function AttendancePage() {
   const router = useRouter();
   
   // Toast уведомления для API операций
-  const { createOperation, updateOperation, deleteOperation, loadOperation } = useApiToast();
+  const { loadOperation } = useApiToast();
   
   const [loading, setLoading] = useState(false);
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);

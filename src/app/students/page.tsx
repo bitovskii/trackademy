@@ -15,7 +15,6 @@ import { canManageUsers } from '../../types/Role';
 import Link from 'next/link';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import { useColumnVisibility, ColumnVisibilityControl } from '../../components/ui/ColumnVisibilityControl';
-import { UserForm } from '../../components/forms/UserForm';
 import { PhoneInput } from '@/components/ui/PhoneInput';
 import { EmailInput } from '@/components/ui/EmailInput';
 import { useApiToast } from '../../hooks/useApiToast';
@@ -48,7 +47,7 @@ export default function StudentsPage() {
   });
   
   // Toast уведомления для API операций
-  const { createOperation, updateOperation, deleteOperation, loadOperation } = useApiToast();
+  const { createOperation, updateOperation, deleteOperation } = useApiToast();
 
   const [filters, setFilters] = useState<UserFiltersType>({
     search: '',
@@ -118,7 +117,7 @@ export default function StudentsPage() {
           if (userData) {
             localStorageUserData = JSON.parse(userData);
           }
-        } catch (e) {
+        } catch {
           console.warn('Could not parse user data for error logging');
         }
 
@@ -205,7 +204,7 @@ export default function StudentsPage() {
         const userObj = JSON.parse(userData);
         localStorageOrgId = userObj.organizationId;
       }
-    } catch (e) {
+    } catch {
       console.warn('Could not parse user data from localStorage for logging');
     }
 
@@ -352,7 +351,7 @@ export default function StudentsPage() {
         const userObj = JSON.parse(userData);
         localStorageOrgId = userObj.organizationId;
       }
-    } catch (e) {
+    } catch {
       console.warn('Could not parse user data from localStorage for debug logging');
     }
 
@@ -655,7 +654,7 @@ export default function StudentsPage() {
         submitText={userModal.getConfig().submitText}
         loadingText={userModal.getConfig().loadingText}
       >
-        {({ formData, setFormData, errors: _errors, setErrors: _setErrors }) => (
+        {({ formData, setFormData, errors: _errors }) => (
           <div className="space-y-6">
             {/* Role Selection */}
             <div>

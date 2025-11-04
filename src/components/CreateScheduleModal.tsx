@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { XMarkIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
-import { ScheduleFormData, getDayName } from '../types/Schedule';
+import { ScheduleFormData } from '../types/Schedule';
 import { Group } from '../types/Group';
 import { Subject } from '../types/Subject';
 import { User } from '../types/User';
@@ -36,7 +36,6 @@ const CreateScheduleModal: React.FC<CreateScheduleModalProps> = ({
   });
 
   const [groups, setGroups] = useState<Group[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [teachers, setTeachers] = useState<User[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(false);
@@ -102,7 +101,6 @@ const CreateScheduleModal: React.FC<CreateScheduleModalProps> = ({
       ]);
 
       setGroups((groupsData as { items: Group[] }).items || []);
-      setSubjects((subjectsData as { items: Subject[] }).items || []);
       setTeachers(teachersData.items || []);
       setRooms((roomsData as { items: Room[] }).items || []);
     } catch (error) {

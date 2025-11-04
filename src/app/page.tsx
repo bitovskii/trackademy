@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { 
   AcademicCapIcon, 
   UserGroupIcon, 
-  BookOpenIcon, 
   CalendarDaysIcon,
   ChartBarIcon,
   ExclamationTriangleIcon,
@@ -21,7 +20,7 @@ import Link from 'next/link';
 
 export default function Dashboard() {
   const { isAuthenticated, user } = useAuth();
-  const { loadOperation } = useApiToast();
+  const { } = useApiToast();
   
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(false);

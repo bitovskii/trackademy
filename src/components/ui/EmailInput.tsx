@@ -34,7 +34,6 @@ export const EmailInput: React.FC<EmailInputProps> = ({
   const { 
     validateEmail, 
     formatEmailDisplay, 
-    getEmailError,
     isValidEmailDomain,
     suggestEmailCorrection 
   } = useEmailValidator();
@@ -42,7 +41,7 @@ export const EmailInput: React.FC<EmailInputProps> = ({
   const [localValue, setLocalValue] = useState(value);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestionsList, setShowSuggestionsList] = useState(false);
-  const [isFocused, setIsFocused] = useState(false);
+  // const [isFocused, setIsFocused] = useState(false);
 
   useEffect(() => {
     setLocalValue(value);
@@ -65,11 +64,11 @@ export const EmailInput: React.FC<EmailInputProps> = ({
   };
 
   const handleFocus = () => {
-    setIsFocused(true);
+    // setIsFocused(true);
   };
 
   const handleBlurInternal = () => {
-    setIsFocused(false);
+    // setIsFocused(false);
     // Задержка чтобы клик по предложению сработал
     setTimeout(() => {
       setShowSuggestionsList(false);

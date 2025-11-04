@@ -1015,7 +1015,7 @@ export default function SchedulesPage() {
           submitText={scheduleModal.getConfig().submitText}
           loadingText={scheduleModal.getConfig().loadingText}
         >
-          {({ formData, setFormData, errors, setErrors }) => (
+          {({ formData, setFormData, errors }) => (
             <div className="space-y-4">
               {/* Days of Week */}
               <div>

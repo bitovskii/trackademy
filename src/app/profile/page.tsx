@@ -62,43 +62,43 @@ export default function Profile() {
     }
   };
 
-  const getRoleDisplayName = (role: string | number) => {
-    // Convert number to string if needed
-    const roleStr = typeof role === 'number' ? role.toString() : role;
-    
-    switch (roleStr) {
-      case 'Administrator':
-      case '2':
-        return 'Администратор';
-      case 'Teacher':
-      case '3':
-        return 'Преподаватель';
-      case 'Student':
-      case '1':
-        return 'Студент';
-      default:
-        return roleStr;
-    }
-  };
+  // const getRoleDisplayName = (role: string | number) => {
+  //   // Convert number to string if needed
+  //   const roleStr = typeof role === 'number' ? role.toString() : role;
+  //   
+  //   switch (roleStr) {
+  //     case 'Administrator':
+  //     case '2':
+  //       return 'Администратор';
+  //     case 'Teacher':
+  //     case '3':
+  //       return 'Преподаватель';
+  //     case 'Student':
+  //     case '1':
+  //       return 'Студент';
+  //     default:
+  //       return roleStr;
+  //   }
+  // };
 
-  const getRoleBadgeColor = (role: string | number) => {
-    // Convert number to string if needed
-    const roleStr = typeof role === 'number' ? role.toString() : role;
-    
-    switch (roleStr) {
-      case 'Administrator':
-      case '2':
-        return 'bg-red-100 text-red-800';
-      case 'Teacher':
-      case '3':
-        return 'bg-blue-100 text-blue-800';
-      case 'Student':
-      case '1':
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
+  // const getRoleBadgeColor = (role: string | number) => {
+  //   // Convert number to string if needed
+  //   const roleStr = typeof role === 'number' ? role.toString() : role;
+  //   
+  //   switch (roleStr) {
+  //     case 'Administrator':
+  //     case '2':
+  //       return 'bg-red-100 text-red-800';
+  //     case 'Teacher':
+  //     case '3':
+  //       return 'bg-blue-100 text-blue-800';
+  //     case 'Student':
+  //     case '1':
+  //       return 'bg-green-100 text-green-800';
+  //     default:
+  //       return 'bg-gray-100 text-gray-800';
+  //   }
+  // };
 
   const displayData = profileData || user;
 

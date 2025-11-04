@@ -3,10 +3,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
-import { UserGroupIcon, PencilIcon, TrashIcon, PlusIcon, EyeIcon } from '@heroicons/react/24/outline';
+import { UserGroupIcon, PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
 import { Group, GroupFormData, GroupsResponse } from '../../types/Group';
 import { DeleteConfirmationModal } from '../../components/ui/DeleteConfirmationModal';
-import { UniversalModal, useUniversalModal, GroupForm, createGroupValidator } from '../../components';
+import { UniversalModal, useUniversalModal, createGroupValidator } from '../../components';
 import { GroupFormUniversal } from '../../components/forms/GroupFormUniversal';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';

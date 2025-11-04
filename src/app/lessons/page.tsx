@@ -1,13 +1,12 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { CalendarView, Lesson, LessonFilters, LessonsResponse, getWeekStart, getWeekEnd, getMonthStart, getMonthEnd, getDayStart, getDayEnd } from '@/types/Lesson';
+import { CalendarView, Lesson, LessonFilters, LessonsResponse, getWeekStart, getWeekEnd, getMonthStart, getMonthEnd } from '@/types/Lesson';
 import { Schedule } from '@/types/Schedule';
-import { User } from '@/types/User';
 import { AuthenticatedApiService } from '@/services/AuthenticatedApiService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import DayView from '@/components/calendar/DayView';
 import WeekView from '@/components/calendar/WeekView';
 import MonthView from '@/components/calendar/MonthView';
@@ -23,7 +22,7 @@ export default function LessonsPage() {
   const router = useRouter();
 
   // Toast уведомления для API операций
-  const { createOperation, updateOperation, deleteOperation, loadOperation } = useApiToast();
+  const { loadOperation } = useApiToast();
 
   // State management
   const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -497,7 +496,6 @@ export default function LessonsPage() {
               {(dateFrom && dateTo) ? (
                 rangeViewMode === 'list' ? (
                   <ListView
-                    date={currentDate}
                     lessons={lessons}
                     onLessonClick={handleLessonClick}
                   />
@@ -537,7 +535,6 @@ export default function LessonsPage() {
                   
                   {view === 'list' && (
                     <ListView
-                      date={currentDate}
                       lessons={lessons}
                       onLessonClick={handleLessonClick}
                     />

@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
-import { useAuth } from '../../contexts/AuthContext';
 import { PhoneInput } from '../ui/PhoneInput';
 import { EmailInput } from '../ui/EmailInput';
 import { UserFormData } from '../../types/User';
@@ -22,7 +21,6 @@ export const UserForm: React.FC<UserFormProps> = ({
   setErrors,
   mode
 }) => {
-  const { user } = useAuth();
   const [showPassword, setShowPassword] = React.useState(false);
 
   const roleOptions = [

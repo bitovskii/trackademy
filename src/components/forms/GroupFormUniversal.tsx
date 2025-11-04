@@ -17,7 +17,6 @@ export const GroupFormUniversal: React.FC<GroupFormUniversalProps> = ({
   formData,
   setFormData,
   errors,
-  setErrors,
   isSubmitting,
   organizationId
 }) => {

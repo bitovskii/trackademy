@@ -271,23 +271,25 @@ export default function PaymentsPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 max-w-md">
-          <div className="text-blue-500 text-4xl mb-4">🔒</div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-            Требуется авторизация
-          </h3>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 max-w-md">
+            <div className="text-blue-500 text-4xl mb-4">🔒</div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              Требуется авторизация
+            </h3>
           <p className="text-gray-600 dark:text-gray-400">
             Войдите в систему для управления платежами
           </p>
         </div>
       </div>
+      </div>
     );
   }
 
   return (
-    <div className="pb-32">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6 page-container">
+      <div className="max-w-7xl mx-auto space-y-6">
         <PageHeaderWithStats
           title="Платежи"
           subtitle="Управление платежами студентов"

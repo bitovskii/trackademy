@@ -84,3 +84,16 @@ export interface PaymentsResponse {
   hasNextPage: boolean;
   hasPreviousPage: boolean;
 }
+
+// Для создания нового платежа (соответствует API)
+export interface CreatePaymentRequest {
+  studentId: string;
+  groupId: string;
+  paymentPeriod: string;
+  type: number;
+  originalAmount: number;
+  discountPercentage?: number;
+  discountReason?: string;
+  periodStart: string;
+  periodEnd: string;
+}

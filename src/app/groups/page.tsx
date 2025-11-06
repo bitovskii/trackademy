@@ -12,6 +12,8 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import { useColumnVisibility, ColumnVisibilityControl } from '../../components/ui/ColumnVisibilityControl';
 import { useApiToast } from '../../hooks/useApiToast';
+import { GroupStudentsModal } from '../../components/GroupStudentsModal';
+import { CreatePaymentModal } from '../../components/CreatePaymentModal';
 
 export default function GroupsPage() {
   const { isAuthenticated, user } = useAuth();
@@ -25,6 +27,13 @@ export default function GroupsPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [viewingGroup, setViewingGroup] = useState<Group | null>(null);
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
+
+  // Состояния для модалок платежей
+  const [isStudentsModalOpen, setIsStudentsModalOpen] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+  const [isCreatePaymentModalOpen, setIsCreatePaymentModalOpen] = useState(false);
+  const [selectedStudentId, setSelectedStudentId] = useState<string>('');
+  const [selectedStudentName, setSelectedStudentName] = useState<string>('');
 
   // Универсальная система модалов для групп
   const groupModal = useUniversalModal('group', {
@@ -139,6 +148,35 @@ export default function GroupsPage() {
     if (group) {
       setViewingGroup(group);
     }
+  };
+
+  // Обработчики для создания платежей
+  const handleShowStudents = (group: Group) => {
+    setSelectedGroup(group);
+    setIsStudentsModalOpen(true);
+  };
+
+  const handleStudentSelect = (studentId: string, studentName: string) => {
+    setSelectedStudentId(studentId);
+    setSelectedStudentName(studentName);
+    setIsStudentsModalOpen(false);
+    setIsCreatePaymentModalOpen(true);
+  };
+
+  const handlePaymentSuccess = () => {
+    // Можно добавить toast уведомление или обновление данных
+    console.log('Payment created successfully');
+  };
+
+  const handleCloseStudentsModal = () => {
+    setIsStudentsModalOpen(false);
+    setSelectedGroup(null);
+  };
+
+  const handleClosePaymentModal = () => {
+    setIsCreatePaymentModalOpen(false);
+    setSelectedStudentId('');
+    setSelectedStudentName('');
   };
 
   const handleCreateGroup = async (formData: GroupFormData) => {
@@ -433,8 +471,9 @@ export default function GroupsPage() {
                         {isColumnVisible('students') && (
                           <td className="px-6 py-4 whitespace-nowrap">
                             <button
-                              onClick={() => handleView(group.id)}
-                              className="text-teal-600 hover:text-teal-900 dark:text-teal-400 dark:hover:text-teal-300 flex items-center"
+                              onClick={() => handleShowStudents(group)}
+                              className="text-teal-600 hover:text-teal-900 dark:text-teal-400 dark:hover:text-teal-300 flex items-center hover:bg-teal-50 dark:hover:bg-teal-900/20 px-2 py-1 rounded transition-colors"
+                              title="Создать платеж для студента"
                             >
                               <span className="font-medium">{group.students.length}</span>
                               <EyeIcon className="h-4 w-4 ml-1" />
@@ -692,6 +731,26 @@ export default function GroupsPage() {
           />
         )}
       </UniversalModal>
+
+      {/* Модалка со списком студентов группы */}
+      <GroupStudentsModal
+        isOpen={isStudentsModalOpen}
+        onClose={handleCloseStudentsModal}
+        groupName={selectedGroup?.name || ''}
+        students={selectedGroup?.students || []}
+        onStudentSelect={handleStudentSelect}
+      />
+
+      {/* Модалка создания платежа */}
+      <CreatePaymentModal
+        isOpen={isCreatePaymentModalOpen}
+        onClose={handleClosePaymentModal}
+        studentId={selectedStudentId}
+        studentName={selectedStudentName}
+        groupId={selectedGroup?.id || ''}
+        groupName={selectedGroup?.name || ''}
+        onSuccess={handlePaymentSuccess}
+      />
     </div>
   );
 }

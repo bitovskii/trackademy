@@ -1,5 +1,5 @@
 import { AuthenticatedApiService } from './AuthenticatedApiService';
-import { PaymentStats, PaymentFilters, PaymentsResponse, Payment } from '../types/Payment';
+import { PaymentStats, PaymentFilters, PaymentsResponse, Payment, CreatePaymentRequest } from '../types/Payment';
 
 export class PaymentApiService {
   private static readonly BASE_URL = '/Payment';
@@ -73,8 +73,23 @@ export class PaymentApiService {
     return AuthenticatedApiService.get<Payment>(`${this.BASE_URL}/${id}`);
   }
 
+  /**
+   * Создание нового платежа
+   * POST /api/Payment
+   */
+  static async createPayment(paymentData: CreatePaymentRequest): Promise<Payment> {
+    try {
+      return await AuthenticatedApiService.request<Payment>(this.BASE_URL, {
+        method: 'POST',
+        body: JSON.stringify(paymentData)
+      });
+    } catch (error) {
+      console.error('Error creating payment:', error);
+      throw error;
+    }
+  }
+
   // Здесь будут добавлены CRUD операции когда API будет готово:
-  // - createPayment
   // - updatePayment  
   // - deletePayment
   // - markAsPaid

@@ -7,15 +7,13 @@ import {
   BanknotesIcon,
   CheckCircleIcon,
   ClockIcon,
-  XCircleIcon,
   ArrowPathIcon,
   ExclamationTriangleIcon,
   FunnelIcon,
-  MagnifyingGlassIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
-import { PaymentStats, Payment, PaymentFilters, PaymentsResponse } from '../../types/Payment';
+import { PaymentStats, Payment, PaymentFilters } from '../../types/Payment';
 import { PaymentApiService } from '../../services/PaymentApiService';
 import { DateRangePicker } from '@/components/ui/DateRangePicker';
 
@@ -111,7 +109,7 @@ export default function PaymentsPage() {
   }, [isAuthenticated, user?.organizationId, currentPage, pageSize]); // Убрал filters из зависимостей
 
   // Функции для работы с фильтрами
-  const updateFilter = (key: keyof PaymentFilters, value: any) => {
+  const updateFilter = (key: keyof PaymentFilters, value: string | number | undefined) => {
     setFilters(prev => ({
       ...prev,
       [key]: value

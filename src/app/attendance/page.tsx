@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { ClipboardDocumentCheckIcon } from '@heroicons/react/24/outline';
+import { ClipboardDocumentCheckIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
 import { PageHeaderWithStats } from '@/components/ui/PageHeaderWithStats';
 import { DateRangePicker } from '@/components/ui/DateRangePicker';
+import { ExportAttendanceModal } from '@/components/ExportAttendanceModal';
 import { attendanceApi } from '@/services/AttendanceApiService';
 import { AttendanceRecord, AttendanceFilters, AttendanceStatus, getAttendanceStatusText, getAttendanceStatusColor, getAttendanceStatusIcon } from '@/types/Attendance';
 import { useApiToast } from '@/hooks/useApiToast';
@@ -25,6 +26,9 @@ export default function AttendancePage() {
     pageNumber: 1,
     pageSize: 20
   });
+  
+  // Export modal state
+  const [showExportModal, setShowExportModal] = useState(false);
 
   // Check authorization
   useEffect(() => {
@@ -212,12 +216,21 @@ export default function AttendancePage() {
           <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-emerald-50 dark:from-gray-800 dark:to-gray-700">
             <div className="flex items-end justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Фильтры</h3>
-              <button
-                onClick={resetFilters}
-                className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors text-sm"
-              >
-                Сбросить фильтры
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowExportModal(true)}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors text-sm flex items-center gap-2"
+                >
+                  <DocumentArrowDownIcon className="w-4 h-4" />
+                  Экспорт Excel
+                </button>
+                <button
+                  onClick={resetFilters}
+                  className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors text-sm"
+                >
+                  Сбросить фильтры
+                </button>
+              </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {/* Student Search */}
@@ -406,6 +419,15 @@ export default function AttendancePage() {
         </div>
         </div>
       </div>
+      
+      {/* Export Modal */}
+      {user?.organizationId && (
+        <ExportAttendanceModal
+          isOpen={showExportModal}
+          onClose={() => setShowExportModal(false)}
+          organizationId={user.organizationId}
+        />
+      )}
     </div>
   );
 }

@@ -23,3 +23,6 @@ export { default as UserModal } from './UserModal';
 // Специализированные обертки для обратной совместимости (legacy)
 export { default as CreateUserModal } from './CreateUserModal'; 
 export { default as EditUserModal } from './EditUserModal';
+
+// Экспорт модальных окон
+export { ExportAttendanceModal } from './ExportAttendanceModal';

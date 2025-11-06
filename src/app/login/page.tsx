@@ -87,43 +87,44 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-all duration-500">
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900 transition-all duration-500">
       
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-10 -right-10 w-64 h-64 rounded-full opacity-10 animate-float" 
-             style={{ background: 'var(--gradient-cool)' }}></div>
-        <div className="absolute -bottom-10 -left-10 w-48 h-48 rounded-full opacity-10 animate-float" 
-             style={{ background: 'var(--gradient-cool)', animationDelay: '1s' }}></div>
+        <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 opacity-10 blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-20 -left-20 w-64 h-64 rounded-full bg-gradient-to-br from-indigo-400 to-cyan-500 opacity-10 blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 opacity-5 blur-3xl animate-pulse" style={{ animationDelay: '4s' }}></div>
       </div>
 
       <div className={`max-w-md w-full space-y-8 relative z-10 transition-all duration-1000 ${isVisible ? 'animate-slide-in-up' : 'opacity-0'}`}>
         {/* Header */}
-        <div className="text-center animate-fade-in">
-          <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-2xl mb-6 shadow-2xl hover-lift animate-pulse-glow"
-               style={{ background: 'var(--gradient-cool)' }}>
-            <AcademicCapIcon className="w-8 h-8 text-white" />
+        <div className="text-center animate-fade-in mb-8">
+          <div className="mx-auto h-20 w-20 flex items-center justify-center rounded-3xl mb-6 bg-gradient-to-br from-blue-500 to-purple-600 shadow-2xl">
+            <AcademicCapIcon className="w-10 h-10 text-white" />
           </div>
-          <h2 className="text-4xl font-bold mb-3 animate-fade-in animate-delay-100 text-gray-900 dark:text-white">
-            <span className="gradient-text">Добро пожаловать</span>
+          <h2 className="text-4xl font-bold mb-3 text-gray-900 dark:text-white">
+            Добро пожаловать
           </h2>
-          <p className="text-lg mb-4 animate-fade-in animate-delay-200 text-gray-600 dark:text-gray-300">
+          <p className="text-lg text-gray-600 dark:text-gray-300">
             Войдите в TrackAcademy для продолжения
           </p>
         </div>
         
         {/* Login Form */}
-        <div className="card glass-card animate-scale-in animate-delay-200 bg-white/10 dark:bg-black/10 backdrop-blur-xl border border-white/30 dark:border-gray-600/30 shadow-2xl">
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-8 animate-scale-in animate-delay-200">
           <form className="space-y-6" onSubmit={handleSubmit}>
             {error && (
-              <div className="error-message bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded-lg border border-red-200 dark:border-red-800">
-                {error}
+              <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-xl border border-red-200 dark:border-red-800 animate-fade-in">
+                <div className="flex items-center gap-2">
+                  <span className="text-red-500">⚠️</span>
+                  {error}
+                </div>
               </div>
             )}
 
             {/* Login Field */}
-            <div className="form-group animate-fade-in animate-delay-300">
-              <label htmlFor="login" className="form-label text-gray-700 dark:text-gray-300">
+            <div className="animate-fade-in animate-delay-300">
+              <label htmlFor="login" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Логин
               </label>
               <input
@@ -133,17 +134,17 @@ export default function LoginPage() {
                 required
                 value={formData.login}
                 onChange={handleChange}
-                className="input-field bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200"
                 placeholder="Введите ваш логин"
               />
             </div>
 
             {/* Password Field */}
-            <div className="form-group animate-fade-in animate-delay-400">
-              <label htmlFor="password" className="form-label text-gray-700 dark:text-gray-300">
+            <div className="animate-fade-in animate-delay-400">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Пароль
               </label>
-              <div className="password-container">
+              <div className="relative">
                 <input
                   id="password"
                   name="password"
@@ -151,13 +152,13 @@ export default function LoginPage() {
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  className="input-field bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                  className="w-full px-4 py-3 pr-12 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200"
                   placeholder="Введите ваш пароль"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="password-toggle text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
                 >
                   {showPassword ? (
                     <EyeSlashIcon className="h-5 w-5" />
@@ -169,8 +170,8 @@ export default function LoginPage() {
             </div>
 
             {/* Organization Selection */}
-            <div className="form-group animate-fade-in animate-delay-500">
-              <label htmlFor="organizationId" className="form-label text-gray-700 dark:text-gray-300">
+            <div className="animate-fade-in animate-delay-500">
+              <label htmlFor="organizationId" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Организация
               </label>
               <select
@@ -178,7 +179,7 @@ export default function LoginPage() {
                 name="organizationId"
                 value={formData.organizationId}
                 onChange={handleChange}
-                className="input-field bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 text-gray-900 dark:text-white transition-all duration-200"
               >
                 <option value="">Выберите организацию</option>
                 {organizations.map((org) => (
@@ -190,19 +191,22 @@ export default function LoginPage() {
             </div>
 
             {/* Submit Button */}
-            <div className="animate-fade-in animate-delay-500">
+            <div className="animate-fade-in animate-delay-500 pt-2">
               <button
                 type="submit"
                 disabled={loading}
-                className="btn-primary animate-pulse-glow"
+                className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {loading ? (
-                  <div className="flex items-center justify-center">
-                    <div className="loading-spinner mr-2"></div>
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     Вход...
-                  </div>
+                  </>
                 ) : (
-                  'Войти в систему'
+                  <>
+                    <AcademicCapIcon className="w-5 h-5" />
+                    Войти в систему
+                  </>
                 )}
               </button>
             </div>

@@ -6,6 +6,7 @@ import { CreatePaymentRequest } from '../types/Payment';
 import { PaymentApiService } from '../services/PaymentApiService';
 import { UserApiService } from '../services/UserApiService';
 import { User } from '../types/User';
+import { useApiToast } from '../hooks/useApiToast';
 
 interface CreatePaymentModalProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ export const CreatePaymentModal: React.FC<CreatePaymentModalProps> = ({
   groupName,
   onSuccess
 }) => {
+  const { createOperation } = useApiToast();
   const [loading, setLoading] = useState(false);
   const [loadingUser, setLoadingUser] = useState(false);
   const [userData, setUserData] = useState<User | null>(null);
@@ -81,8 +83,12 @@ export const CreatePaymentModal: React.FC<CreatePaymentModalProps> = ({
 
     console.log('Отправляемые данные платежа:', formData); // Для отладки
 
-    try {
-      await PaymentApiService.createPayment(formData);
+    const result = await createOperation(
+      () => PaymentApiService.createPayment(formData),
+      'платёж'
+    );
+
+    if (result.success) {
       onSuccess();
       onClose();
       // Сбрасываем форму
@@ -101,12 +107,9 @@ export const CreatePaymentModal: React.FC<CreatePaymentModalProps> = ({
         originalAmount: '',
         discountPercentage: ''
       });
-    } catch (error) {
-      console.error('Error creating payment:', error);
-      // TODO: Показать toast с ошибкой
-    } finally {
-      setLoading(false);
     }
+
+    setLoading(false);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {

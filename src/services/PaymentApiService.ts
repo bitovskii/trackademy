@@ -89,9 +89,51 @@ export class PaymentApiService {
     }
   }
 
-  // Здесь будут добавлены CRUD операции когда API будет готово:
-  // - updatePayment  
-  // - deletePayment
-  // - markAsPaid
-  // - refundPayment
+  /**
+   * Отметить платеж как оплаченный
+   * PATCH /api/Payment/{id}/paid
+   */
+  static async markAsPaid(id: string, paidAt: string): Promise<Payment> {
+    try {
+      return await AuthenticatedApiService.request<Payment>(`${this.BASE_URL}/${id}/paid`, {
+        method: 'PATCH',
+        body: JSON.stringify({ paidAt })
+      });
+    } catch (error) {
+      console.error('Error marking payment as paid:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Отменить платеж
+   * PATCH /api/Payment/{id}/cancel
+   */
+  static async cancelPayment(id: string, cancelReason: string): Promise<Payment> {
+    try {
+      return await AuthenticatedApiService.request<Payment>(`${this.BASE_URL}/${id}/cancel`, {
+        method: 'PATCH',
+        body: JSON.stringify({ cancelReason })
+      });
+    } catch (error) {
+      console.error('Error cancelling payment:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Сделать возврат платежа
+   * PATCH /api/Payment/{id}/refund
+   */
+  static async refundPayment(id: string, refundReason: string): Promise<Payment> {
+    try {
+      return await AuthenticatedApiService.request<Payment>(`${this.BASE_URL}/${id}/refund`, {
+        method: 'PATCH',
+        body: JSON.stringify({ refundReason })
+      });
+    } catch (error) {
+      console.error('Error refunding payment:', error);
+      throw error;
+    }
+  }
 }

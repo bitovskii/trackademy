@@ -105,9 +105,29 @@ export class AuthenticatedApiService {
           if (errorData) {
             try {
               parsedError = JSON.parse(errorData);
-              // Если есть структурированная ошибка с понятным сообщением
-              if (parsedError && parsedError.error) {
-                errorMessage = parsedError.error;
+              // Обрабатываем разные форматы ошибок API
+              if (parsedError) {
+                if (parsedError.error) {
+                  // Простая ошибка
+                  errorMessage = parsedError.error;
+                } else if (parsedError.errors) {
+                  // Ошибки валидации - извлекаем первое сообщение
+                  const validationErrors = parsedError.errors;
+                  const firstFieldErrors = Object.values(validationErrors)[0];
+                  if (Array.isArray(firstFieldErrors) && firstFieldErrors.length > 0) {
+                    errorMessage = firstFieldErrors[0] as string;
+                  } else {
+                    errorMessage = 'Ошибка валидации данных';
+                  }
+                } else if (parsedError.title) {
+                  // Стандартная ошибка с title
+                  errorMessage = parsedError.title;
+                } else if (parsedError.message) {
+                  // Ошибка с message
+                  errorMessage = parsedError.message;
+                } else {
+                  errorMessage += ` - ${errorData}`;
+                }
               } else {
                 errorMessage += ` - ${errorData}`;
               }
@@ -262,5 +282,18 @@ export class AuthenticatedApiService {
       organizationId: organizationId
     };
     return this.post('/Group/get-groups', body);
+  }
+
+  // Profile management methods
+  static async getUserById(id: string): Promise<User> {
+    return this.get(`/User/GetUserById/${id}`);
+  }
+
+  static async changePassword(studentId: string, currentPassword: string, newPassword: string): Promise<ApiResponse<boolean>> {
+    return this.put('/User/update-password', {
+      studentId,
+      currentPassword,
+      newPassword
+    });
   }
 }

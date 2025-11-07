@@ -36,7 +36,12 @@ export const useApiToast = () => {
 
         // Уточнённая типизация для возможных форм ошибок
         const apiError = error as {
-          parsedError?: { error?: string };
+          parsedError?: { 
+            error?: string; 
+            errors?: Record<string, string[]>;
+            title?: string;
+            message?: string;
+          };
           response?: { data?: { error?: string; message?: string } };
           message?: string;
         };
@@ -45,6 +50,21 @@ export const useApiToast = () => {
         if (apiError?.parsedError?.error) {
           // Структурированная ошибка из нашего API сервиса
           message = apiError.parsedError.error!;
+        } else if (apiError?.parsedError?.errors) {
+          // Ошибки валидации - берем первую
+          const validationErrors = apiError.parsedError.errors;
+          const firstFieldErrors = Object.values(validationErrors)[0];
+          if (Array.isArray(firstFieldErrors) && firstFieldErrors.length > 0) {
+            message = firstFieldErrors[0];
+          } else {
+            message = 'Ошибка валидации данных';
+          }
+        } else if (apiError?.parsedError?.title) {
+          // Стандартная ошибка с title
+          message = apiError.parsedError.title;
+        } else if (apiError?.parsedError?.message) {
+          // Ошибка с message
+          message = apiError.parsedError.message;
         } else if (apiError?.response?.data?.error) {
           // Axios формат
           message = apiError.response.data.error!;

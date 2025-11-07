@@ -33,6 +33,27 @@ export interface Payment {
   daysUntilEnd: number;
 }
 
+// Новый тип для группировки платежей по студентам
+export interface StudentPaymentGroup {
+  studentId: string;
+  studentName: string;
+  lastPaymentId: string;
+  lastPaymentAmount: number;
+  lastPaymentStatus: number;
+  lastPaymentStatusName: string;
+  lastPaymentType: number;
+  lastPaymentTypeName: string;
+  lastPaymentPeriod: string;
+  lastPaymentCreatedAt: string;
+  lastPaymentPaidAt: string | null;
+  lastPaymentPeriodStart: string;
+  lastPaymentPeriodEnd: string;
+  lastPaymentDiscountReason: string;
+  lastPaymentOriginalAmount: number;
+  lastPaymentDiscountPercentage: number;
+  payments?: Payment[];
+}
+
 export interface PaymentFormData {
   id?: string;
   studentId: string;
@@ -74,9 +95,9 @@ export interface PaymentFilters {
   pageSize?: number;
 }
 
-// Ответ от API для списка платежей (соответствует реальному API)
+// Ответ от API для списка платежей (новая структура с группировкой по студентам)
 export interface PaymentsResponse {
-  items: Payment[];
+  items: StudentPaymentGroup[];
   totalCount: number;
   pageNumber: number;
   pageSize: number;

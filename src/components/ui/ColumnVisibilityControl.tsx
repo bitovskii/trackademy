@@ -25,15 +25,46 @@ export const ColumnVisibilityControl: React.FC<ColumnVisibilityControlProps> = (
   variant = 'default'
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
+      const dropdownWidth = 288; // w-72 = 18rem = 288px
+      const dropdownHeight = 400; // Примерная высота dropdown'а
+      const viewportHeight = window.innerHeight;
+      const viewportWidth = window.innerWidth;
+      const padding = 16; // Отступ от краев экрана
+      
+      // Рассчитываем позицию для dropdown'а
+      let top = rect.bottom + 8;
+      let left = rect.left;
+      
+      // Проверяем, не выходит ли dropdown за пределы экрана снизу
+      if (top + dropdownHeight + padding > viewportHeight) {
+        // Показываем сверху от кнопки
+        top = rect.top - dropdownHeight - 8;
+        
+        // Если и сверху не помещается, то по центру экрана
+        if (top < padding) {
+          top = (viewportHeight - dropdownHeight) / 2;
+        }
+      }
+      
+      // Проверяем, не выходит ли dropdown за пределы экрана справа
+      if (left + dropdownWidth + padding > viewportWidth) {
+        left = rect.right - dropdownWidth; // Выравниваем по правому краю кнопки
+      }
+      
+      // Проверяем, не выходит ли dropdown за пределы экрана слева
+      if (left < padding) {
+        left = padding;
+      }
+      
       setDropdownPosition({
-        top: rect.bottom + window.scrollY + 8,
-        right: window.innerWidth - rect.right
+        top: Math.max(padding, top),
+        left: Math.max(padding, left)
       });
     }
   }, [isOpen]);
@@ -73,11 +104,11 @@ export const ColumnVisibilityControl: React.FC<ColumnVisibilityControlProps> = (
           
           {/* Dropdown */}
           <div 
-            className="fixed w-72 bg-white dark:bg-gray-700 rounded-xl shadow-xl 
+            className="fixed w-72 max-h-96 bg-white dark:bg-gray-700 rounded-xl shadow-xl 
                        border border-gray-200 dark:border-gray-600 z-[9999] ring-1 ring-black ring-opacity-5 overflow-hidden"
             style={{
               top: `${dropdownPosition.top}px`,
-              right: `${dropdownPosition.right}px`
+              left: `${dropdownPosition.left}px`
             }}
           >
             <div className="p-4">

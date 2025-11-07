@@ -13,6 +13,7 @@ interface BaseModalProps {
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl';
   gradientFrom?: string;
   gradientTo?: string;
+  customBackground?: string;
 }
 
 export const BaseModal: React.FC<BaseModalProps> = ({
@@ -25,6 +26,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
   maxWidth = 'lg',
   gradientFrom = 'from-blue-500',
   gradientTo = 'to-purple-600',
+  customBackground,
 }) => {
   if (!isOpen) return null;
 
@@ -37,7 +39,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className={`bg-white rounded-2xl shadow-2xl w-full ${maxWidthClasses[maxWidth]} max-h-[70vh] overflow-hidden`}>
+      <div className={`${customBackground || 'bg-white'} rounded-2xl shadow-2xl w-full ${maxWidthClasses[maxWidth]} max-h-[70vh] overflow-hidden`}>
         {/* Header with gradient */}
         <div className={`relative bg-gradient-to-r ${gradientFrom} ${gradientTo} p-2 text-white`}>
           <div className="flex items-center justify-between">

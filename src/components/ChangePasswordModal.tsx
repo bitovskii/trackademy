@@ -70,8 +70,8 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
       } else {
         showError(response.message || 'Ошибка при смене пароля');
       }
-    } catch (error: any) {
-      showError(error.message || 'Ошибка при смене пароля');
+    } catch (error) {
+      showError('Ошибка при смене пароля');
     } finally {
       setIsLoading(false);
     }

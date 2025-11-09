@@ -80,13 +80,15 @@ export default function RoomsPage() {
         setTableLoading(false);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.organizationId]);
 
   useEffect(() => {
-    if (isAuthenticated && !rooms.length) {
-      loadRooms(currentPage, true);
+    if (isAuthenticated && user?.organizationId) {
+      loadRooms(1, false);
     }
-  }, [isAuthenticated, rooms.length]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, user?.organizationId]);
 
   // Check authentication after all hooks are called
   if (!isAuthenticated) {

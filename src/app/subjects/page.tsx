@@ -86,13 +86,15 @@ export default function SubjectsPage() {
         setTableLoading(false);
       }
     }
-  }, [currentPage, user?.organizationId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.organizationId]);
 
   useEffect(() => {
-    if (isAuthenticated && !subjects.length) {
-      loadSubjects(currentPage, true);
+    if (isAuthenticated && user?.organizationId) {
+      loadSubjects(1, false);
     }
-  }, [isAuthenticated, subjects.length]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, user?.organizationId]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);

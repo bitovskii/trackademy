@@ -127,7 +127,8 @@ export default function SchedulesPage() {
         setTableLoading(false);
       }
     }
-  }, [currentPage, user?.organizationId, filters]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.organizationId, filters.groupId, filters.subjectId, filters.teacherId, filters.roomId]);
 
   const loadFilterData = useCallback(async () => {
     try {
@@ -168,12 +169,14 @@ export default function SchedulesPage() {
     }
   }, [user?.organizationId]);
 
+  // Initial load
   useEffect(() => {
     if (isAuthenticated && user?.organizationId) {
       setFilters(prev => ({ ...prev, organizationId: user.organizationId || '' }));
       loadFilterData();
-      loadSchedules(currentPage, true);
+      loadSchedules(1, true);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, user?.organizationId]);
 
   // Reload data when view changes
@@ -187,7 +190,8 @@ export default function SchedulesPage() {
         loadSchedules(1, false);
       }
     }
-  }, [currentView, isAuthenticated, user?.organizationId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentView]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);

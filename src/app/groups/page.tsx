@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
 import { UserGroupIcon, PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
+import { useDebounce } from '../../hooks/useDebounce';
 import { Group, GroupFormData, GroupsResponse } from '../../types/Group';
 import { DeleteConfirmationModal } from '../../components/ui/DeleteConfirmationModal';
 import { UniversalModal, useUniversalModal, createGroupValidator } from '../../components';
@@ -34,6 +35,19 @@ export default function GroupsPage() {
   const [isCreatePaymentModalOpen, setIsCreatePaymentModalOpen] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   const [selectedStudentName, setSelectedStudentName] = useState<string>('');
+
+  // Фильтры для групп
+  const [filters, setFilters] = useState<{
+    subjectId: string;
+    search: string;
+  }>({
+    subjectId: '',
+    search: ''
+  });
+  const [subjects, setSubjects] = useState<Array<{id: string, name: string}>>([]);
+
+  // Debounce search to avoid too many API calls
+  const debouncedSearchTerm = useDebounce(filters.search, 300);
 
   // Универсальная система модалов для групп
   const groupModal = useUniversalModal('group', {
@@ -75,11 +89,25 @@ export default function GroupsPage() {
         return;
       }
 
-      const requestBody = {
+      const requestBody: {
+        pageNumber: number;
+        pageSize: number;
+        organizationId: string;
+        subjectId?: string;
+        search?: string;
+      } = {
         pageNumber: page,
         pageSize: pageSize,
         organizationId: organizationId
       };
+
+      // Add optional filters
+      if (filters.subjectId) {
+        requestBody.subjectId = filters.subjectId;
+      }
+      if (debouncedSearchTerm) {
+        requestBody.search = debouncedSearchTerm;
+      }
 
       const response = await loadOperation(
         () => AuthenticatedApiService.post<GroupsResponse>('/Group/get-groups', requestBody),
@@ -107,13 +135,70 @@ export default function GroupsPage() {
     } finally {
       setTableLoading(false);
     }
-  }, [currentPage, user?.organizationId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.organizationId]);
 
+  // Load subjects for filter
+  const loadSubjects = useCallback(async () => {
+    try {
+      const organizationId = user?.organizationId || localStorage.getItem('userOrganizationId');
+      if (!organizationId) return;
+
+      const requestBody = {
+        pageNumber: 1,
+        pageSize: 1000, // Get all subjects
+        organizationId: organizationId
+      };
+
+      const response = await AuthenticatedApiService.post<{items: Array<{id: string, name: string}>}>('/Subject/GetAllSubjects', requestBody);
+      if (response && response.items) {
+        setSubjects(response.items);
+      }
+    } catch (error) {
+      console.error('Error loading subjects:', error);
+    }
+  }, [user?.organizationId]);
+
+  // Track if initial load is done
+  const initialLoadDone = useRef(false);
+
+  // Initial load - load both groups and subjects once
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (isAuthenticated && user?.organizationId && !initialLoadDone.current) {
+      initialLoadDone.current = true;
+      loadSubjects();
       loadGroups(1, false);
     }
-  }, [isAuthenticated, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, user?.organizationId]);
+
+  // Reload groups when filters change (debounced search or subject filter)
+  useEffect(() => {
+    // Only trigger if initial load is done and we actually have filters
+    if (!initialLoadDone.current) {
+      return;
+    }
+    
+    if (isAuthenticated && user?.organizationId) {
+      setCurrentPage(1);
+      loadGroups(1, true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearchTerm, filters.subjectId]);
+
+  const handleFilterChange = (newFilters: Partial<typeof filters>) => {
+    setFilters(prev => ({ ...prev, ...newFilters }));
+  };
+
+  const handleResetFilters = () => {
+    setFilters({
+      subjectId: '',
+      search: ''
+    });
+    // When resetting filters, reload all groups
+    setCurrentPage(1);
+    loadGroups(1, true);
+  };
 
   const handleCreate = () => {
     setEditingGroupId(null);
@@ -389,6 +474,59 @@ export default function GroupsPage() {
           ]}
         />
 
+        {/* Filters Card */}
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-lg rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Фильтры</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Search Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Поиск по названию группы или имени студента
+              </label>
+              <input
+                type="text"
+                value={filters.search}
+                onChange={(e) => handleFilterChange({ search: e.target.value })}
+                placeholder="Введите название или имя студента..."
+                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 dark:text-white transition-all duration-200"
+              />
+            </div>
+
+            {/* Subject Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Предмет
+              </label>
+              <select
+                value={filters.subjectId}
+                onChange={(e) => handleFilterChange({ subjectId: e.target.value })}
+                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 dark:text-white transition-all duration-200"
+              >
+                <option value="">Все предметы</option>
+                {subjects.map((subject) => (
+                  <option key={subject.id} value={subject.id}>
+                    {subject.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Reset Filters Button */}
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={handleResetFilters}
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Сбросить фильтры
+            </button>
+          </div>
+        </div>
+
         {/* Content Card */}
         <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-lg rounded-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
           {/* Loading State */}
@@ -573,10 +711,14 @@ export default function GroupsPage() {
           {!tableLoading && groups.length === 0 && (
             <EmptyState
               icon={UserGroupIcon}
-              title="Нет групп"
-              description="Начните с добавления первой группы"
-              actionLabel="Добавить группу"
-              onAction={handleCreate}
+              title={filters.search || filters.subjectId ? "Группы не найдены" : "Нет групп"}
+              description={
+                filters.search || filters.subjectId
+                  ? "Попробуйте изменить критерии поиска"
+                  : "Начните с добавления первой группы"
+              }
+              actionLabel={filters.search || filters.subjectId ? "Сбросить фильтры" : "Добавить группу"}
+              onAction={filters.search || filters.subjectId ? handleResetFilters : handleCreate}
             />
           )}
         </div>

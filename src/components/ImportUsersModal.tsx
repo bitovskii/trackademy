@@ -112,9 +112,37 @@ export const ImportUsersModal: React.FC<ImportUsersModalProps> = ({
     }
   };
 
-  const handleDownloadTemplate = () => {
-    // TODO: Будет добавлено после получения API endpoint
-    console.log('Скачивание шаблона...');
+  const handleDownloadTemplate = async () => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch('https://trackademy.onrender.com/api/User/download-template', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Не удалось скачать шаблон');
+      }
+
+      // Получаем blob из ответа
+      const blob = await response.blob();
+      
+      // Создаем ссылку для скачивания
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'template_users.xlsx'; // Имя файла для скачивания
+      document.body.appendChild(link);
+      link.click();
+      
+      // Очищаем
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Ошибка при скачивании шаблона');
+    }
   };
 
   const handleFixError = (errorData: ImportError) => {

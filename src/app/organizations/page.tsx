@@ -34,10 +34,29 @@ function OrganizationsPage() {
   // Toast уведомления для API операций
   const { createOperation, updateOperation, deleteOperation, loadOperation } = useApiToast();
 
+  const loadOrganizations = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const data = await loadOperation(
+        () => AuthenticatedApiService.getOrganizations(),
+        'организации'
+      );
+      setOrganizations(data);
+    } catch (err) {
+      setError('Не удалось загрузить организации. Попробуйте еще раз.');
+      console.error('Error loading organizations:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (isAuthenticated) {
       loadOrganizations();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
 
   // Check authentication after all hooks are called
@@ -66,24 +85,6 @@ function OrganizationsPage() {
       </div>
     );
   }
-
-  const loadOrganizations = async () => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const data = await loadOperation(
-        () => AuthenticatedApiService.getOrganizations(),
-        'организации'
-      );
-      setOrganizations(data);
-    } catch (err) {
-      setError('Не удалось загрузить организации. Попробуйте еще раз.');
-      console.error('Error loading organizations:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleEdit = (id: number) => {
     const organization = organizations.find(org => org.id === id);

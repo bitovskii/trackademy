@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
 import { AcademicCapIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
@@ -72,17 +72,27 @@ export default function StudentsPage() {
   // Debounce search to avoid too many API calls
   const debouncedSearchTerm = useDebounce(filters.search, 300);
   
-  // Track previous search term to avoid unnecessary calls
-  const [prevDebouncedSearch, setPrevDebouncedSearch] = useState('');
+  // Stringify arrays to avoid triggering effects when reference changes but content is the same
+  const roleIdsStr = filters.roleIds.join(',');
+  const groupIdsStr = filters.groupIds.join(',');
+  
+  // Use ref to store current filters to avoid recreating callbacks
+  const filtersRef = useRef(filters);
+  filtersRef.current = filters;
   
   const pageSize = 10;
 
-  const loadStudents = useCallback(async (page: number = currentPage, userFilters: UserFiltersType = filters, isTableOnly: boolean = true) => {
+  const loadStudents = useCallback(async (page: number, isTableOnly: boolean = true) => {
+    console.log('loadStudents called with page:', page);
+    
     // Ранняя проверка аутентификации
     if (!isAuthenticated) {
       console.warn('User not authenticated, skipping loadStudents');
       return;
     }
+    
+    // Use current filters from ref
+    const currentFilters = filtersRef.current;
     
     try {
       if (isTableOnly) {
@@ -133,16 +143,16 @@ export default function StudentsPage() {
         return;
       }
 
-      // Используем debouncedSearchTerm для поиска
-      const searchTerm = userFilters === filters ? debouncedSearchTerm : userFilters.search;
+      // Use current search term (debounced)
+      const searchTerm = currentFilters.search;
 
       const data = await AuthenticatedApiService.getUsers({
         organizationId,
         pageNumber: page,
         pageSize,
         search: searchTerm || undefined,
-        roleIds: userFilters.roleIds.length > 0 ? userFilters.roleIds : undefined,
-        groupIds: userFilters.groupIds.length > 0 ? userFilters.groupIds : undefined
+        roleIds: currentFilters.roleIds.length > 0 ? currentFilters.roleIds : undefined,
+        groupIds: currentFilters.groupIds.length > 0 ? currentFilters.groupIds : undefined
       });
       
       setStudents(data.items);
@@ -164,7 +174,8 @@ export default function StudentsPage() {
         // Не нужно управлять loading, используем только tableLoading
       }
     }
-  }, [user?.organizationId, debouncedSearchTerm, isAuthenticated, filters]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.organizationId, debouncedSearchTerm, isAuthenticated]);
 
   const loadGroups = useCallback(async () => {
     try {
@@ -190,6 +201,7 @@ export default function StudentsPage() {
     } catch (error) {
       console.error('Failed to load groups:', error);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.organizationId]);
 
   const handleFilterChange = useCallback((newFilters: UserFiltersType) => {
@@ -225,7 +237,7 @@ export default function StudentsPage() {
     }
     
     setCurrentPage(page);
-    loadStudents(page, filters, true); // Only update table
+    loadStudents(page, true); // Only update table
   }, [isAuthenticated, loadStudents]);
 
   const renderPagination = () => {
@@ -312,36 +324,32 @@ export default function StudentsPage() {
     );
   };
 
-  // Effect for debounced search
-  useEffect(() => {
-    if (isAuthenticated && debouncedSearchTerm !== prevDebouncedSearch) {
-      setPrevDebouncedSearch(debouncedSearchTerm);
-      loadStudents(1, filters, true); // Only update table
-    }
-  }, [debouncedSearchTerm, isAuthenticated]);
+  // Track if initial load is done
+  const initialLoadDoneStudents = useRef(false);
 
-  // Effect for role and group filters (immediate)
+  // Initial load - load students and groups once
   useEffect(() => {
-    if (isAuthenticated && (filters.roleIds.length > 0 || filters.groupIds.length > 0)) {
-      loadStudents(1, filters, true); // Only update table
-    }
-  }, [filters.roleIds, filters.groupIds, isAuthenticated]);
-
-  // If all filters are cleared, make sure the table refreshes to show unfiltered data
-  useEffect(() => {
-    const noFilters = !filters.search && filters.roleIds.length === 0 && filters.groupIds.length === 0;
-    if (isAuthenticated && noFilters) {
-      // Force table-only reload when user clears all filters
-      loadStudents(1, filters, true);
-    }
-  }, [filters.search, filters.roleIds.length, filters.groupIds.length, isAuthenticated]);
-
-  useEffect(() => {
-    if (isAuthenticated && !students.length) {
-      loadStudents(1, filters, true); // Only update table, no full page load needed
+    if (isAuthenticated && user?.organizationId && !initialLoadDoneStudents.current) {
+      initialLoadDoneStudents.current = true;
+      loadStudents(1, false);
       loadGroups();
     }
-  }, [isAuthenticated, students.length]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, user?.organizationId]);
+
+  // Reload students when filters change (debounced search, role, or group filters)
+  useEffect(() => {
+    // Only trigger if initial load is done
+    if (!initialLoadDoneStudents.current) {
+      return;
+    }
+    
+    if (isAuthenticated && user?.organizationId) {
+      setCurrentPage(1);
+      loadStudents(1, true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearchTerm, roleIdsStr, groupIdsStr]);
 
   // Debug effect to track user context changes
   useEffect(() => {
@@ -436,7 +444,7 @@ export default function StudentsPage() {
     
     // Always reload data and close modal regardless of result
     if (result.success) {
-      await loadStudents(currentPage, filters, true);
+      await loadStudents(currentPage, true);
     }
     setEditingUserId(null);
   };
@@ -459,7 +467,7 @@ export default function StudentsPage() {
       throw new Error('Не удалось удалить пользователя. Попробуйте еще раз.');
     }
     
-    await loadStudents(currentPage, filters, true);
+    await loadStudents(currentPage, true);
     handleCloseDeleteModal();
   };
 
@@ -503,7 +511,7 @@ export default function StudentsPage() {
 
     // Always reload data and close modal regardless of result
     if (result.success) {
-      await loadStudents(currentPage, filters, true);
+      await loadStudents(currentPage, true);
     }
     userModal.closeModal();
   };
@@ -517,7 +525,7 @@ export default function StudentsPage() {
     
     // После успешного импорта обновляем список пользователей
     if (result.successCount > 0) {
-      await loadStudents(currentPage, filters, true);
+      await loadStudents(currentPage, true);
     }
     
     return result;
@@ -539,7 +547,7 @@ export default function StudentsPage() {
                 {error}
               </p>
               <button
-                onClick={() => loadStudents(currentPage, filters, true)}
+                onClick={() => loadStudents(currentPage, true)}
                 className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 
                          text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all 
                          duration-200 transform hover:-translate-y-0.5"

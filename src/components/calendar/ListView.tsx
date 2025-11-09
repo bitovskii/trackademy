@@ -2,6 +2,7 @@
 
 import { Lesson, formatDate, formatTimeRange, generateSubjectColor, getLessonStatusColor, getLessonStatusText } from '@/types/Lesson';
 import { useState } from 'react';
+import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
 
 interface ListViewProps {
   lessons: Lesson[];
@@ -168,6 +169,12 @@ function ListLessonCard({ lesson, onClick }: ListLessonCardProps) {
             <h5 className="font-semibold text-gray-900 dark:text-white">
               {lesson.subject.subjectName}
             </h5>
+            {lesson.note && (
+              <ChatBubbleLeftIcon 
+                className="w-4 h-4 text-blue-500 dark:text-blue-400" 
+                title="Есть комментарий преподавателя"
+              />
+            )}
             <div
               className="px-2 py-1 rounded-full text-xs font-medium text-white"
               style={{ backgroundColor: statusColor }}

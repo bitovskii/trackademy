@@ -185,6 +185,13 @@ export class AuthenticatedApiService {
     return this.request<T>(endpoint, { method: 'DELETE' });
   }
 
+  static async patch<T>(endpoint: string, data: unknown): Promise<T> {
+    return this.request<T>(endpoint, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
   // User management methods
   static async updateUser(id: string, userData: UserFormData): Promise<ApiResponse<User>> {
     return this.put(`/User/update-user/${id}`, userData);
@@ -338,5 +345,10 @@ export class AuthenticatedApiService {
     }
 
     return response.json();
+  }
+
+  // Lesson note management
+  static async updateLessonNote(lessonId: string, note: string): Promise<ApiResponse<boolean>> {
+    return this.patch(`/Lesson/${lessonId}/note`, { note });
   }
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { Lesson, getTimeSlots, getLessonsForDay, formatTime, generateSubjectColor, getLessonStatusColor } from '@/types/Lesson';
+import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
 
 interface DayViewProps {
   date: Date;
@@ -124,9 +125,17 @@ function LessonBlock({ lesson, onClick, height }: LessonBlockProps) {
     >
       <div className="flex items-start justify-between h-full">
         <div className="flex-1 min-w-0">
-          <h4 className="font-medium text-gray-900 dark:text-white truncate">
-            {lesson.subject.subjectName}
-          </h4>
+          <div className="flex items-center gap-1">
+            <h4 className="font-medium text-gray-900 dark:text-white truncate">
+              {lesson.subject.subjectName}
+            </h4>
+            {lesson.note && (
+              <ChatBubbleLeftIcon 
+                className="w-4 h-4 text-blue-500 dark:text-blue-400 flex-shrink-0" 
+                title="Есть комментарий преподавателя"
+              />
+            )}
+          </div>
           <p className="text-sm text-gray-600 dark:text-gray-300 truncate">
             {lesson.group.name}
           </p>

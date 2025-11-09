@@ -1,6 +1,7 @@
 'use client';
 
 import { Lesson, getTimeSlots, getLessonsForDay, getWeekDays, formatTime, generateSubjectColor, getLessonStatusColor } from '@/types/Lesson';
+import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
 
 interface WeekViewProps {
   date: Date;
@@ -163,9 +164,17 @@ function WeekLessonBlock({ lesson, onClick, height }: WeekLessonBlockProps) {
       }}
     >
       <div className="flex items-center justify-between mb-1">
-        <span className="font-medium text-gray-900 dark:text-white truncate flex-1">
-          {lesson.subject.subjectName}
-        </span>
+        <div className="flex items-center gap-1 flex-1 min-w-0">
+          <span className="font-medium text-gray-900 dark:text-white truncate">
+            {lesson.subject.subjectName}
+          </span>
+          {lesson.note && (
+            <ChatBubbleLeftIcon 
+              className="w-3 h-3 text-blue-500 dark:text-blue-400 flex-shrink-0" 
+              title="Есть комментарий"
+            />
+          )}
+        </div>
         <div
           className="w-2 h-2 rounded-full ml-1 flex-shrink-0"
           style={{ backgroundColor: statusColor }}

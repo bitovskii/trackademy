@@ -1,6 +1,7 @@
 'use client';
 
 import { Lesson, getLessonsForDay, getCalendarGrid, generateSubjectColor, formatTime } from '@/types/Lesson';
+import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
 
 interface MonthViewProps {
   date: Date;
@@ -112,10 +113,17 @@ function MonthLessonBlock({ lesson, onClick }: MonthLessonBlockProps) {
         borderLeft: `3px solid ${subjectColor}`,
         paddingLeft: '6px'
       }}
-      title={`${lesson.subject.subjectName} - ${lesson.group.name} (${formatTime(lesson.startTime)}-${formatTime(lesson.endTime)})`}
+      title={`${lesson.subject.subjectName} - ${lesson.group.name} (${formatTime(lesson.startTime)}-${formatTime(lesson.endTime)})${lesson.note ? ' • Есть комментарий' : ''}`}
     >
-      <div className="font-medium text-gray-900 dark:text-white truncate">
-        {formatTime(lesson.startTime)} {lesson.subject.subjectName}
+      <div className="flex items-center gap-1 font-medium text-gray-900 dark:text-white">
+        <span className="truncate">
+          {formatTime(lesson.startTime)} {lesson.subject.subjectName}
+        </span>
+        {lesson.note && (
+          <ChatBubbleLeftIcon 
+            className="w-3 h-3 text-blue-500 dark:text-blue-400 flex-shrink-0" 
+          />
+        )}
       </div>
       <div className="text-gray-600 dark:text-gray-300 truncate">
         {lesson.group.name}

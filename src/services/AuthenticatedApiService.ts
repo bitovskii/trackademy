@@ -296,4 +296,47 @@ export class AuthenticatedApiService {
       newPassword
     });
   }
+
+  // Import users from Excel
+  static async importUsersFromExcel(file: File, organizationId: string): Promise<import('../types/User').ImportResult> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('organizationId', organizationId);
+
+    const token = this.getAuthToken();
+    const API_BASE_URL = 'https://trackademy.onrender.com/api';
+    const url = `${API_BASE_URL}/User/import-excel`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        // Don't set Content-Type for FormData, browser will set it with boundary
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        globalThis.location.href = '/login';
+        throw new Error('Authentication expired');
+      }
+
+      let errorMessage = `Ошибка импорта: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorMessage;
+      } catch {
+        // Ignore parse error
+      }
+      
+      const error = new Error(errorMessage) as StructuredError;
+      error.status = response.status;
+      throw error;
+    }
+
+    return response.json();
+  }
 }

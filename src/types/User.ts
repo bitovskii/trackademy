@@ -31,3 +31,31 @@ export interface UserFormData {
   organizationId?: string;
   isTrial: boolean;
 }
+
+// Типы для импорта пользователей
+export interface ImportedUser {
+  rowNumber: number;
+  userId: string;
+  fullName: string;
+  login: string;
+  generatedPassword: string;
+  email: string;
+  phone: string;
+  role: string;
+}
+
+export interface ImportError {
+  rowNumber: number;
+  fullName: string;
+  email: string;
+  phone: string;
+  errors: string[];
+}
+
+export interface ImportResult {
+  totalRows: number;
+  successCount: number;
+  errorCount: number;
+  createdUsers: ImportedUser[];
+  errors: ImportError[];
+}

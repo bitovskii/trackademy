@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
-import { AcademicCapIcon } from '@heroicons/react/24/outline';
-import { User, UserFormData } from '../../types/User';
+import { AcademicCapIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
+import { User, UserFormData, ImportResult } from '../../types/User';
 import UniversalModal from '../../components/ui/UniversalModal';
 import { useUniversalModal } from '../../hooks/useUniversalModal';
 import { DeleteConfirmationModal } from '../../components/ui/DeleteConfirmationModal';
@@ -20,6 +20,7 @@ import { EmailInput } from '@/components/ui/EmailInput';
 import { useApiToast } from '../../hooks/useApiToast';
 import { PasswordInput } from '@/components/ui/PasswordInput';
 import { cleanUserFormData } from '../../utils/apiHelpers';
+import { ImportUsersModal } from '../../components/ImportUsersModal';
 
 export default function StudentsPage() {
   const { isAuthenticated, user } = useAuth();
@@ -31,6 +32,7 @@ export default function StudentsPage() {
   const [deletingUser, setDeletingUser] = useState<User | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   // Универсальная система модалов для пользователей
   const userModal = useUniversalModal('user', {
@@ -506,6 +508,21 @@ export default function StudentsPage() {
     userModal.closeModal();
   };
 
+  const handleImportUsers = async (file: File): Promise<ImportResult> => {
+    if (!user?.organizationId) {
+      throw new Error('Organization ID не найден');
+    }
+
+    const result = await AuthenticatedApiService.importUsersFromExcel(file, user.organizationId);
+    
+    // После успешного импорта обновляем список пользователей
+    if (result.successCount > 0) {
+      await loadStudents(currentPage, filters, true);
+    }
+    
+    return result;
+  };
+
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
@@ -549,11 +566,23 @@ export default function StudentsPage() {
           actionLabel={user && canManageUsers(user.role) ? "Добавить пользователя" : undefined}
           onAction={user && canManageUsers(user.role) ? () => userModal.openCreateModal() : undefined}
           extraActions={
-            <ColumnVisibilityControl
-              columns={columns}
-              onColumnToggle={toggleColumn}
-              variant="header"
-            />
+            <div className="flex items-center gap-3">
+              {user && canManageUsers(user.role) && (
+                <button
+                  onClick={() => setIsImportModalOpen(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-500 to-emerald-600 text-white rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-105 font-medium"
+                  title="Импорт пользователей"
+                >
+                  <ArrowUpTrayIcon className="w-5 h-5" />
+                  <span className="hidden sm:inline">Импорт</span>
+                </button>
+              )}
+              <ColumnVisibilityControl
+                columns={columns}
+                onColumnToggle={toggleColumn}
+                variant="header"
+              />
+            </div>
           }
           stats={[
             { label: "Всего пользователей", value: totalCount, color: "emerald" },
@@ -886,6 +915,16 @@ export default function StudentsPage() {
         itemName={deletingUser?.name}
         danger={true}
       />
+
+      {/* Import Users Modal */}
+      {user?.organizationId && (
+        <ImportUsersModal
+          isOpen={isImportModalOpen}
+          onClose={() => setIsImportModalOpen(false)}
+          onImport={handleImportUsers}
+          organizationId={user.organizationId}
+        />
+      )}
     </div>
   );
 }

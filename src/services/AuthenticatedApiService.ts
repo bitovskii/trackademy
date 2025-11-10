@@ -351,4 +351,25 @@ export class AuthenticatedApiService {
   static async updateLessonNote(lessonId: string, note: string): Promise<ApiResponse<boolean>> {
     return this.patch(`/Lesson/${lessonId}/note`, { note });
   }
+
+  // Assignment management
+  static async getAssignmentById(id: string): Promise<any> {
+    return this.get(`/Assignment/${id}`);
+  }
+
+  static async getAssignments(filters: any): Promise<any> {
+    return this.post('/Assignment/get-assignments', filters);
+  }
+
+  static async createAssignment(data: any): Promise<any> {
+    return this.post('/Assignment/create', data);
+  }
+
+  static async updateAssignment(id: string, data: any): Promise<any> {
+    return this.put(`/Assignment/${id}`, data);
+  }
+
+  static async deleteAssignment(id: string): Promise<any> {
+    return this.delete(`/Assignment/${id}`);
+  }
 }

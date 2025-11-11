@@ -49,6 +49,13 @@ export default function GroupsPage() {
   // Debounce search to avoid too many API calls
   const debouncedSearchTerm = useDebounce(filters.search, 300);
 
+  // Ref для доступа к актуальным фильтрам в useCallback
+  const filtersRef = useRef(filters);
+  filtersRef.current = filters;
+
+  const debouncedSearchRef = useRef(debouncedSearchTerm);
+  debouncedSearchRef.current = debouncedSearchTerm;
+
   // Универсальная система модалов для групп
   const groupModal = useUniversalModal('group', {
     name: '',
@@ -89,6 +96,9 @@ export default function GroupsPage() {
         return;
       }
 
+      const currentFilters = filtersRef.current;
+      const currentSearch = debouncedSearchRef.current;
+
       const requestBody: {
         pageNumber: number;
         pageSize: number;
@@ -102,11 +112,11 @@ export default function GroupsPage() {
       };
 
       // Add optional filters
-      if (filters.subjectId) {
-        requestBody.subjectId = filters.subjectId;
+      if (currentFilters.subjectId) {
+        requestBody.subjectId = currentFilters.subjectId;
       }
-      if (debouncedSearchTerm) {
-        requestBody.search = debouncedSearchTerm;
+      if (currentSearch) {
+        requestBody.search = currentSearch;
       }
 
       const response = await loadOperation(

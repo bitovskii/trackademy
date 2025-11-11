@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useToast } from '../contexts/ToastContext';
 import { BaseModal } from './ui/BaseModal';
 import { User, UserFormData } from '../types/User';
+import { usePhoneFormatter } from '../hooks/usePhoneFormatter';
 
 interface ProfileEditModalProps {
   isOpen: boolean;
@@ -41,6 +42,7 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const { showError, showSuccess } = useToast();
+  const { formatPhoneDisplay } = usePhoneFormatter();
   
   const [formData, setFormData] = useState<ProfileFormData>({
     login: '',
@@ -75,10 +77,20 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    // Специальная обработка для телефонных полей
+    if (name === 'phone' || name === 'parentPhone') {
+      const formattedValue = formatPhoneDisplay(value);
+      setFormData(prev => ({
+        ...prev,
+        [name]: formattedValue
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -104,8 +116,8 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
       };
       
       await onSave(userFormData);
-      onClose();
       showSuccess('Профиль успешно обновлен');
+      onClose();
     } catch (error) {
       console.error('Error updating profile:', error);
       showError('Ошибка при обновлении профиля');

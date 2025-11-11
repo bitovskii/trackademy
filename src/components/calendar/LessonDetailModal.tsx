@@ -2,12 +2,13 @@
 
 import { Lesson, formatDate, formatTimeRange, getLessonStatusText, getLessonStatusColor, generateSubjectColor } from '@/types/Lesson';
 import { getAttendanceStatusText, getAttendanceStatusColor } from '@/types/Attendance';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import QuickAttendance from '@/components/attendance/QuickAttendance';
 import ImprovedAttendance from '@/components/attendance/ImprovedAttendance';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthenticatedApiService } from '@/services/AuthenticatedApiService';
 import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
+import { useToast } from '@/contexts/ToastContext';
 
 interface LessonDetailModalProps {
   lesson: Lesson;
@@ -18,11 +19,32 @@ interface LessonDetailModalProps {
 
 export default function LessonDetailModal({ lesson, isOpen, onClose, onUpdate }: LessonDetailModalProps) {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<'details' | 'attendance' | 'quick-attendance'>('details');
   const [note, setNote] = useState(lesson.note || '');
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [noteError, setNoteError] = useState<string | null>(null);
   const [noteSuccess, setNoteSuccess] = useState(false);
+  
+  // Cancel modal state
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [isCancelling, setIsCancelling] = useState(false);
+  
+  // Move modal state
+  const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
+  const [moveDate, setMoveDate] = useState('');
+  const [moveStartTime, setMoveStartTime] = useState('');
+  const [moveEndTime, setMoveEndTime] = useState('');
+  const [moveReason, setMoveReason] = useState('');
+  const [isMoving, setIsMoving] = useState(false);
+
+  // Update note when lesson changes
+  useEffect(() => {
+    setNote(lesson.note || '');
+    setNoteError(null);
+    setNoteSuccess(false);
+  }, [lesson.id]);
 
   if (!isOpen) return null;
 
@@ -56,6 +78,77 @@ export default function LessonDetailModal({ lesson, isOpen, onClose, onUpdate }:
       setNoteError(error instanceof Error ? error.message : 'Ошибка при сохранении комментария');
     } finally {
       setIsSavingNote(false);
+    }
+  };
+
+  const handleCancelLesson = async () => {
+    if (!cancelReason.trim()) {
+      showToast('Пожалуйста, укажите причину отмены', 'error');
+      return;
+    }
+
+    setIsCancelling(true);
+    try {
+      await AuthenticatedApiService.cancelLesson(lesson.id, 3, cancelReason);
+      
+      showToast('Урок успешно отменен', 'success');
+      
+      if (onUpdate) {
+        onUpdate();
+      }
+      
+      setIsCancelModalOpen(false);
+      setCancelReason('');
+      onClose();
+    } catch (error) {
+      console.error('Error cancelling lesson:', error);
+      const errorMessage = (error as { response?: { data?: { error?: string } }; message?: string })?.response?.data?.error 
+        || (error as { message?: string })?.message 
+        || 'Ошибка при отмене урока';
+      showToast(errorMessage, 'error');
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  const handleMoveLesson = async () => {
+    if (!moveDate || !moveStartTime || !moveEndTime || !moveReason.trim()) {
+      showToast('Пожалуйста, заполните все поля', 'error');
+      return;
+    }
+
+    setIsMoving(true);
+    try {
+      // Add seconds to time format (HH:mm:ss)
+      const startTimeWithSeconds = moveStartTime.includes(':') && moveStartTime.split(':').length === 2 
+        ? `${moveStartTime}:00` 
+        : moveStartTime;
+      const endTimeWithSeconds = moveEndTime.includes(':') && moveEndTime.split(':').length === 2 
+        ? `${moveEndTime}:00` 
+        : moveEndTime;
+      
+      await AuthenticatedApiService.moveLesson(lesson.id, moveDate, startTimeWithSeconds, endTimeWithSeconds, moveReason);
+      
+      showToast('Урок успешно перенесен', 'success');
+      
+      if (onUpdate) {
+        onUpdate();
+      }
+      
+      setIsMoveModalOpen(false);
+      setMoveDate('');
+      setMoveStartTime('');
+      setMoveEndTime('');
+      setMoveReason('');
+      onClose();
+    } catch (error) {
+      console.error('Error moving lesson:', error);
+      const errorMessage = (error as { response?: { data?: { error?: string } }; message?: string })?.response?.data?.error 
+        || (error as { message?: string })?.message 
+        || 'Ошибка при переносе урока';
+      showToast(errorMessage, 'error');
+    } finally {
+      setIsMoving(false);
     }
   };
 
@@ -171,7 +264,33 @@ export default function LessonDetailModal({ lesson, isOpen, onClose, onUpdate }:
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex justify-between items-center p-6 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex gap-3">
+            {/* Show action buttons only if lesson is Planned and user has permissions */}
+            {lesson.lessonStatus === 'Planned' && (isTeacher || isOwner) && (
+              <>
+                <button
+                  onClick={() => setIsMoveModalOpen(true)}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Перенести урок
+                </button>
+                <button
+                  onClick={() => setIsCancelModalOpen(true)}
+                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Отменить урок
+                </button>
+              </>
+            )}
+          </div>
+          
           <button
             onClick={onClose}
             className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white transition-colors"
@@ -180,6 +299,169 @@ export default function LessonDetailModal({ lesson, isOpen, onClose, onUpdate }:
           </button>
         </div>
       </div>
+
+      {/* Cancel Lesson Modal */}
+      {isCancelModalOpen && (
+        <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6 shadow-xl">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+              Отменить урок
+            </h3>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Причина <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                rows={4}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
+                         bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                         focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                placeholder="Укажите причину отмены урока..."
+              />
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setIsCancelModalOpen(false);
+                  setCancelReason('');
+                }}
+                disabled={isCancelling}
+                className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white transition-colors"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleCancelLesson}
+                disabled={isCancelling || !cancelReason.trim()}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 
+                         disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+              >
+                {isCancelling ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Отменяем...
+                  </>
+                ) : (
+                  'Подтвердить отмену'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Move Lesson Modal */}
+      {isMoveModalOpen && (
+        <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6 shadow-xl">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+              Перенести урок
+            </h3>
+            
+            <div className="space-y-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Новая дата <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={moveDate}
+                  onChange={(e) => setMoveDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
+                           bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Время начала <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="time"
+                    value={moveStartTime}
+                    onChange={(e) => setMoveStartTime(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
+                             bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                             focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Время окончания <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="time"
+                    value={moveEndTime}
+                    onChange={(e) => setMoveEndTime(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
+                             bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                             focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Причина <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={moveReason}
+                  onChange={(e) => setMoveReason(e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
+                           bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Укажите причину переноса урока..."
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setIsMoveModalOpen(false);
+                  setMoveDate('');
+                  setMoveStartTime('');
+                  setMoveEndTime('');
+                  setMoveReason('');
+                }}
+                disabled={isMoving}
+                className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white transition-colors"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleMoveLesson}
+                disabled={isMoving || !moveDate || !moveStartTime || !moveEndTime || !moveReason.trim()}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 
+                         disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+              >
+                {isMoving ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Переносим...
+                  </>
+                ) : (
+                  'Подтвердить перенос'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -347,7 +629,7 @@ function DetailsTab({ lesson, subjectColor, note, setNote, canEditNote, isSaving
       {lesson.cancelReason && (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Причина отмены
+            Причина
           </h3>
           <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
             <p className="text-red-600 dark:text-red-400">{lesson.cancelReason}</p>

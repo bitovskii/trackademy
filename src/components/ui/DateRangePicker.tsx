@@ -37,7 +37,11 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
   }, []);
 
   const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('ru-RU', {
+    // Парсим дату как локальную (без сдвига часового пояса)
+    const [year, month, day] = date.split('-').map(Number);
+    const localDate = new Date(year, month - 1, day);
+    
+    return localDate.toLocaleDateString('ru-RU', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric'
@@ -63,7 +67,11 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
   };
 
   const handleDateClick = (date: Date) => {
-    const dateString = date.toISOString().split('T')[0];
+    // Форматируем дату как локальную строку YYYY-MM-DD без сдвига часового пояса
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateString = `${year}-${month}-${day}`;
     
     if (selectingStart || !startDate) {
       onDateChange(dateString, undefined);
@@ -104,7 +112,10 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
   };
 
   const isDateSelected = (date: Date) => {
-    const dateString = date.toISOString().split('T')[0];
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateString = `${year}-${month}-${day}`;
     return dateString === startDate || dateString === endDate;
   };
 
@@ -265,8 +276,12 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
             <div className="grid grid-cols-2 gap-2 mb-3">
               <button
                 onClick={() => {
-                  const today = new Date().toISOString().split('T')[0];
-                  onDateChange(today, today);
+                  const today = new Date();
+                  const year = today.getFullYear();
+                  const month = String(today.getMonth() + 1).padStart(2, '0');
+                  const day = String(today.getDate()).padStart(2, '0');
+                  const todayString = `${year}-${month}-${day}`;
+                  onDateChange(todayString, todayString);
                   setIsOpen(false);
                   setSelectingStart(true);
                 }}
@@ -281,7 +296,18 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
                   const today = new Date();
                   const weekAgo = new Date(today);
                   weekAgo.setDate(today.getDate() - 7);
-                  onDateChange(weekAgo.toISOString().split('T')[0], today.toISOString().split('T')[0]);
+                  
+                  const todayYear = today.getFullYear();
+                  const todayMonth = String(today.getMonth() + 1).padStart(2, '0');
+                  const todayDay = String(today.getDate()).padStart(2, '0');
+                  const todayString = `${todayYear}-${todayMonth}-${todayDay}`;
+                  
+                  const weekYear = weekAgo.getFullYear();
+                  const weekMonth = String(weekAgo.getMonth() + 1).padStart(2, '0');
+                  const weekDay = String(weekAgo.getDate()).padStart(2, '0');
+                  const weekAgoString = `${weekYear}-${weekMonth}-${weekDay}`;
+                  
+                  onDateChange(weekAgoString, todayString);
                   setIsOpen(false);
                   setSelectingStart(true);
                 }}
@@ -294,9 +320,20 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
               <button
                 onClick={() => {
                   const today = new Date();
-                  const monthAgo = new Date(today);
-                  monthAgo.setMonth(today.getMonth() - 1);
-                  onDateChange(monthAgo.toISOString().split('T')[0], today.toISOString().split('T')[0]);
+                  // Первый день текущего месяца
+                  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+                  
+                  const todayYear = today.getFullYear();
+                  const todayMonth = String(today.getMonth() + 1).padStart(2, '0');
+                  const todayDay = String(today.getDate()).padStart(2, '0');
+                  const todayString = `${todayYear}-${todayMonth}-${todayDay}`;
+                  
+                  const startYear = monthStart.getFullYear();
+                  const startMonth = String(monthStart.getMonth() + 1).padStart(2, '0');
+                  const startDay = String(monthStart.getDate()).padStart(2, '0');
+                  const monthStartString = `${startYear}-${startMonth}-${startDay}`;
+                  
+                  onDateChange(monthStartString, todayString);
                   setIsOpen(false);
                   setSelectingStart(true);
                 }}
@@ -309,8 +346,20 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
               <button
                 onClick={() => {
                   const today = new Date();
+                  // Первый день текущего года
                   const yearStart = new Date(today.getFullYear(), 0, 1);
-                  onDateChange(yearStart.toISOString().split('T')[0], today.toISOString().split('T')[0]);
+                  
+                  const todayYear = today.getFullYear();
+                  const todayMonth = String(today.getMonth() + 1).padStart(2, '0');
+                  const todayDay = String(today.getDate()).padStart(2, '0');
+                  const todayString = `${todayYear}-${todayMonth}-${todayDay}`;
+                  
+                  const startYear = yearStart.getFullYear();
+                  const startMonth = String(yearStart.getMonth() + 1).padStart(2, '0');
+                  const startDay = String(yearStart.getDate()).padStart(2, '0');
+                  const yearStartString = `${startYear}-${startMonth}-${startDay}`;
+                  
+                  onDateChange(yearStartString, todayString);
                   setIsOpen(false);
                   setSelectingStart(true);
                 }}

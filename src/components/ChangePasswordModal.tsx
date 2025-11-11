@@ -25,6 +25,13 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
     confirmPassword: ''
   });
 
+  // Сбрасываем форму при открытии модалки
+  React.useEffect(() => {
+    if (isOpen) {
+      setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    }
+  }, [isOpen]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -65,12 +72,15 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
       );
       if (response.success) {
         showSuccess('Пароль успешно изменен');
+        // Сбрасываем форму
         setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        // Закрываем модалку
         onClose();
       } else {
         showError(response.message || 'Ошибка при смене пароля');
       }
     } catch (error) {
+      console.error('Password change error:', error);
       showError('Ошибка при смене пароля');
     } finally {
       setIsLoading(false);

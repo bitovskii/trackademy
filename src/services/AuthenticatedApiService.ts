@@ -354,6 +354,23 @@ export class AuthenticatedApiService {
     return this.patch(`/Lesson/${lessonId}/note`, { note });
   }
 
+  // Lesson management
+  static async moveLesson(lessonId: string, date: string, startTime: string, endTime: string, cancelReason: string): Promise<ApiResponse<boolean>> {
+    return this.patch(`/Lesson/${lessonId}/moved`, {
+      date,
+      startTime,
+      endTime,
+      cancelReason
+    });
+  }
+
+  static async cancelLesson(lessonId: string, lessonStatus: number, cancelReason: string): Promise<ApiResponse<boolean>> {
+    return this.patch(`/Lesson/${lessonId}/cancel`, {
+      lessonStatus,
+      cancelReason
+    });
+  }
+
   // Assignment management
   static async getAssignmentById(id: string): Promise<Assignment> {
     return this.get(`/Assignment/${id}`);

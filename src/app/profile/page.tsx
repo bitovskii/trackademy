@@ -78,6 +78,9 @@ export default function Profile() {
       await AuthenticatedApiService.updateUser(user.id, formData);
       // Обновляем данные профиля после сохранения
       await fetchProfileData();
+      // Также обновляем полные данные для модалки
+      const fullData = await AuthenticatedApiService.getUserById(user.id);
+      setFullProfileData(fullData);
     } catch (error) {
       console.error('Failed to update profile:', error);
       throw error; // Пробрасываем ошибку для обработки в модалке

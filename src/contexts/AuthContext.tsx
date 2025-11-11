@@ -6,6 +6,7 @@ interface User {
   login: string;
   email: string;
   role: string; // Changed to string since API returns role names like "Administrator"
+  roleId?: number; // Role ID for easier role checking (1=Student, 2=Admin, 3=Teacher, 4=Owner)
   organizationId?: string;
   organizationNames?: string | string[]; // Can be string or array
 }
@@ -151,6 +152,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
         login: result.user.login,
         email: result.user.email,
         role: result.user.role,
+        roleId: result.user.roleId,
         organizationId: result.user.organizationId,
         organizationNames: result.user.organizationNames
       };

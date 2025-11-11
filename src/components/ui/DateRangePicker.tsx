@@ -181,10 +181,10 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
 
       {/* Calendar Dropdown */}
       {isOpen && (
-        <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 
+        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 
                        md:left-0 md:transform-none
                        bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 
-                       rounded-xl shadow-xl z-50 p-4 w-80 max-w-[calc(100vw-2rem)] 
+                       rounded-xl shadow-xl z-[100] p-4 w-80 max-w-[calc(100vw-2rem)] 
                        md:min-w-[320px] md:w-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">

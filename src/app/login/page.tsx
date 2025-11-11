@@ -21,6 +21,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   // Redirect to home if already authenticated
   useEffect(() => {
@@ -32,16 +33,20 @@ export default function LoginPage() {
 
   // Pre-fill login and organizationId if available in localStorage
   useEffect(() => {
+    setMounted(true);
     setIsVisible(true);
-    const savedLogin = localStorage.getItem('userLogin');
-    const savedOrgId = localStorage.getItem('userOrganizationId');
     
-    if (savedLogin) {
-      setFormData(prev => ({ 
-        ...prev, 
-        login: savedLogin,
-        organizationId: savedOrgId || ''
-      }));
+    if (typeof window !== 'undefined') {
+      const savedLogin = localStorage.getItem('userLogin');
+      const savedOrgId = localStorage.getItem('userOrganizationId');
+      
+      if (savedLogin) {
+        setFormData(prev => ({ 
+          ...prev, 
+          login: savedLogin,
+          organizationId: savedOrgId || ''
+        }));
+      }
     }
     
     // Fetch organizations for dropdown
@@ -85,6 +90,11 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  // Prevent hydration mismatch by not rendering until mounted
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900 transition-all duration-500">

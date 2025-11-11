@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
 import { ClipboardDocumentListIcon, PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { Assignment, AssignmentFormData, AssignmentsResponse, AssignmentFilters } from '../../types/Assignment';
+import { Submission, SubmissionFilters, SubmissionsResponse, SubmissionStatus } from '../../types/Submission';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import { useApiToast } from '../../hooks/useApiToast';
 import { DeleteConfirmationModal } from '../../components/ui/DeleteConfirmationModal';
@@ -37,6 +38,31 @@ export default function HomeworkPage() {
   const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
+  // Submissions tab state
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [submissionsCurrentPage, setSubmissionsCurrentPage] = useState(1);
+  const [submissionsTotalPages, setSubmissionsTotalPages] = useState(0);
+  const [submissionsTotalCount, setSubmissionsTotalCount] = useState(0);
+  const [submissionsTableLoading, setSubmissionsTableLoading] = useState(false);
+  const [submissionFilters, setSubmissionFilters] = useState<{
+    assignmentId: string;
+    groupId: string;
+    studentId: string;
+    status: string;
+    fromDate: string;
+    toDate: string;
+  }>({
+    assignmentId: '',
+    groupId: '',
+    studentId: '',
+    status: '',
+    fromDate: '',
+    toDate: ''
+  });
+  const [students, setStudents] = useState<Array<{id: string, name: string}>>([]);
+  const [studentSearchQuery, setStudentSearchQuery] = useState('');
+  const [isStudentDropdownOpen, setIsStudentDropdownOpen] = useState(false);
+
   const [filters, setFilters] = useState<{
     groupId: string;
     fromDate: string;
@@ -50,10 +76,14 @@ export default function HomeworkPage() {
   const filtersRef = useRef(filters);
   filtersRef.current = filters;
 
+  const submissionFiltersRef = useRef(submissionFilters);
+  submissionFiltersRef.current = submissionFilters;
+
   const { createOperation, updateOperation, deleteOperation, loadOperation } = useApiToast();
 
   const pageSize = 10;
   const initialLoadDone = useRef(false);
+  const submissionsInitialLoadDone = useRef(false);
 
   const loadAssignments = useCallback(async (page: number, isTableOnly: boolean = true) => {
     if (isTableOnly) {
@@ -137,14 +167,118 @@ export default function HomeworkPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.organizationId]);
 
+  const loadStudents = useCallback(async () => {
+    try {
+      const organizationId = user?.organizationId || localStorage.getItem('userOrganizationId');
+      if (!organizationId) return;
+
+      const requestBody = {
+        pageNumber: 1,
+        pageSize: 1000,
+        organizationId: organizationId,
+        roleIds: [1] // Student role
+      };
+
+      const response = await AuthenticatedApiService.post<{items: Array<{id: string, name: string}>}>('/User/get-users', requestBody);
+      if (response && response.items) {
+        setStudents(response.items.map(student => ({
+          id: student.id,
+          name: student.name || 'Без имени'
+        })));
+      }
+    } catch (error) {
+      console.error('Error loading students:', error);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.organizationId]);
+
+  const loadSubmissions = useCallback(async (page: number, isTableOnly: boolean = true) => {
+    if (isTableOnly) {
+      setSubmissionsTableLoading(true);
+    }
+    setError(null);
+
+    try {
+      const organizationId = user?.organizationId || localStorage.getItem('userOrganizationId');
+
+      if (!organizationId) {
+        setError('Не удается определить организацию пользователя');
+        return;
+      }
+
+      const currentFilters = submissionFiltersRef.current;
+
+      const requestBody: SubmissionFilters = {
+        pageNumber: page,
+        pageSize: pageSize,
+        organizationId: organizationId
+      };
+
+      if (currentFilters.assignmentId) {
+        requestBody.assignmentId = currentFilters.assignmentId;
+      }
+      if (currentFilters.groupId) {
+        requestBody.groupId = currentFilters.groupId;
+      }
+      if (currentFilters.studentId) {
+        requestBody.studentId = currentFilters.studentId;
+      }
+      if (currentFilters.status) {
+        requestBody.status = parseInt(currentFilters.status) as SubmissionStatus;
+      }
+      if (currentFilters.fromDate) {
+        requestBody.fromDate = new Date(currentFilters.fromDate).toISOString();
+      }
+      if (currentFilters.toDate) {
+        requestBody.toDate = new Date(currentFilters.toDate).toISOString();
+      }
+
+      const response = await loadOperation(
+        () => AuthenticatedApiService.getSubmissions(requestBody),
+        'работы студентов'
+      );
+
+      if (response && response.items) {
+        setSubmissions(response.items);
+        setSubmissionsCurrentPage(response.pageNumber);
+        setSubmissionsTotalPages(response.totalPages);
+        setSubmissionsTotalCount(response.totalCount);
+      } else {
+        setSubmissions([]);
+        setSubmissionsCurrentPage(1);
+        setSubmissionsTotalPages(0);
+        setSubmissionsTotalCount(0);
+      }
+    } catch (error) {
+      console.error('Error loading submissions:', error);
+      setError('Ошибка при загрузке работ студентов');
+      setSubmissions([]);
+      setSubmissionsCurrentPage(1);
+      setSubmissionsTotalPages(0);
+      setSubmissionsTotalCount(0);
+    } finally {
+      setSubmissionsTableLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.organizationId]);
+
   useEffect(() => {
     if (isAuthenticated && user?.organizationId && !initialLoadDone.current) {
       initialLoadDone.current = true;
       loadGroups();
+      loadStudents();
       loadAssignments(1, false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, user?.organizationId]);
+
+  useEffect(() => {
+    if (activeTab === 'checking' && isAuthenticated && user?.organizationId && !submissionsInitialLoadDone.current) {
+      submissionsInitialLoadDone.current = true;
+      loadSubmissions(1, false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, isAuthenticated, user?.organizationId]);
 
   useEffect(() => {
     if (!initialLoadDone.current) {
@@ -158,6 +292,18 @@ export default function HomeworkPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.groupId, filters.fromDate, filters.toDate]);
 
+  useEffect(() => {
+    if (!submissionsInitialLoadDone.current) {
+      return;
+    }
+
+    if (isAuthenticated && user?.organizationId && activeTab === 'checking') {
+      setSubmissionsCurrentPage(1);
+      loadSubmissions(1, true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [submissionFilters.assignmentId, submissionFilters.groupId, submissionFilters.studentId, submissionFilters.status, submissionFilters.fromDate, submissionFilters.toDate]);
+
   const handleFilterChange = (newFilters: Partial<typeof filters>) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
   };
@@ -170,6 +316,79 @@ export default function HomeworkPage() {
     });
     setCurrentPage(1);
     loadAssignments(1, true);
+  };
+
+  const handleSubmissionFilterChange = (newFilters: Partial<typeof submissionFilters>) => {
+    setSubmissionFilters(prev => ({ ...prev, ...newFilters }));
+  };
+
+  const handleResetSubmissionFilters = () => {
+    setSubmissionFilters({
+      assignmentId: '',
+      groupId: '',
+      studentId: '',
+      status: '',
+      fromDate: '',
+      toDate: ''
+    });
+    setStudentSearchQuery('');
+    setSubmissionsCurrentPage(1);
+    loadSubmissions(1, true);
+  };
+
+  const filteredStudents = students.filter(student =>
+    student.name.toLowerCase().includes(studentSearchQuery.toLowerCase())
+  );
+
+  const selectedStudent = students.find(s => s.id === submissionFilters.studentId);
+
+  const handleStudentSelect = (studentId: string) => {
+    handleSubmissionFilterChange({ studentId });
+    setIsStudentDropdownOpen(false);
+    const student = students.find(s => s.id === studentId);
+    if (student) {
+      setStudentSearchQuery(student.name);
+    }
+  };
+
+  const getStatusLabel = (status: SubmissionStatus) => {
+    switch (status) {
+      case SubmissionStatus.Draft:
+        return 'Черновик';
+      case SubmissionStatus.Submitted:
+        return 'На проверке';
+      case SubmissionStatus.Graded:
+        return 'Проверено';
+      case SubmissionStatus.Returned:
+        return 'На доработке';
+      case SubmissionStatus.Overdue:
+        return 'Просрочено';
+      default:
+        return 'Неизвестно';
+    }
+  };
+
+  const getStatusColor = (status: SubmissionStatus) => {
+    switch (status) {
+      case SubmissionStatus.Draft:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+      case SubmissionStatus.Submitted:
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
+      case SubmissionStatus.Graded:
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+      case SubmissionStatus.Returned:
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
+      case SubmissionStatus.Overdue:
+        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+    }
+  };
+
+  const handleSubmissionsPageChange = (page: number) => {
+    if (page !== submissionsCurrentPage && page >= 1 && page <= submissionsTotalPages) {
+      loadSubmissions(page, true);
+    }
   };
 
   const handleCreate = () => {
@@ -364,6 +583,71 @@ export default function HomeworkPage() {
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
+                className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105"
+              >
+                →
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderSubmissionsPagination = () => {
+    if (submissionsTotalPages <= 1) return null;
+
+    const pageNumbers = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, submissionsCurrentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(submissionsTotalPages, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers.push(i);
+    }
+
+    return (
+      <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-lg rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6">
+        <div className="flex items-center justify-between">
+          <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-gray-700 dark:text-gray-300">
+                Показано <span className="font-medium">{((submissionsCurrentPage - 1) * pageSize) + 1}</span> по{' '}
+                <span className="font-medium">{Math.min(submissionsCurrentPage * pageSize, submissionsTotalCount)}</span> из{' '}
+                <span className="font-medium">{submissionsTotalCount}</span> результатов
+              </p>
+            </div>
+
+            <div className="flex space-x-2">
+              <button
+                onClick={() => handleSubmissionsPageChange(submissionsCurrentPage - 1)}
+                disabled={submissionsCurrentPage === 1}
+                className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105"
+              >
+                ←
+              </button>
+
+              {pageNumbers.map((number) => (
+                <button
+                  key={number}
+                  onClick={() => handleSubmissionsPageChange(number)}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 hover:scale-105 ${
+                    submissionsCurrentPage === number
+                      ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg'
+                      : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  {number}
+                </button>
+              ))}
+
+              <button
+                onClick={() => handleSubmissionsPageChange(submissionsCurrentPage + 1)}
+                disabled={submissionsCurrentPage === submissionsTotalPages}
                 className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105"
               >
                 →
@@ -641,19 +925,304 @@ export default function HomeworkPage() {
         )}
 
         {activeTab === 'checking' && (
-          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-lg rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-16">
-            <div className="text-center">
-              <div className="p-4 bg-indigo-100 dark:bg-indigo-900/30 rounded-full w-16 h-16 mx-auto mb-6">
-                <ClipboardDocumentListIcon className="h-8 w-8 text-indigo-600 dark:text-indigo-400 mx-auto mt-2" />
+          <>
+            {/* Filters */}
+            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-lg rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Фильтры</h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Assignment Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Задание
+                  </label>
+                  <select
+                    value={submissionFilters.assignmentId}
+                    onChange={(e) => handleSubmissionFilterChange({ assignmentId: e.target.value })}
+                    className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm text-gray-900 dark:text-white transition-all duration-200"
+                  >
+                    <option value="">Все задания</option>
+                    {assignments.map((assignment) => (
+                      <option key={assignment.id} value={assignment.id}>
+                        {assignment.description.substring(0, 50)}{assignment.description.length > 50 ? '...' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Group Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Группа
+                  </label>
+                  <select
+                    value={submissionFilters.groupId}
+                    onChange={(e) => handleSubmissionFilterChange({ groupId: e.target.value })}
+                    className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm text-gray-900 dark:text-white transition-all duration-200"
+                  >
+                    <option value="">Все группы</option>
+                    {groups.map((group) => (
+                      <option key={group.id} value={group.id}>
+                        {group.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Student Filter with Search */}
+                <div className="relative">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Студент
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={studentSearchQuery || (selectedStudent?.name || '')}
+                      onChange={(e) => {
+                        setStudentSearchQuery(e.target.value);
+                        setIsStudentDropdownOpen(true);
+                        if (!e.target.value) {
+                          handleSubmissionFilterChange({ studentId: '' });
+                        }
+                      }}
+                      onFocus={() => setIsStudentDropdownOpen(true)}
+                      placeholder="Поиск студента..."
+                      className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm text-gray-900 dark:text-white transition-all duration-200"
+                    />
+                    {submissionFilters.studentId && (
+                      <button
+                        onClick={() => {
+                          handleSubmissionFilterChange({ studentId: '' });
+                          setStudentSearchQuery('');
+                        }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                  
+                  {isStudentDropdownOpen && (
+                    <>
+                      <div 
+                        className="fixed inset-0 z-10" 
+                        onClick={() => setIsStudentDropdownOpen(false)}
+                      />
+                      <div className="absolute z-20 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        {filteredStudents.length > 0 ? (
+                          <>
+                            <button
+                              onClick={() => {
+                                handleSubmissionFilterChange({ studentId: '' });
+                                setStudentSearchQuery('');
+                                setIsStudentDropdownOpen(false);
+                              }}
+                              className="w-full px-3 py-2 text-left text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                            >
+                              Все студенты
+                            </button>
+                            {filteredStudents.map((student) => (
+                              <button
+                                key={student.id}
+                                onClick={() => handleStudentSelect(student.id)}
+                                className={`w-full px-3 py-2 text-left text-sm transition-colors ${
+                                  submissionFilters.studentId === student.id
+                                    ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                                    : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                                }`}
+                              >
+                                {student.name}
+                              </button>
+                            ))}
+                          </>
+                        ) : (
+                          <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
+                            Студенты не найдены
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Status Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Статус
+                  </label>
+                  <select
+                    value={submissionFilters.status}
+                    onChange={(e) => handleSubmissionFilterChange({ status: e.target.value })}
+                    className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm text-gray-900 dark:text-white transition-all duration-200"
+                  >
+                    <option value="">Все статусы</option>
+                    <option value="0">Черновик</option>
+                    <option value="1">На проверке</option>
+                    <option value="2">Проверено</option>
+                    <option value="3">На доработке</option>
+                    <option value="4">Просрочено</option>
+                  </select>
+                </div>
+
+                {/* Date Range Picker */}
+                <div className="lg:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Период
+                  </label>
+                  <DateRangePicker
+                    startDate={submissionFilters.fromDate}
+                    endDate={submissionFilters.toDate}
+                    onDateChange={(fromDate, toDate) => {
+                      handleSubmissionFilterChange({ fromDate: fromDate || '', toDate: toDate || '' });
+                    }}
+                    placeholder="Выберите период"
+                  />
+                </div>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                Проверка домашних заданий
-              </h3>
-              <p className="text-gray-500 dark:text-gray-400">
-                Этот раздел находится в разработке
-              </p>
+
+              {/* Reset Button */}
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={handleResetSubmissionFilters}
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Сбросить фильтры
+                </button>
+              </div>
             </div>
-          </div>
+
+            {/* Table */}
+            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-lg rounded-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
+              {submissionsTableLoading && (
+                <div className="p-8">
+                  <div className="text-center">
+                    <div className="p-4 bg-purple-100 dark:bg-purple-900/30 rounded-full w-16 h-16 mx-auto mb-4">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 dark:border-purple-400 mx-auto mt-2"></div>
+                    </div>
+                    <p className="text-gray-600 dark:text-gray-400">Загрузка работ студентов...</p>
+                  </div>
+                </div>
+              )}
+
+              {!submissionsTableLoading && submissions.length > 0 && (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/30 dark:to-indigo-900/30">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-purple-700 dark:text-purple-300 uppercase tracking-wider">
+                          №
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-purple-700 dark:text-purple-300 uppercase tracking-wider">
+                          Студент
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-purple-700 dark:text-purple-300 uppercase tracking-wider">
+                          Задание
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-purple-700 dark:text-purple-300 uppercase tracking-wider">
+                          Группа
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-purple-700 dark:text-purple-300 uppercase tracking-wider">
+                          Статус
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-purple-700 dark:text-purple-300 uppercase tracking-wider">
+                          Оценка
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-purple-700 dark:text-purple-300 uppercase tracking-wider">
+                          Дата сдачи
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      {submissions.map((submission, index) => (
+                        <tr 
+                          key={submission.id} 
+                          className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="inline-flex items-center justify-center w-8 h-8 bg-gradient-to-r from-purple-500 to-indigo-600 text-white text-sm font-medium rounded-lg shadow-sm">
+                              {(submissionsCurrentPage - 1) * pageSize + index + 1}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900 dark:text-white font-medium">{submission.studentName}</div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm text-gray-900 dark:text-white max-w-md truncate">
+                              {submission.assignment?.description || 'Без описания'}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {submission.group && (
+                              <>
+                                <div className="text-sm text-gray-900 dark:text-white">{submission.group.name}</div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">{submission.group.code}</div>
+                              </>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(submission.status)}`}>
+                              {getStatusLabel(submission.status)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {submission.score !== null ? (
+                              <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                {submission.score}/100
+                              </div>
+                            ) : (
+                              <div className="text-sm text-gray-500 dark:text-gray-400">—</div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {submission.submittedAt ? (
+                              <div className="text-sm text-gray-900 dark:text-white">{formatDate(submission.submittedAt)}</div>
+                            ) : (
+                              <div className="text-sm text-gray-500 dark:text-gray-400">Не сдано</div>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {!submissionsTableLoading && submissions.length === 0 && (
+                <div className="text-center py-16 p-6">
+                  <div className="p-4 bg-purple-100 dark:bg-purple-900/30 rounded-full w-16 h-16 mx-auto mb-6">
+                    <ClipboardDocumentListIcon className="h-8 w-8 text-purple-600 dark:text-purple-400 mx-auto mt-2" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                    {Object.values(submissionFilters).some(v => v) ? 'Работы не найдены' : 'Нет работ'}
+                  </h3>
+                  <p className="text-gray-500 dark:text-gray-400 mb-6">
+                    {Object.values(submissionFilters).some(v => v)
+                      ? 'Попробуйте изменить критерии поиска'
+                      : 'Студенты еще не сдали работы'
+                    }
+                  </p>
+                  {Object.values(submissionFilters).some(v => v) && (
+                    <button
+                      onClick={handleResetSubmissionFilters}
+                      className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all duration-200 hover:scale-105 inline-flex items-center"
+                    >
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      Сбросить фильтры
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {renderSubmissionsPagination()}
+          </>
         )}
       </div>
 

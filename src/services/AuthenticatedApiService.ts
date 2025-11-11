@@ -372,4 +372,37 @@ export class AuthenticatedApiService {
   static async deleteAssignment(id: string): Promise<any> {
     return this.delete(`/Assignment/${id}`);
   }
+
+  // Submission API methods
+  static async getSubmissions(filters: any): Promise<any> {
+    return this.post('/Submission/get-submissions', filters);
+  }
+
+  static async getSubmissionById(id: string): Promise<any> {
+    return this.get(`/Submission/${id}`);
+  }
+
+  static async createOrUpdateSubmission(assignmentId: string, formData: FormData): Promise<any> {
+    return this.post(`/Submission/assignment/${assignmentId}`, formData);
+  }
+
+  static async submitSubmission(submissionId: string): Promise<any> {
+    return this.post(`/Submission/${submissionId}/submit`, {});
+  }
+
+  static async gradeSubmission(submissionId: string, data: any): Promise<any> {
+    return this.post(`/Submission/${submissionId}/grade`, data);
+  }
+
+  static async returnSubmission(submissionId: string, data: any): Promise<any> {
+    return this.post(`/Submission/${submissionId}/return`, data);
+  }
+
+  static async downloadSubmissionFile(fileId: string): Promise<any> {
+    return this.get(`/Submission/file/${fileId}`);
+  }
+
+  static async deleteSubmissionFile(fileId: string): Promise<any> {
+    return this.delete(`/Submission/file/${fileId}`);
+  }
 }

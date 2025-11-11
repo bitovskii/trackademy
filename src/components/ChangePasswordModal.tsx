@@ -5,6 +5,7 @@ import { useToast } from '../contexts/ToastContext';
 import { BaseModal } from './ui/BaseModal';
 import { useAuth } from '../contexts/AuthContext';
 import { AuthenticatedApiService } from '../services/AuthenticatedApiService';
+import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
 interface ChangePasswordModalProps {
   isOpen: boolean;
@@ -16,7 +17,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
   onClose
 }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const { showError, showSuccess } = useToast();
+  const { showToast } = useToast();
   const { user } = useAuth();
   
   const [formData, setFormData] = useState({
@@ -25,10 +26,17 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
     confirmPassword: ''
   });
 
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    new: false,
+    confirm: false
+  });
+
   // Сбрасываем форму при открытии модалки
   React.useEffect(() => {
     if (isOpen) {
       setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setShowPasswords({ current: false, new: false, confirm: false });
     }
   }, [isOpen]);
 
@@ -44,44 +52,48 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
     e.preventDefault();
     
     if (!formData.currentPassword.trim() || !formData.newPassword.trim() || !formData.confirmPassword.trim()) {
-      showError('Пожалуйста, заполните все поля');
+      showToast('Пожалуйста, заполните все поля', 'error');
       return;
     }
 
     if (formData.newPassword !== formData.confirmPassword) {
-      showError('Новые пароли не совпадают');
+      showToast('Новые пароли не совпадают', 'error');
       return;
     }
 
     if (formData.newPassword.length < 6) {
-      showError('Новый пароль должен содержать минимум 6 символов');
+      showToast('Новый пароль должен содержать минимум 6 символов', 'error');
       return;
     }
 
     if (!user?.id) {
-      showError('Не удалось определить пользователя');
+      showToast('Не удалось определить пользователя', 'error');
       return;
     }
 
     setIsLoading(true);
     try {
-      const response = await AuthenticatedApiService.changePassword(
+      await AuthenticatedApiService.changePassword(
         user.id,
         formData.currentPassword,
         formData.newPassword
       );
-      if (response.success) {
-        showSuccess('Пароль успешно изменен');
-        // Сбрасываем форму
-        setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-        // Закрываем модалку
+      
+      // Если мы дошли до этой строки без ошибки, значит пароль успешно изменен
+      // Сбрасываем форму
+      setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      // Сбрасываем видимость паролей
+      setShowPasswords({ current: false, new: false, confirm: false });
+      // Показываем успешное уведомление
+      showToast('Пароль успешно изменен', 'success');
+      // Закрываем модалку с небольшой задержкой, чтобы пользователь увидел успешное уведомление
+      setTimeout(() => {
         onClose();
-      } else {
-        showError(response.message || 'Ошибка при смене пароля');
-      }
+      }, 500);
     } catch (error) {
       console.error('Password change error:', error);
-      showError('Ошибка при смене пароля');
+      const errorMessage = (error as { message?: string })?.message || 'Ошибка при смене пароля';
+      showToast(errorMessage, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -105,14 +117,27 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Текущий пароль <span className="text-red-500">*</span>
           </label>
-          <input
-            type="password"
-            name="currentPassword"
-            value={formData.currentPassword}
-            onChange={handleInputChange}
-            className="w-full px-4 py-3 border border-gray-300/50 dark:border-gray-600/50 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white/80 dark:bg-gray-700/80 text-gray-900 dark:text-white shadow-sm transition-all duration-200 hover:shadow-md"
-            required
-          />
+          <div className="relative">
+            <input
+              type={showPasswords.current ? "text" : "password"}
+              name="currentPassword"
+              value={formData.currentPassword}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 pr-12 border border-gray-300/50 dark:border-gray-600/50 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white/80 dark:bg-gray-700/80 text-gray-900 dark:text-white shadow-sm transition-all duration-200 hover:shadow-md"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPasswords(prev => ({ ...prev, current: !prev.current }))}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            >
+              {showPasswords.current ? (
+                <EyeSlashIcon className="h-5 w-5" />
+              ) : (
+                <EyeIcon className="h-5 w-5" />
+              )}
+            </button>
+          </div>
         </div>
 
           {/* Новый пароль */}
@@ -120,15 +145,28 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Новый пароль <span className="text-red-500">*</span>
             </label>
-            <input
-              type="password"
-              name="newPassword"
-              value={formData.newPassword}
-              onChange={handleInputChange}
-              minLength={6}
-              className="w-full px-4 py-3 border border-gray-300/50 dark:border-gray-600/50 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white/80 dark:bg-gray-700/80 text-gray-900 dark:text-white shadow-sm transition-all duration-200 hover:shadow-md"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showPasswords.new ? "text" : "password"}
+                name="newPassword"
+                value={formData.newPassword}
+                onChange={handleInputChange}
+                minLength={6}
+                className="w-full px-4 py-3 pr-12 border border-gray-300/50 dark:border-gray-600/50 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white/80 dark:bg-gray-700/80 text-gray-900 dark:text-white shadow-sm transition-all duration-200 hover:shadow-md"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPasswords(prev => ({ ...prev, new: !prev.new }))}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              >
+                {showPasswords.new ? (
+                  <EyeSlashIcon className="h-5 w-5" />
+                ) : (
+                  <EyeIcon className="h-5 w-5" />
+                )}
+              </button>
+            </div>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 flex items-center">
               <svg className="h-3 w-3 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -142,14 +180,27 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Подтвердите новый пароль <span className="text-red-500">*</span>
             </label>
-            <input
-              type="password"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-300/50 dark:border-gray-600/50 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white/80 dark:bg-gray-700/80 text-gray-900 dark:text-white shadow-sm transition-all duration-200 hover:shadow-md"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showPasswords.confirm ? "text" : "password"}
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 pr-12 border border-gray-300/50 dark:border-gray-600/50 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white/80 dark:bg-gray-700/80 text-gray-900 dark:text-white shadow-sm transition-all duration-200 hover:shadow-md"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPasswords(prev => ({ ...prev, confirm: !prev.confirm }))}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              >
+                {showPasswords.confirm ? (
+                  <EyeSlashIcon className="h-5 w-5" />
+                ) : (
+                  <EyeIcon className="h-5 w-5" />
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Кнопки */}

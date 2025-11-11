@@ -36,6 +36,7 @@ export default function HomeworkPage() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Submissions tab state
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -418,48 +419,53 @@ export default function HomeworkPage() {
   };
 
   const handleSave = async () => {
-    if (!formData.description || !formData.groupId || !modalDueDate) {
+    if (!formData.description || !formData.groupId || !modalDueDate || isSaving) {
       return;
     }
 
-    // Устанавливаем дату назначения как текущую дату
-    const assignedDate = new Date().toISOString();
-    const dueDate = new Date(modalDueDate).toISOString();
+    setIsSaving(true);
+    try {
+      // Устанавливаем дату назначения как текущую дату
+      const assignedDate = new Date().toISOString();
+      const dueDate = new Date(modalDueDate).toISOString();
 
-    if (modalMode === 'create') {
-      const result = await createOperation(
-        () => AuthenticatedApiService.createAssignment({
-          description: formData.description,
-          groupId: formData.groupId,
-          assignedDate: assignedDate,
-          dueDate: dueDate
-        }),
-        'задание'
-      );
+      if (modalMode === 'create') {
+        const result = await createOperation(
+          () => AuthenticatedApiService.createAssignment({
+            description: formData.description,
+            groupId: formData.groupId,
+            assignedDate: assignedDate,
+            dueDate: dueDate
+          }),
+          'задание'
+        );
 
-      if (result.success) {
-        await loadAssignments(currentPage, true);
-        setIsAssignmentModalOpen(false);
+        if (result.success) {
+          await loadAssignments(currentPage, true);
+          setIsAssignmentModalOpen(false);
+        }
+      } else {
+        if (!editingAssignmentId) {
+          return;
+        }
+
+        const result = await updateOperation(
+          () => AuthenticatedApiService.updateAssignment(editingAssignmentId, {
+            description: formData.description,
+            assignedDate: assignedDate,
+            dueDate: dueDate
+          }),
+          'задание'
+        );
+
+        if (result.success) {
+          await loadAssignments(currentPage, true);
+          setIsAssignmentModalOpen(false);
+          setEditingAssignmentId(null);
+        }
       }
-    } else {
-      if (!editingAssignmentId) {
-        return;
-      }
-
-      const result = await updateOperation(
-        () => AuthenticatedApiService.updateAssignment(editingAssignmentId, {
-          description: formData.description,
-          assignedDate: assignedDate,
-          dueDate: dueDate
-        }),
-        'задание'
-      );
-
-      if (result.success) {
-        await loadAssignments(currentPage, true);
-        setIsAssignmentModalOpen(false);
-        setEditingAssignmentId(null);
-      }
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -1211,8 +1217,11 @@ export default function HomeworkPage() {
       <BaseModal
         isOpen={isAssignmentModalOpen}
         onClose={() => {
-          setIsAssignmentModalOpen(false);
-          setEditingAssignmentId(null);
+          if (!isSaving) {
+            setIsAssignmentModalOpen(false);
+            setEditingAssignmentId(null);
+            setIsSaving(false);
+          }
         }}
         title={modalMode === 'create' ? 'Создать задание' : 'Редактировать задание'}
         customBackground="bg-gray-800 dark:bg-gray-800"
@@ -1272,19 +1281,33 @@ export default function HomeworkPage() {
           <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-gray-700">
             <button
               onClick={() => {
-                setIsAssignmentModalOpen(false);
-                setEditingAssignmentId(null);
+                if (!isSaving) {
+                  setIsAssignmentModalOpen(false);
+                  setEditingAssignmentId(null);
+                  setIsSaving(false);
+                }
               }}
-              className="px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 rounded-lg transition-colors"
+              disabled={isSaving}
+              className="px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Отмена
             </button>
             <button
               onClick={handleSave}
-              disabled={!formData.description || !formData.groupId || !modalDueDate}
-              className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-500 to-indigo-600 rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              disabled={!formData.description || !formData.groupId || !modalDueDate || isSaving}
+              className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-500 to-indigo-600 rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center gap-2"
             >
-              {modalMode === 'create' ? 'Создать' : 'Сохранить'}
+              {isSaving ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  {modalMode === 'create' ? 'Создание...' : 'Сохранение...'}
+                </>
+              ) : (
+                modalMode === 'create' ? 'Создать' : 'Сохранить'
+              )}
             </button>
           </div>
         </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { CalendarIcon, XMarkIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
 interface DateRangePickerProps {
@@ -22,12 +23,49 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectingStart, setSelectingStart] = useState(true);
   const [hoverDate, setHoverDate] = useState<Date | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const [position, setPosition] = useState({ top: 0, left: 0 });
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  // Set mounted state
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Update position when opening
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const calendarHeight = 450; // Примерная высота календаря
+      const spaceAbove = rect.top;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      
+      // Определяем, где больше места - сверху или снизу
+      const shouldOpenBelow = spaceAbove < calendarHeight && spaceBelow > spaceAbove;
+      
+      if (shouldOpenBelow) {
+        // Открываем снизу
+        setPosition({
+          top: rect.bottom + 10,
+          left: rect.left
+        });
+      } else {
+        // Открываем сверху, но не выше верхней границы экрана
+        const topPosition = Math.max(10, rect.top - calendarHeight - 10);
+        setPosition({
+          top: topPosition,
+          left: rect.left
+        });
+      }
+    }
+  }, [isOpen]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
+          buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
@@ -157,9 +195,10 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
   const weekDays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative">
       {/* Input Field */}
       <button
+        ref={buttonRef}
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
         className={`w-full flex items-center justify-between px-4 py-3 border border-gray-300 dark:border-gray-600 
@@ -190,13 +229,17 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
         </div>
       </button>
 
-      {/* Calendar Dropdown */}
-      {isOpen && (
-        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 
-                       md:left-0 md:transform-none
-                       bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 
-                       rounded-xl shadow-xl z-[100] p-4 w-80 max-w-[calc(100vw-2rem)] 
-                       md:min-w-[320px] md:w-auto">
+      {/* Calendar Dropdown - Rendered as Portal */}
+      {mounted && isOpen && createPortal(
+        <div 
+          ref={dropdownRef}
+          className="fixed bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 
+                     rounded-xl shadow-2xl z-[9999] p-4 w-80 max-w-[calc(100vw-2rem)]"
+          style={{
+            top: `${position.top}px`,
+            left: `${position.left}px`
+          }}
+        >
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <button
@@ -384,7 +427,8 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

@@ -10,7 +10,9 @@ import {
   ArrowPathIcon,
   ExclamationTriangleIcon,
   FunnelIcon,
-  XMarkIcon
+  XMarkIcon,
+  PlusIcon,
+  MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import { PaymentStats, StudentPaymentGroup, PaymentFilters } from '../../types/Payment';
@@ -18,6 +20,9 @@ import { PaymentApiService } from '../../services/PaymentApiService';
 import { DateRangePicker } from '@/components/ui/DateRangePicker';
 import { StudentPaymentsModal } from '../../components/StudentPaymentsModal';
 import { ColumnVisibilityControl, ColumnConfig } from '../../components/ui/ColumnVisibilityControl';
+import { AuthenticatedApiService } from '@/services/AuthenticatedApiService';
+import { Group } from '@/types/Group';
+import { CreatePaymentModal } from '@/components/CreatePaymentModal';
 
 export default function PaymentsPage() {
   const { isAuthenticated, user } = useAuth();
@@ -30,6 +35,16 @@ export default function PaymentsPage() {
   // Modal state
   const [selectedStudentPayments, setSelectedStudentPayments] = useState<StudentPaymentGroup | null>(null);
   const [showPaymentsModal, setShowPaymentsModal] = useState(false);
+  
+  // Create payment modal state
+  const [showCreatePaymentModal, setShowCreatePaymentModal] = useState(false);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+  const [loadingGroups, setLoadingGroups] = useState(false);
+  const [groupSearch, setGroupSearch] = useState('');
+  const [showGroupDropdown, setShowGroupDropdown] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<{ id: string; name: string } | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   
   // Пагинация
   const [currentPage, setCurrentPage] = useState(1);
@@ -76,6 +91,26 @@ export default function PaymentsPage() {
   ];
 
   // Загрузка статистики платежей
+  // Загрузка групп
+  const loadGroups = useCallback(async () => {
+    if (!isAuthenticated || !user?.organizationId) {
+      return;
+    }
+
+    setLoadingGroups(true);
+    try {
+      const response = await AuthenticatedApiService.post<{ items: Group[] }>(
+        '/Group/get-groups',
+        { organizationId: user.organizationId }
+      );
+      setGroups(response.items);
+    } catch (err) {
+      console.error('Error loading groups:', err);
+    } finally {
+      setLoadingGroups(false);
+    }
+  }, [isAuthenticated, user?.organizationId]);
+
   const loadPaymentStats = useCallback(async () => {
     if (!isAuthenticated || !user?.organizationId) {
       return;
@@ -406,6 +441,16 @@ export default function PaymentsPage() {
                     </h3>
                   </div>
                   <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => {
+                        loadGroups();
+                        setShowCreatePaymentModal(true);
+                      }}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+                    >
+                      <PlusIcon className="h-4 w-4" />
+                      Создать платеж
+                    </button>
                     <ColumnVisibilityControl
                       columns={columns}
                       onColumnToggle={handleColumnToggle}
@@ -712,6 +757,217 @@ export default function PaymentsPage() {
           onPaymentUpdate={() => {
             console.log('Payment updated, reloading data...');
             // Перезагружаем данные после изменения статуса платежа
+            loadPaymentStats();
+            loadPayments(currentPage);
+          }}
+        />
+      )}
+
+      {/* Modal for creating payment - Group and Student selection */}
+      {showCreatePaymentModal && !selectedGroup && !showPaymentModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto backdrop-blur-sm">
+          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div 
+              className="fixed inset-0 transition-opacity bg-black/30 dark:bg-black/50" 
+              onClick={() => {
+                setShowCreatePaymentModal(false);
+                setGroupSearch('');
+                setShowGroupDropdown(false);
+              }}
+            />
+
+            <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full border border-gray-200 dark:border-gray-700 relative z-10">
+              <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                    <CurrencyDollarIcon className="h-6 w-6" />
+                    Выберите группу
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setShowCreatePaymentModal(false);
+                      setGroupSearch('');
+                      setShowGroupDropdown(false);
+                    }}
+                    className="text-white/80 hover:text-white transition-colors"
+                  >
+                    <XMarkIcon className="h-6 w-6" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-gray-800 px-6 py-5">
+                {loadingGroups ? (
+                  <div className="flex flex-col items-center justify-center py-16">
+                    <ArrowPathIcon className="h-12 w-12 animate-spin text-blue-500 mb-4" />
+                    <span className="text-gray-600 dark:text-gray-400 font-medium">Загрузка групп...</span>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Search input */}
+                    <div className="relative">
+                      <MagnifyingGlassIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Поиск по названию или коду группы..."
+                        value={groupSearch}
+                        onChange={(e) => setGroupSearch(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      />
+                    </div>
+
+                    {/* Groups list */}
+                    <div className="max-h-[400px] overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                      {groups
+                        .filter(group => 
+                          group.name.toLowerCase().includes(groupSearch.toLowerCase()) ||
+                          group.code.toLowerCase().includes(groupSearch.toLowerCase())
+                        )
+                        .map(group => (
+                          <button
+                            key={group.id}
+                            onClick={() => {
+                              console.log('Group selected:', group);
+                              setSelectedGroup(group);
+                            }}
+                            className="w-full text-left px-5 py-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-300 dark:hover:border-blue-500 transition-all duration-200 group"
+                          >
+                            <div className="font-semibold text-gray-900 dark:text-white mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                              {group.name}
+                            </div>
+                            <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
+                              <span className="font-mono bg-gray-200 dark:bg-gray-600 px-2 py-0.5 rounded">
+                                {group.code}
+                              </span>
+                              <span>•</span>
+                              <span>{group.subject?.subjectName}</span>
+                              <span>•</span>
+                              <span className="font-medium">{group.students?.length || 0} студентов</span>
+                            </div>
+                          </button>
+                        ))}
+                      {groups.filter(group => 
+                        group.name.toLowerCase().includes(groupSearch.toLowerCase()) ||
+                        group.code.toLowerCase().includes(groupSearch.toLowerCase())
+                      ).length === 0 && (
+                        <div className="text-center py-16">
+                          <div className="text-gray-400 dark:text-gray-500 text-5xl mb-4">🔍</div>
+                          <p className="text-gray-500 dark:text-gray-400 font-medium">Группы не найдены</p>
+                          <p className="text-gray-400 dark:text-gray-500 text-sm mt-2">Попробуйте изменить запрос</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Student selection modal */}
+      {showCreatePaymentModal && selectedGroup && !showPaymentModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto backdrop-blur-sm">
+          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div 
+              className="fixed inset-0 transition-opacity bg-black/30 dark:bg-black/50" 
+              onClick={() => {
+                setSelectedGroup(null);
+                setShowCreatePaymentModal(false);
+                setGroupSearch('');
+              }}
+            />
+
+            <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full border border-gray-200 dark:border-gray-700 relative z-10">
+              <div className="bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                      <CurrencyDollarIcon className="h-6 w-6" />
+                      Выберите студента
+                    </h3>
+                    <p className="text-white/80 text-sm mt-1">
+                      Группа: {selectedGroup.name} ({selectedGroup.code})
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedGroup(null);
+                      setShowCreatePaymentModal(false);
+                      setGroupSearch('');
+                    }}
+                    className="text-white/80 hover:text-white transition-colors"
+                  >
+                    <XMarkIcon className="h-6 w-6" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-gray-800 px-6 py-5">
+                <div className="space-y-4">
+                  <button
+                    onClick={() => setSelectedGroup(null)}
+                    className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium flex items-center gap-1 transition-colors"
+                  >
+                    ← Назад к выбору группы
+                  </button>
+
+                  {/* Students list */}
+                  <div className="max-h-[400px] overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                    {selectedGroup.students && selectedGroup.students.length > 0 ? (
+                      selectedGroup.students.map(student => (
+                        <button
+                          key={student.studentId}
+                          onClick={() => {
+                            setSelectedStudent({ id: student.studentId, name: student.studentName });
+                            setShowPaymentModal(true);
+                          }}
+                          className="w-full text-left px-5 py-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-green-50 dark:hover:bg-green-900/20 hover:border-green-300 dark:hover:border-green-500 transition-all duration-200 group"
+                        >
+                          <div className="font-semibold text-gray-900 dark:text-white group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center text-white font-bold text-sm">
+                              {student.studentName.charAt(0).toUpperCase()}
+                            </div>
+                            {student.studentName}
+                          </div>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="text-center py-16">
+                        <div className="text-gray-400 dark:text-gray-500 text-5xl mb-4">👥</div>
+                        <p className="text-gray-500 dark:text-gray-400 font-medium">В группе нет студентов</p>
+                        <p className="text-gray-400 dark:text-gray-500 text-sm mt-2">Добавьте студентов в группу</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Payment Modal */}
+      {showPaymentModal && selectedStudent && selectedGroup && (
+        <CreatePaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => {
+            setShowPaymentModal(false);
+            setSelectedStudent(null);
+            setSelectedGroup(null);
+            setShowCreatePaymentModal(false);
+            setGroupSearch('');
+          }}
+          studentId={selectedStudent.id}
+          studentName={selectedStudent.name}
+          groupId={selectedGroup.id}
+          groupName={selectedGroup.name}
+          onSuccess={() => {
+            setShowPaymentModal(false);
+            setSelectedStudent(null);
+            setSelectedGroup(null);
+            setShowCreatePaymentModal(false);
+            setGroupSearch('');
             loadPaymentStats();
             loadPayments(currentPage);
           }}

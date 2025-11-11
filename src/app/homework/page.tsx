@@ -4,8 +4,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
 import { ClipboardDocumentListIcon, PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
-import { Assignment, AssignmentFormData, AssignmentsResponse, AssignmentFilters } from '../../types/Assignment';
-import { Submission, SubmissionFilters, SubmissionsResponse, SubmissionStatus } from '../../types/Submission';
+import { Assignment, AssignmentFormData, AssignmentFilters } from '../../types/Assignment';
+import { Submission, SubmissionFilters, SubmissionStatus } from '../../types/Submission';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import { useApiToast } from '../../hooks/useApiToast';
 import { DeleteConfirmationModal } from '../../components/ui/DeleteConfirmationModal';
@@ -17,7 +17,6 @@ export default function HomeworkPage() {
   const [activeTab, setActiveTab] = useState<'assignments' | 'checking'>('assignments');
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [groups, setGroups] = useState<Array<{id: string, name: string}>>([]);
-  const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
@@ -89,13 +88,11 @@ export default function HomeworkPage() {
     if (isTableOnly) {
       setTableLoading(true);
     }
-    setError(null);
 
     try {
       const organizationId = user?.organizationId || localStorage.getItem('userOrganizationId');
 
       if (!organizationId) {
-        setError('Не удается определить организацию пользователя');
         return;
       }
 
@@ -135,7 +132,6 @@ export default function HomeworkPage() {
       }
     } catch (error) {
       console.error('Error loading assignments:', error);
-      setError('Ошибка при загрузке заданий');
       setAssignments([]);
       setCurrentPage(1);
       setTotalPages(0);
@@ -143,8 +139,7 @@ export default function HomeworkPage() {
     } finally {
       setTableLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.organizationId]);
+  }, [user?.organizationId, loadOperation]);
 
   const loadGroups = useCallback(async () => {
     try {
@@ -164,7 +159,6 @@ export default function HomeworkPage() {
     } catch (error) {
       console.error('Error loading groups:', error);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.organizationId]);
 
   const loadStudents = useCallback(async () => {
@@ -189,20 +183,17 @@ export default function HomeworkPage() {
     } catch (error) {
       console.error('Error loading students:', error);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.organizationId]);
 
   const loadSubmissions = useCallback(async (page: number, isTableOnly: boolean = true) => {
     if (isTableOnly) {
       setSubmissionsTableLoading(true);
     }
-    setError(null);
 
     try {
       const organizationId = user?.organizationId || localStorage.getItem('userOrganizationId');
 
       if (!organizationId) {
-        setError('Не удается определить организацию пользователя');
         return;
       }
 
@@ -251,7 +242,6 @@ export default function HomeworkPage() {
       }
     } catch (error) {
       console.error('Error loading submissions:', error);
-      setError('Ошибка при загрузке работ студентов');
       setSubmissions([]);
       setSubmissionsCurrentPage(1);
       setSubmissionsTotalPages(0);
@@ -259,8 +249,7 @@ export default function HomeworkPage() {
     } finally {
       setSubmissionsTableLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.organizationId]);
+  }, [user?.organizationId, loadOperation]);
 
   useEffect(() => {
     if (isAuthenticated && user?.organizationId && !initialLoadDone.current) {
@@ -534,12 +523,8 @@ export default function HomeworkPage() {
 
     const pageNumbers = [];
     const maxVisiblePages = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-    if (endPage - startPage + 1 < maxVisiblePages) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
+    const startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
 
     for (let i = startPage; i <= endPage; i++) {
       pageNumbers.push(i);
@@ -599,12 +584,8 @@ export default function HomeworkPage() {
 
     const pageNumbers = [];
     const maxVisiblePages = 5;
-    let startPage = Math.max(1, submissionsCurrentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(submissionsTotalPages, startPage + maxVisiblePages - 1);
-
-    if (endPage - startPage + 1 < maxVisiblePages) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
+    const startPage = Math.max(1, submissionsCurrentPage - Math.floor(maxVisiblePages / 2));
+    const endPage = Math.min(submissionsTotalPages, startPage + maxVisiblePages - 1);
 
     for (let i = startPage; i <= endPage; i++) {
       pageNumbers.push(i);

@@ -14,7 +14,6 @@ export default function MyHomeworkPage() {
   const { isAuthenticated, user } = useAuth();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [submissions, setSubmissions] = useState<Map<string, Submission>>(new Map());
-  const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
@@ -33,13 +32,11 @@ export default function MyHomeworkPage() {
 
   const loadAssignments = useCallback(async (page: number) => {
     setLoading(true);
-    setError(null);
 
     try {
       const organizationId = user?.organizationId || localStorage.getItem('userOrganizationId');
 
       if (!organizationId) {
-        setError('Не удается определить организацию пользователя');
         return;
       }
 
@@ -70,7 +67,6 @@ export default function MyHomeworkPage() {
       }
     } catch (error) {
       console.error('Error loading assignments:', error);
-      setError('Ошибка при загрузке заданий');
       setAssignments([]);
     } finally {
       setLoading(false);
@@ -241,12 +237,8 @@ export default function MyHomeworkPage() {
 
     const pageNumbers = [];
     const maxVisiblePages = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-    if (endPage - startPage + 1 < maxVisiblePages) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
+    const startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
 
     for (let i = startPage; i <= endPage; i++) {
       pageNumbers.push(i);

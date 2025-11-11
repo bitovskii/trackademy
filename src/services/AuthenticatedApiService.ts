@@ -6,6 +6,8 @@ import { Organization, OrganizationFormData } from '../types/Organization';
 import { Room, RoomFormData } from '../types/Room';
 import { Subject, SubjectFormData } from '../types/Subject';
 import { GroupsResponse } from '../types/Group';
+import { Assignment, AssignmentFormData, AssignmentsResponse, AssignmentFilters } from '../types/Assignment';
+import { Submission, SubmissionFilters, SubmissionsResponse, GradeSubmissionRequest, ReturnSubmissionRequest } from '../types/Submission';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -353,56 +355,56 @@ export class AuthenticatedApiService {
   }
 
   // Assignment management
-  static async getAssignmentById(id: string): Promise<any> {
+  static async getAssignmentById(id: string): Promise<Assignment> {
     return this.get(`/Assignment/${id}`);
   }
 
-  static async getAssignments(filters: any): Promise<any> {
+  static async getAssignments(filters: AssignmentFilters): Promise<AssignmentsResponse> {
     return this.post('/Assignment/get-assignments', filters);
   }
 
-  static async createAssignment(data: any): Promise<any> {
+  static async createAssignment(data: AssignmentFormData): Promise<Assignment> {
     return this.post('/Assignment/create', data);
   }
 
-  static async updateAssignment(id: string, data: any): Promise<any> {
+  static async updateAssignment(id: string, data: Partial<AssignmentFormData>): Promise<Assignment> {
     return this.put(`/Assignment/${id}`, data);
   }
 
-  static async deleteAssignment(id: string): Promise<any> {
+  static async deleteAssignment(id: string): Promise<void> {
     return this.delete(`/Assignment/${id}`);
   }
 
   // Submission API methods
-  static async getSubmissions(filters: any): Promise<any> {
+  static async getSubmissions(filters: SubmissionFilters): Promise<SubmissionsResponse> {
     return this.post('/Submission/get-submissions', filters);
   }
 
-  static async getSubmissionById(id: string): Promise<any> {
+  static async getSubmissionById(id: string): Promise<Submission> {
     return this.get(`/Submission/${id}`);
   }
 
-  static async createOrUpdateSubmission(assignmentId: string, formData: FormData): Promise<any> {
+  static async createOrUpdateSubmission(assignmentId: string, formData: FormData): Promise<Submission> {
     return this.post(`/Submission/assignment/${assignmentId}`, formData);
   }
 
-  static async submitSubmission(submissionId: string): Promise<any> {
+  static async submitSubmission(submissionId: string): Promise<Submission> {
     return this.post(`/Submission/${submissionId}/submit`, {});
   }
 
-  static async gradeSubmission(submissionId: string, data: any): Promise<any> {
+  static async gradeSubmission(submissionId: string, data: GradeSubmissionRequest): Promise<Submission> {
     return this.post(`/Submission/${submissionId}/grade`, data);
   }
 
-  static async returnSubmission(submissionId: string, data: any): Promise<any> {
+  static async returnSubmission(submissionId: string, data: ReturnSubmissionRequest): Promise<Submission> {
     return this.post(`/Submission/${submissionId}/return`, data);
   }
 
-  static async downloadSubmissionFile(fileId: string): Promise<any> {
+  static async downloadSubmissionFile(fileId: string): Promise<Blob> {
     return this.get(`/Submission/file/${fileId}`);
   }
 
-  static async deleteSubmissionFile(fileId: string): Promise<any> {
+  static async deleteSubmissionFile(fileId: string): Promise<void> {
     return this.delete(`/Submission/file/${fileId}`);
   }
 }

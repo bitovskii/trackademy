@@ -48,12 +48,13 @@ export default function LessonDetailModal({ lesson, isOpen, onClose, onUpdate }:
 
   if (!isOpen) return null;
 
-  // Check if user can edit notes (Teacher or Owner)
+  // Check if user can edit notes (Administrator, Teacher or Owner)
   const userRole = user?.role;
   const roleStr = String(userRole);
+  const isAdministrator = userRole === 'Administrator' || roleStr === '2';
   const isTeacher = userRole === 'Teacher' || roleStr === '3';
   const isOwner = userRole === 'Owner' || roleStr === '4';
-  const canEditNote = isTeacher || isOwner;
+  const canEditNote = isAdministrator || isTeacher || isOwner;
 
   const handleSaveNote = async () => {
     setIsSavingNote(true);
@@ -161,9 +162,9 @@ export default function LessonDetailModal({ lesson, isOpen, onClose, onUpdate }:
 
   return (
     <div className="fixed inset-0 bg-gray-900/20 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-xl">
+      <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-xl">
         {/* Header */}
-        <div className="flex items-start justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-start justify-between p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -195,7 +196,7 @@ export default function LessonDetailModal({ lesson, isOpen, onClose, onUpdate }:
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-200 dark:border-gray-700">
+        <div className="flex border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           <button
             onClick={() => setActiveTab('details')}
             className={`px-6 py-3 font-medium text-sm transition-colors ${
@@ -229,7 +230,7 @@ export default function LessonDetailModal({ lesson, isOpen, onClose, onUpdate }:
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[60vh]">
+        <div className="p-6 overflow-y-auto flex-1 min-h-0">
           {activeTab === 'details' && (
             <DetailsTab
               lesson={lesson}
@@ -264,10 +265,10 @@ export default function LessonDetailModal({ lesson, isOpen, onClose, onUpdate }:
         </div>
 
         {/* Footer */}
-        <div className="flex justify-between items-center p-6 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex justify-between items-center p-6 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 bg-gray-50 dark:bg-gray-900/50">
           <div className="flex gap-3">
             {/* Show action buttons only if lesson is Planned and user has permissions */}
-            {lesson.lessonStatus === 'Planned' && (isTeacher || isOwner) && (
+            {lesson.lessonStatus === 'Planned' && (isAdministrator || isTeacher || isOwner) && (
               <>
                 <button
                   onClick={() => setIsMoveModalOpen(true)}

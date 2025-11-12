@@ -115,18 +115,19 @@ function LessonBlock({ lesson, onClick, height }: LessonBlockProps) {
   return (
     <div
       onClick={onClick}
-      className="p-3 rounded-lg border-l-4 cursor-pointer hover:shadow-md transition-all
+      className="p-2.5 rounded-lg border-l-4 cursor-pointer hover:shadow-md transition-all
                  bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600"
       style={{ 
         borderLeftColor: subjectColor,
         height: height ? `${height}px` : 'auto',
-        minHeight: '60px'
+        minHeight: '70px'
       }}
+      title={`${lesson.subject.subjectName} - ${lesson.group.name}\n${formatTime(lesson.startTime)} - ${formatTime(lesson.endTime)}\n${lesson.teacher.name} • ${lesson.room.name}`}
     >
       <div className="flex items-start justify-between h-full">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1">
-            <h4 className="font-medium text-gray-900 dark:text-white truncate">
+            <h4 className="font-medium text-gray-900 dark:text-white line-clamp-1" title={lesson.subject.subjectName}>
               {lesson.subject.subjectName}
             </h4>
             {lesson.note && (
@@ -136,13 +137,13 @@ function LessonBlock({ lesson, onClick, height }: LessonBlockProps) {
               />
             )}
           </div>
-          <p className="text-sm text-gray-600 dark:text-gray-300 truncate">
+          <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-1" title={lesson.group.name}>
             {lesson.group.name}
           </p>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {formatTime(lesson.startTime)} - {formatTime(lesson.endTime)}
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+          <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1" title={`${lesson.teacher.name} • ${lesson.room.name}`}>
             {lesson.teacher.name} • {lesson.room.name}
           </p>
         </div>

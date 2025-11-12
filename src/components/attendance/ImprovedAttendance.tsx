@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { Lesson } from '@/types/Lesson';
 import { AttendanceStatus, getAttendanceStatusText, getAttendanceStatusColor, getAttendanceStatusIcon } from '@/types/Attendance';
 import { attendanceApi } from '@/services/AttendanceApiService';
+import { useToast } from '@/contexts/ToastContext';
 
 interface ImprovedAttendanceProps {
   lesson: Lesson;
@@ -12,6 +13,7 @@ interface ImprovedAttendanceProps {
 }
 
 export default function ImprovedAttendance({ lesson, onUpdate, onClose }: ImprovedAttendanceProps) {
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   // Хранилище статусов для каждого студента: studentId -> status
   const [studentStatuses, setStudentStatuses] = useState<Record<string, AttendanceStatus>>({});
@@ -101,6 +103,7 @@ export default function ImprovedAttendance({ lesson, onUpdate, onClose }: Improv
         attendances
       });
 
+      showToast('Посещаемость успешно сохранена', 'success');
       setStudentStatuses({});
       onUpdate();
       
@@ -112,12 +115,17 @@ export default function ImprovedAttendance({ lesson, onUpdate, onClose }: Improv
       console.error('Ошибка при обновлении посещаемости:', error);
       
       // Более информативное сообщение об ошибке
-      const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
+      let errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
+      
+      // Убираем "API Error: XXX" из сообщения
+      errorMessage = errorMessage.replace(/API Error:\s*\d+\s*/gi, '').trim();
       
       if (errorMessage.includes('аутентификации') || errorMessage.includes('401') || errorMessage.includes('403')) {
-        alert('Ошибка аутентификации. Пожалуйста, перезайдите в систему.');
+        showToast('Ошибка аутентификации. Пожалуйста, перезайдите в систему.', 'error');
+      } else if (errorMessage) {
+        showToast(`Ошибка при обновлении посещаемости: ${errorMessage}`, 'error');
       } else {
-        alert(`Ошибка при обновлении посещаемости: ${errorMessage}`);
+        showToast('Ошибка при обновлении посещаемости', 'error');
       }
     } finally {
       setLoading(false);

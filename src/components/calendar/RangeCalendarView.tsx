@@ -176,23 +176,24 @@ function RangeLessonBlock({ lesson, onClick, height }: RangeLessonBlockProps) {
   return (
     <div
       onClick={onClick}
-      className="p-2 rounded-lg border-l-4 cursor-pointer hover:shadow-md transition-all
+      className="p-1.5 rounded-lg border-l-4 cursor-pointer hover:shadow-sm transition-all
                  bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-xs"
       style={{ 
         borderLeftColor: subjectColor,
         height: height ? `${height}px` : 'auto',
-        minHeight: '58px'
+        minHeight: '64px'
       }}
+      title={`${lesson.subject.subjectName} - ${lesson.group.name}\n${formatTime(lesson.startTime)}-${formatTime(lesson.endTime)}`}
     >
       <div className="flex flex-col h-full">
         <div className="flex-1 min-w-0">
-          <h4 className="font-medium text-gray-900 dark:text-white truncate text-xs">
+          <h4 className="font-medium text-gray-900 dark:text-white line-clamp-1 text-xs" title={lesson.subject.subjectName}>
             {lesson.subject.subjectName}
           </h4>
-          <p className="text-xs text-gray-600 dark:text-gray-300 truncate">
+          <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-1" title={lesson.group.name}>
             {lesson.group.name}
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+          <p className="text-[10px] text-gray-500 dark:text-gray-400">
             {formatTime(lesson.startTime)}-{formatTime(lesson.endTime)}
           </p>
         </div>

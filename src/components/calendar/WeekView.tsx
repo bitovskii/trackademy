@@ -154,18 +154,19 @@ function WeekLessonBlock({ lesson, onClick, height }: WeekLessonBlockProps) {
   return (
     <div
       onClick={onClick}
-      className="w-full p-2 rounded text-xs cursor-pointer hover:shadow-sm transition-all
+      className="w-full p-1.5 rounded text-xs cursor-pointer hover:shadow-sm transition-all
                  bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 overflow-hidden"
       style={{ 
         borderLeftColor: subjectColor, 
         borderLeftWidth: '3px',
         height: height ? `${height}px` : 'auto',
-        minHeight: '58px'
+        minHeight: '64px'
       }}
+      title={`${lesson.subject.subjectName} - ${lesson.group.name}\n${formatTime(lesson.startTime)}-${formatTime(lesson.endTime)}\n${lesson.room.name}`}
     >
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-1 flex-1 min-w-0">
-          <span className="font-medium text-gray-900 dark:text-white truncate">
+          <span className="font-medium text-gray-900 dark:text-white line-clamp-1" title={lesson.subject.subjectName}>
             {lesson.subject.subjectName}
           </span>
           {lesson.note && (
@@ -181,15 +182,15 @@ function WeekLessonBlock({ lesson, onClick, height }: WeekLessonBlockProps) {
         />
       </div>
       
-      <div className="text-gray-600 dark:text-gray-300 truncate mb-1">
+      <div className="text-gray-600 dark:text-gray-300 line-clamp-1 mb-1" title={lesson.group.name}>
         {lesson.group.name}
       </div>
       
-      <div className="text-gray-500 dark:text-gray-400">
+      <div className="text-gray-500 dark:text-gray-400 text-[10px]">
         {formatTime(lesson.startTime)}-{formatTime(lesson.endTime)}
       </div>
       
-      <div className="text-gray-500 dark:text-gray-400 truncate">
+      <div className="text-gray-500 dark:text-gray-400 line-clamp-1 text-[10px]" title={lesson.room.name}>
         {lesson.room.name}
       </div>
     </div>

@@ -116,7 +116,7 @@ function MonthLessonBlock({ lesson, onClick }: MonthLessonBlockProps) {
       title={`${lesson.subject.subjectName} - ${lesson.group.name} (${formatTime(lesson.startTime)}-${formatTime(lesson.endTime)})${lesson.note ? ' • Есть комментарий' : ''}`}
     >
       <div className="flex items-center gap-1 font-medium text-gray-900 dark:text-white">
-        <span className="truncate">
+        <span className="line-clamp-1 flex-1 min-w-0">
           {formatTime(lesson.startTime)} {lesson.subject.subjectName}
         </span>
         {lesson.note && (
@@ -125,7 +125,7 @@ function MonthLessonBlock({ lesson, onClick }: MonthLessonBlockProps) {
           />
         )}
       </div>
-      <div className="text-gray-600 dark:text-gray-300 truncate">
+      <div className="text-gray-600 dark:text-gray-300 line-clamp-1" title={lesson.group.name}>
         {lesson.group.name}
       </div>
     </div>

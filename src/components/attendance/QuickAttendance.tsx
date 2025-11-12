@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { Lesson } from '@/types/Lesson';
 import { AttendanceStatus, getAttendanceStatusText, getAttendanceStatusColor, getAttendanceStatusIcon } from '@/types/Attendance';
 import { attendanceApi } from '@/services/AttendanceApiService';
+import { useToast } from '@/contexts/ToastContext';
 
 interface QuickAttendanceProps {
   lesson: Lesson;
@@ -11,6 +12,7 @@ interface QuickAttendanceProps {
 }
 
 export default function QuickAttendance({ lesson, onUpdate }: QuickAttendanceProps) {
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set());
 
@@ -50,11 +52,19 @@ export default function QuickAttendance({ lesson, onUpdate }: QuickAttendancePro
         attendances
       });
 
+      showToast('Посещаемость успешно обновлена', 'success');
       setSelectedStudents(new Set());
       onUpdate();
     } catch (error) {
       console.error('Ошибка при обновлении посещаемости:', error);
-      alert('Ошибка при обновлении посещаемости');
+      let errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
+      // Убираем "API Error: XXX" из сообщения
+      errorMessage = errorMessage.replace(/API Error:\s*\d+\s*/gi, '').trim();
+      if (errorMessage) {
+        showToast(`Ошибка при обновлении посещаемости: ${errorMessage}`, 'error');
+      } else {
+        showToast('Ошибка при обновлении посещаемости', 'error');
+      }
     } finally {
       setLoading(false);
     }
@@ -69,10 +79,18 @@ export default function QuickAttendance({ lesson, onUpdate }: QuickAttendancePro
         status
       });
 
+      showToast('Посещаемость успешно обновлена', 'success');
       onUpdate();
     } catch (error) {
       console.error('Ошибка при обновлении посещаемости:', error);
-      alert('Ошибка при обновлении посещаемости');
+      let errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
+      // Убираем "API Error: XXX" из сообщения
+      errorMessage = errorMessage.replace(/API Error:\s*\d+\s*/gi, '').trim();
+      if (errorMessage) {
+        showToast(`Ошибка при обновлении посещаемости: ${errorMessage}`, 'error');
+      } else {
+        showToast('Ошибка при обновлении посещаемости', 'error');
+      }
     } finally {
       setLoading(false);
     }

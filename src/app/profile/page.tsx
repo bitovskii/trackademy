@@ -87,25 +87,6 @@ export default function Profile() {
     }
   };
 
-  // const getRoleDisplayName = (role: string | number) => {
-  //   // Convert number to string if needed
-  //   const roleStr = typeof role === 'number' ? role.toString() : role;
-  //   
-  //   switch (roleStr) {
-  //     case 'Administrator':
-  //     case '2':
-  //       return 'Администратор';
-  //     case 'Teacher':
-  //     case '3':
-  //       return 'Преподаватель';
-  //     case 'Student':
-  //     case '1':
-  //       return 'Студент';
-  //     default:
-  //       return roleStr;
-  //   }
-  // };
-
   const getRoleDisplayName = (role: string | number) => {
     // Convert number to string if needed
     const roleStr = typeof role === 'number' ? role.toString() : role;

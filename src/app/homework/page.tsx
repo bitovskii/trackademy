@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
 import { ClipboardDocumentListIcon, PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
-import { Assignment, AssignmentFormData, AssignmentFilters } from '../../types/Assignment';
+import { Assignment, AssignmentFormData, AssignmentFilters, getSubmissionStatusText, getSubmissionStatusColor } from '../../types/Assignment';
 import { Submission, SubmissionFilters, SubmissionStatus } from '../../types/Submission';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import { useApiToast } from '../../hooks/useApiToast';
@@ -37,6 +37,8 @@ export default function HomeworkPage() {
   const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [detailActiveTab, setDetailActiveTab] = useState<'details' | 'students'>('details');
+  const [studentFilter, setStudentFilter] = useState<'all' | 'submitted' | 'notSubmitted'>('all');
 
   // Submissions tab state
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -1330,18 +1332,52 @@ export default function HomeworkPage() {
         onClose={() => {
           setIsDetailModalOpen(false);
           setSelectedAssignment(null);
+          setDetailActiveTab('details');
+          setStudentFilter('all');
         }}
         title="Детали задания"
         customBackground="bg-gray-800 dark:bg-gray-800"
         gradientFrom="from-purple-500"
         gradientTo="to-indigo-600"
-        maxWidth="xl"
+        maxWidth="4xl"
       >
         {detailLoading ? (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
           </div>
         ) : selectedAssignment ? (
+          <div className="space-y-6">
+            {/* Tabs */}
+            <div className="flex border-b border-gray-700">
+              <button
+                onClick={() => setDetailActiveTab('details')}
+                className={`px-6 py-3 font-medium text-sm transition-colors ${
+                  detailActiveTab === 'details'
+                    ? 'text-purple-400 border-b-2 border-purple-400'
+                    : 'text-gray-400 hover:text-gray-300'
+                }`}
+              >
+                Детали задания
+              </button>
+              <button
+                onClick={() => setDetailActiveTab('students')}
+                className={`px-6 py-3 font-medium text-sm transition-colors ${
+                  detailActiveTab === 'students'
+                    ? 'text-purple-400 border-b-2 border-purple-400'
+                    : 'text-gray-400 hover:text-gray-300'
+                }`}
+              >
+                Студенты 
+                {selectedAssignment.studentSubmissions && (
+                  <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-purple-500/20 text-purple-300">
+                    {selectedAssignment.studentSubmissions.length}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Tab Content */}
+            {detailActiveTab === 'details' ? (
           <div className="space-y-6">
             {/* Description */}
             <div>
@@ -1419,12 +1455,14 @@ export default function HomeworkPage() {
               </div>
             </div>
 
-            {/* Actions */}
+            {/* Actions for Details Tab */}
             <div className="flex justify-end gap-3 pt-6 border-t border-gray-700">
               <button
                 onClick={() => {
                   setIsDetailModalOpen(false);
                   setSelectedAssignment(null);
+                  setDetailActiveTab('details');
+                  setStudentFilter('all');
                 }}
                 className="px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 rounded-lg transition-colors"
               >
@@ -1440,6 +1478,140 @@ export default function HomeworkPage() {
                 Редактировать
               </button>
             </div>
+          </div>
+            ) : (
+              /* Students Tab */
+              <div className="space-y-4">
+                {/* Filter Buttons */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setStudentFilter('all')}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      studentFilter === 'all'
+                        ? 'bg-purple-500 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    Все ({selectedAssignment.studentSubmissions?.length || 0})
+                  </button>
+                  <button
+                    onClick={() => setStudentFilter('submitted')}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      studentFilter === 'submitted'
+                        ? 'bg-purple-500 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    Сдавшие ({selectedAssignment.studentSubmissions?.filter(s => s.submission !== null).length || 0})
+                  </button>
+                  <button
+                    onClick={() => setStudentFilter('notSubmitted')}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      studentFilter === 'notSubmitted'
+                        ? 'bg-purple-500 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    Не сдавшие ({selectedAssignment.studentSubmissions?.filter(s => s.submission === null).length || 0})
+                  </button>
+                </div>
+
+                {/* Students Table */}
+                <div className="overflow-x-auto rounded-lg border border-gray-700">
+                  <table className="min-w-full divide-y divide-gray-700">
+                    <thead className="bg-gray-700/50">
+                      <tr>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                          Студент
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                          Логин
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                          Статус
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                          Оценка
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                          Дата сдачи
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                          Дата проверки
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-gray-800/50 divide-y divide-gray-700">
+                      {selectedAssignment.studentSubmissions
+                        ?.filter(student => {
+                          if (studentFilter === 'submitted') return student.submission !== null;
+                          if (studentFilter === 'notSubmitted') return student.submission === null;
+                          return true;
+                        })
+                        .map((student) => (
+                          <tr 
+                            key={student.studentId}
+                            className="hover:bg-gray-700/50 cursor-pointer transition-colors"
+                            onClick={() => {
+                              // TODO: Navigate to student submission detail page
+                              console.log('Navigate to student submission:', student.studentId);
+                            }}
+                          >
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm font-medium text-white">{student.studentName}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-300">{student.studentLogin}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {student.submission ? (
+                                <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                  student.submission.status === 1 ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
+                                  student.submission.status === 2 ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                                  student.submission.status === 3 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                                  student.submission.status === 4 ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
+                                  'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
+                                }`}>
+                                  {student.submission.statusName}
+                                </span>
+                              ) : (
+                                <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300">
+                                  Не сдано
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {student.submission?.score !== null && student.submission?.score !== undefined ? (
+                                <div className="flex items-center">
+                                  <span className="text-sm font-medium text-white">{student.submission.score}</span>
+                                  <span className="text-xs text-gray-400 ml-1">/100</span>
+                                </div>
+                              ) : (
+                                <span className="text-sm text-gray-500">—</span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                              {student.submission?.submittedAt ? formatDate(student.submission.submittedAt) : '—'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                              {student.submission?.gradedAt ? formatDate(student.submission.gradedAt) : '—'}
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                  {selectedAssignment.studentSubmissions?.filter(student => {
+                    if (studentFilter === 'submitted') return student.submission !== null;
+                    if (studentFilter === 'notSubmitted') return student.submission === null;
+                    return true;
+                  }).length === 0 && (
+                    <div className="text-center py-8 text-gray-400">
+                      Нет студентов для отображения
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-center py-8 text-gray-400">

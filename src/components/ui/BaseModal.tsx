@@ -10,7 +10,7 @@ interface BaseModalProps {
   subtitle?: string;
   icon?: React.ReactNode;
   children: React.ReactNode;
-  maxWidth?: 'sm' | 'md' | 'lg' | 'xl';
+  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl';
   gradientFrom?: string;
   gradientTo?: string;
   customBackground?: string;
@@ -35,6 +35,9 @@ export const BaseModal: React.FC<BaseModalProps> = ({
     md: 'max-w-md',
     lg: 'max-w-lg',
     xl: 'max-w-xl',
+    '2xl': 'max-w-2xl',
+    '3xl': 'max-w-3xl',
+    '4xl': 'max-w-4xl',
   };
 
   return (

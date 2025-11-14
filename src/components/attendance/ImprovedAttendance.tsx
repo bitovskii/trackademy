@@ -114,19 +114,9 @@ export default function ImprovedAttendance({ lesson, onUpdate, onClose }: Improv
     } catch (error) {
       console.error('Ошибка при обновлении посещаемости:', error);
       
-      // Более информативное сообщение об ошибке
-      let errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
-      
-      // Убираем "API Error: XXX" из сообщения
-      errorMessage = errorMessage.replace(/API Error:\s*\d+\s*/gi, '').trim();
-      
-      if (errorMessage.includes('аутентификации') || errorMessage.includes('401') || errorMessage.includes('403')) {
-        showToast('Ошибка аутентификации. Пожалуйста, перезайдите в систему.', 'error');
-      } else if (errorMessage) {
-        showToast(`Ошибка при обновлении посещаемости: ${errorMessage}`, 'error');
-      } else {
-        showToast('Ошибка при обновлении посещаемости', 'error');
-      }
+      // Показываем ошибку от бэкенда как есть
+      const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
+      showToast(errorMessage, 'error');
     } finally {
       setLoading(false);
     }

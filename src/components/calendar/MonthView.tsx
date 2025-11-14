@@ -125,9 +125,6 @@ function MonthLessonBlock({ lesson, onClick }: MonthLessonBlockProps) {
           />
         )}
       </div>
-      <div className="text-gray-600 dark:text-gray-300 line-clamp-1" title={lesson.group.name}>
-        {lesson.group.name}
-      </div>
     </div>
   );
 }

@@ -44,8 +44,8 @@ export default function RangeCalendarView({ dateFrom, dateTo, lessons, onLessonC
     const height = ((endTotalMin - startTotalMin) / 60) * 60; // 60px per hour
     
     return {
-      top: Math.max(0, topOffset), // Ensure non-negative
-      height: Math.max(58, height) // Minimum 58px
+      top: Math.max(0, topOffset),
+      height: Math.max(25, height) // Minimum 25px for very short lessons
     };
   };
 
@@ -172,42 +172,44 @@ interface RangeLessonBlockProps {
 function RangeLessonBlock({ lesson, onClick, height }: RangeLessonBlockProps) {
   const subjectColor = generateSubjectColor(lesson.subject.subjectName);
   const statusColor = getLessonStatusColor(lesson.lessonStatus);
+  
+  // Adaptive padding based on height
+  const isShort = height && height < 45;
+  const showTime = !height || height >= 40; // Show time only if block is tall enough
+  const paddingClass = isShort ? 'p-1' : 'p-1.5';
 
   return (
     <div
       onClick={onClick}
-      className="p-1.5 rounded-lg border-l-4 cursor-pointer hover:shadow-sm transition-all
-                 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-xs"
+      className={`${paddingClass} rounded-lg border-l-4 cursor-pointer hover:shadow-sm transition-all
+                 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-xs overflow-hidden`}
       style={{ 
         borderLeftColor: subjectColor,
         height: height ? `${height}px` : 'auto',
-        minHeight: '64px'
+        maxHeight: height ? `${height}px` : 'none',
+        boxSizing: 'border-box'
       }}
       title={`${lesson.subject.subjectName} - ${lesson.group.name}\n${formatTime(lesson.startTime)}-${formatTime(lesson.endTime)}`}
     >
-      <div className="flex flex-col h-full">
-        <div className="flex-1 min-w-0">
-          <h4 className="font-medium text-gray-900 dark:text-white line-clamp-1 text-xs" title={lesson.subject.subjectName}>
-            {lesson.subject.subjectName}
-          </h4>
-          <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-1" title={lesson.group.name}>
-            {lesson.group.name}
-          </p>
-          <p className="text-[10px] text-gray-500 dark:text-gray-400">
-            {formatTime(lesson.startTime)}-{formatTime(lesson.endTime)}
-          </p>
-        </div>
-        
-        <div className="flex items-center justify-between mt-1">
+      <div className="flex flex-col h-full justify-between">
+        <div className="flex items-center justify-between">
+          <div className="flex-1 min-w-0">
+            <h4 className="font-medium text-gray-900 dark:text-white line-clamp-1 text-xs" title={lesson.subject.subjectName}>
+              {lesson.subject.subjectName}
+            </h4>
+          </div>
+          
           <div
-            className="w-2 h-2 rounded-full"
+            className="w-2 h-2 rounded-full flex-shrink-0 ml-1"
             style={{ backgroundColor: statusColor }}
             title={lesson.lessonStatus}
           />
-          <span className="text-xs text-gray-500 dark:text-gray-400">
-            {lesson.students.length}
-          </span>
         </div>
+        {showTime && (
+          <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-auto">
+            {formatTime(lesson.startTime)}-{formatTime(lesson.endTime)}
+          </p>
+        )}
       </div>
     </div>
   );

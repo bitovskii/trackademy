@@ -30,7 +30,7 @@ export default function DayView({ date, lessons, onLessonClick }: DayViewProps) 
     
     return {
       top: Math.max(0, topOffset), // Ensure non-negative
-      height: Math.max(60, height) // Minimum 60px
+      height: Math.max(30, height) // Minimum 30px for very short lessons
     };
   };
 
@@ -111,53 +111,52 @@ interface LessonBlockProps {
 function LessonBlock({ lesson, onClick, height }: LessonBlockProps) {
   const subjectColor = generateSubjectColor(lesson.subject.subjectName);
   const statusColor = getLessonStatusColor(lesson.lessonStatus);
+  
+  // Adaptive padding based on height
+  const isShort = height && height < 50;
+  const showTime = !height || height >= 50; // Show time only if block is tall enough
+  const paddingClass = isShort ? 'p-1.5' : 'p-2.5';
 
   return (
     <div
       onClick={onClick}
-      className="p-2.5 rounded-lg border-l-4 cursor-pointer hover:shadow-md transition-all
-                 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600"
+      className={`${paddingClass} rounded-lg border-l-4 cursor-pointer hover:shadow-md transition-all
+                 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 overflow-hidden`}
       style={{ 
         borderLeftColor: subjectColor,
         height: height ? `${height}px` : 'auto',
-        minHeight: '70px'
+        maxHeight: height ? `${height}px` : 'none',
+        boxSizing: 'border-box'
       }}
       title={`${lesson.subject.subjectName} - ${lesson.group.name}\n${formatTime(lesson.startTime)} - ${formatTime(lesson.endTime)}\n${lesson.teacher.name} • ${lesson.room.name}`}
     >
-      <div className="flex items-start justify-between h-full">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1">
-            <h4 className="font-medium text-gray-900 dark:text-white line-clamp-1" title={lesson.subject.subjectName}>
-              {lesson.subject.subjectName}
-            </h4>
-            {lesson.note && (
-              <ChatBubbleLeftIcon 
-                className="w-4 h-4 text-blue-500 dark:text-blue-400 flex-shrink-0" 
-                title="Есть комментарий преподавателя"
-              />
-            )}
+      <div className="flex flex-col h-full justify-between">
+        <div className="flex items-center justify-between">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1">
+              <h4 className="font-medium text-gray-900 dark:text-white line-clamp-1" title={lesson.subject.subjectName}>
+                {lesson.subject.subjectName}
+              </h4>
+              {lesson.note && (
+                <ChatBubbleLeftIcon 
+                  className="w-4 h-4 text-blue-500 dark:text-blue-400 flex-shrink-0" 
+                  title="Есть комментарий преподавателя"
+                />
+              )}
+            </div>
           </div>
-          <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-1" title={lesson.group.name}>
-            {lesson.group.name}
-          </p>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            {formatTime(lesson.startTime)} - {formatTime(lesson.endTime)}
-          </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1" title={`${lesson.teacher.name} • ${lesson.room.name}`}>
-            {lesson.teacher.name} • {lesson.room.name}
-          </p>
-        </div>
-        
-        <div className="flex flex-col items-end gap-1">
+          
           <div
-            className="w-3 h-3 rounded-full"
+            className="w-3 h-3 rounded-full flex-shrink-0"
             style={{ backgroundColor: statusColor }}
             title={lesson.lessonStatus}
           />
-          <span className="text-xs text-gray-500 dark:text-gray-400">
-            {lesson.students.length} студ.
-          </span>
         </div>
+        {showTime && (
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-auto">
+            {formatTime(lesson.startTime)} - {formatTime(lesson.endTime)}
+          </p>
+        )}
       </div>
     </div>
   );

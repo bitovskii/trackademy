@@ -32,7 +32,7 @@ export default function WeekView({ date, lessons, onLessonClick }: WeekViewProps
     
     return {
       top: Math.max(0, topOffset), // Ensure non-negative
-      height: Math.max(58, height) // Minimum 58px
+      height: Math.max(25, height) // Minimum 25px for very short lessons
     };
   };
 
@@ -150,48 +150,49 @@ interface WeekLessonBlockProps {
 function WeekLessonBlock({ lesson, onClick, height }: WeekLessonBlockProps) {
   const subjectColor = generateSubjectColor(lesson.subject.subjectName);
   const statusColor = getLessonStatusColor(lesson.lessonStatus);
+  
+  // Adaptive padding based on height
+  const isShort = height && height < 45;
+  const showTime = !height || height >= 40; // Show time only if block is tall enough
+  const paddingClass = isShort ? 'p-1' : 'p-1.5';
 
   return (
     <div
       onClick={onClick}
-      className="w-full p-1.5 rounded text-xs cursor-pointer hover:shadow-sm transition-all
-                 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 overflow-hidden"
+      className={`w-full ${paddingClass} rounded text-xs cursor-pointer hover:shadow-sm transition-all
+                 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 overflow-hidden`}
       style={{ 
         borderLeftColor: subjectColor, 
         borderLeftWidth: '3px',
         height: height ? `${height}px` : 'auto',
-        minHeight: '64px'
+        maxHeight: height ? `${height}px` : 'none',
+        boxSizing: 'border-box'
       }}
       title={`${lesson.subject.subjectName} - ${lesson.group.name}\n${formatTime(lesson.startTime)}-${formatTime(lesson.endTime)}\n${lesson.room.name}`}
     >
-      <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-1 flex-1 min-w-0">
-          <span className="font-medium text-gray-900 dark:text-white line-clamp-1" title={lesson.subject.subjectName}>
-            {lesson.subject.subjectName}
-          </span>
-          {lesson.note && (
-            <ChatBubbleLeftIcon 
-              className="w-3 h-3 text-blue-500 dark:text-blue-400 flex-shrink-0" 
-              title="Есть комментарий"
-            />
-          )}
+      <div className="flex flex-col h-full justify-between">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1 flex-1 min-w-0">
+            <span className="font-medium text-gray-900 dark:text-white line-clamp-1" title={lesson.subject.subjectName}>
+              {lesson.subject.subjectName}
+            </span>
+            {lesson.note && (
+              <ChatBubbleLeftIcon 
+                className="w-3 h-3 text-blue-500 dark:text-blue-400 flex-shrink-0" 
+                title="Есть комментарий"
+              />
+            )}
+          </div>
+          <div
+            className="w-2 h-2 rounded-full ml-1 flex-shrink-0"
+            style={{ backgroundColor: statusColor }}
+          />
         </div>
-        <div
-          className="w-2 h-2 rounded-full ml-1 flex-shrink-0"
-          style={{ backgroundColor: statusColor }}
-        />
-      </div>
-      
-      <div className="text-gray-600 dark:text-gray-300 line-clamp-1 mb-1" title={lesson.group.name}>
-        {lesson.group.name}
-      </div>
-      
-      <div className="text-gray-500 dark:text-gray-400 text-[10px]">
-        {formatTime(lesson.startTime)}-{formatTime(lesson.endTime)}
-      </div>
-      
-      <div className="text-gray-500 dark:text-gray-400 line-clamp-1 text-[10px]" title={lesson.room.name}>
-        {lesson.room.name}
+        {showTime && (
+          <div className="text-gray-500 dark:text-gray-400 text-[10px] mt-auto">
+            {formatTime(lesson.startTime)}-{formatTime(lesson.endTime)}
+          </div>
+        )}
       </div>
     </div>
   );

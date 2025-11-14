@@ -267,8 +267,8 @@ export default function LessonDetailModal({ lesson, isOpen, onClose, onUpdate }:
         {/* Footer */}
         <div className="flex justify-between items-center p-6 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 bg-gray-50 dark:bg-gray-900/50">
           <div className="flex gap-3">
-            {/* Show action buttons only if lesson is Planned and user has permissions */}
-            {lesson.lessonStatus === 'Planned' && (isAdministrator || isTeacher || isOwner) && (
+            {/* Show action buttons for Planned and Moved lessons, but not for Cancelled */}
+            {(lesson.lessonStatus === 'Planned' || lesson.lessonStatus === 'Moved') && (isAdministrator || isTeacher || isOwner) && (
               <>
                 <button
                   onClick={() => setIsMoveModalOpen(true)}

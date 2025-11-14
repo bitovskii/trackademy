@@ -1522,6 +1522,9 @@ export default function HomeworkPage() {
                     <thead className="bg-gray-700/50">
                       <tr>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                          №
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                           Студент
                         </th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
@@ -1548,7 +1551,7 @@ export default function HomeworkPage() {
                           if (studentFilter === 'notSubmitted') return student.submission === null;
                           return true;
                         })
-                        .map((student) => (
+                        .map((student, index) => (
                           <tr 
                             key={student.studentId}
                             className="hover:bg-gray-700/50 cursor-pointer transition-colors"
@@ -1557,6 +1560,9 @@ export default function HomeworkPage() {
                               console.log('Navigate to student submission:', student.studentId);
                             }}
                           >
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-400">{index + 1}</div>
+                            </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-sm font-medium text-white">{student.studentName}</div>
                             </td>

@@ -518,12 +518,10 @@ export default function HomeworkPage() {
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('ru-RU', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
+    // Parse only the date part to avoid timezone conversion issues
+    const datePart = dateString.split('T')[0];
+    const [year, month, day] = datePart.split('-');
+    return `${day}.${month}.${year}`;
   };
 
   const renderPagination = () => {

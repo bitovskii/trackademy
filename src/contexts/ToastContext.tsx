@@ -1,73 +1,21 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode, useRef } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useRef, useMemo } from 'react';
 import { Toast, ToastType } from '@/types/Toast';
 
 interface ToastContextType {
-  toasts: Toast[];
   showToast: (message: string, type: ToastType, duration?: number) => void;
-  removeToast: (id: string) => void;
   showSuccess: (message: string) => void;
   showError: (message: string) => void;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
-export function ToastProvider({ children }: { children: ReactNode }) {
-  const [toasts, setToasts] = useState<Toast[]>([]);
-  const timeoutRefs = useRef<Map<string, NodeJS.Timeout>>(new Map());
-
-  const showToast = (message: string, type: ToastType, duration: number = 15000) => {
-    const id = Math.random().toString(36).substr(2, 9);
-    const newToast: Toast = {
-      id,
-      message,
-      type,
-      duration
-    };
-
-    setToasts(prev => [...prev, newToast]);
-
-    // Автоматическое удаление через duration
-    const timeout = setTimeout(() => {
-      removeToast(id);
-    }, duration);
-    
-    timeoutRefs.current.set(id, timeout);
-  };
-
-  const removeToast = (id: string) => {
-    // Очищаем таймер если он есть
-    const timeout = timeoutRefs.current.get(id);
-    if (timeout) {
-      clearTimeout(timeout);
-      timeoutRefs.current.delete(id);
-    }
-    
-    setToasts(prev => prev.filter(toast => toast.id !== id));
-  };
-
-  const showSuccess = (message: string) => {
-    showToast(message, 'success');
-  };
-
-  const showError = (message: string) => {
-    showToast(message, 'error');
-  };
-
+// Отдельный компонент для рендеринга toast-ов
+function ToastContainer({ toasts, removeToast }: { toasts: Toast[], removeToast: (id: string) => void }) {
   return (
-    <ToastContext.Provider value={{
-      toasts,
-      showToast,
-      removeToast,
-      showSuccess,
-      showError
-    }}>
-      {children}
-      
-      {/* Toast Container - отображаем уведомления в правом нижнем углу */}
-      <div className="fixed bottom-4 right-4 z-[99999] space-y-2">
-        {toasts.map((toast) => (
+    <div className="fixed bottom-4 right-4 z-[99999] space-y-2">
+      {toasts.map((toast) => (
           <div
             key={toast.id}
             className={`
@@ -111,7 +59,63 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             </div>
           </div>
         ))}
-      </div>
+    </div>
+  );
+}
+
+export function ToastProvider({ children }: { children: ReactNode }) {
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const timeoutRefs = useRef<Map<string, NodeJS.Timeout>>(new Map());
+
+  const showToast = (message: string, type: ToastType, duration: number = 15000) => {
+    const id = Math.random().toString(36).substr(2, 9);
+    const newToast: Toast = {
+      id,
+      message,
+      type,
+      duration
+    };
+
+    setToasts(prev => [...prev, newToast]);
+
+    // Автоматическое удаление через duration
+    const timeout = setTimeout(() => {
+      removeToast(id);
+    }, duration);
+    
+    timeoutRefs.current.set(id, timeout);
+  };
+
+  const removeToast = (id: string) => {
+    // Очищаем таймер если он есть
+    const timeout = timeoutRefs.current.get(id);
+    if (timeout) {
+      clearTimeout(timeout);
+      timeoutRefs.current.delete(id);
+    }
+    
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+  };
+
+  const showSuccess = (message: string) => {
+    showToast(message, 'success');
+  };
+
+  const showError = (message: string) => {
+    showToast(message, 'error');
+  };
+
+  // Мемоизируем значение контекста, чтобы оно не пересоздавалось при изменении toasts
+  const contextValue = useMemo(() => ({
+    showToast,
+    showSuccess,
+    showError
+  }), []);
+
+  return (
+    <ToastContext.Provider value={contextValue}>
+      {children}
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
     </ToastContext.Provider>
   );
 }

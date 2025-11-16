@@ -1156,7 +1156,7 @@ export default function SchedulesPage() {
                   <option value="">Выберите преподавателя</option>
                   {teachers.map((teacher) => (
                     <option key={teacher.id} value={teacher.id}>
-                      {teacher.login}
+                      {teacher.name || teacher.login} ({teacher.login})
                     </option>
                   ))}
                 </select>

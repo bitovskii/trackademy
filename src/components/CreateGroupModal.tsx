@@ -128,10 +128,11 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Преобразуем студентов для MultiSelect
+  // Преобразуем студентов для MultiSelect с отображением имени и логина
   const studentOptions = students.map(student => ({
     id: student.id,
-    name: student.name
+    name: student.name || student.login, // используем name, если есть, иначе login
+    secondaryText: student.login // показываем логин как дополнительную информацию
   }));
 
   return (

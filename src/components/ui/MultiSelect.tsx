@@ -6,6 +6,7 @@ import { ChevronDownIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/outli
 interface MultiSelectOption {
   id: string;
   name: string;
+  secondaryText?: string; // для отображения логина или другой дополнительной информации
 }
 
 interface MultiSelectProps {
@@ -43,10 +44,13 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Filter options based on search term
-  const filteredOptions = options.filter(option =>
-    option.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter options based on search term (по имени и secondaryText)
+  const filteredOptions = options.filter(option => {
+    const searchLower = searchTerm.toLowerCase();
+    const nameMatch = option.name.toLowerCase().includes(searchLower);
+    const secondaryMatch = option.secondaryText?.toLowerCase().includes(searchLower);
+    return nameMatch || secondaryMatch;
+  });
 
   const handleToggleOption = (optionId: string) => {
     const isSelected = selectedValues.includes(optionId);
@@ -96,8 +100,10 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
                 {placeholder}
               </span>
             ) : (
-              selectedNames.map((name, index) => {
-                const optionId = selectedValues[index];
+              selectedValues.map((optionId) => {
+                const option = options.find(opt => opt.id === optionId);
+                if (!option) return null;
+                
                 return (
                   <span
                     key={optionId}
@@ -106,7 +112,12 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
                              bg-blue-100 dark:bg-blue-900/20
                              border border-blue-200 dark:border-blue-800"
                   >
-                    <span style={{ color: '#000000' }}>{name}</span>
+                    <span style={{ color: '#000000' }}>
+                      {option.name}
+                      {option.secondaryText && (
+                        <span className="ml-1 text-gray-600">({option.secondaryText})</span>
+                      )}
+                    </span>
                     {!disabled && (
                       <button
                         onClick={(e) => handleRemoveOption(optionId, e)}
@@ -147,23 +158,21 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
                        rounded-lg shadow-lg ring-1 ring-black ring-opacity-5">
           
           {/* Search Input */}
-          {options.length > 5 && (
-            <div className="p-2 border-b border-gray-100">
-              <input
-                ref={inputRef}
-                type="text"
-                placeholder="Поиск..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={{ color: '#000000' }} // Inline style for guaranteed black color
-                className="w-full px-3 py-2 text-sm border border-gray-300 
-                         rounded-md bg-white dark:bg-gray-700
-                         placeholder-gray-500 dark:placeholder-gray-400
-                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                autoFocus
-              />
-            </div>
-          )}
+          <div className="p-2 border-b border-gray-100">
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder="Поиск по имени или логину..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ color: '#000000' }} // Inline style for guaranteed black color
+              className="w-full px-3 py-2 text-sm border border-gray-300 
+                       rounded-md bg-white dark:bg-gray-700
+                       placeholder-gray-500 dark:placeholder-gray-400
+                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              autoFocus
+            />
+          </div>
 
           {/* Options List */}
           <div className="max-h-60 overflow-auto py-1" style={{ maxHeight }}>
@@ -178,17 +187,25 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
                   <div
                     key={option.id}
                     onClick={() => handleToggleOption(option.id)}
-                    style={{ color: isSelected ? '#1e3a8a' : '#000000' }} // Inline style for guaranteed color
-                    className={`flex items-center justify-between px-3 py-2 text-sm cursor-pointer 
+                    className={`flex items-center justify-between px-3 py-2 cursor-pointer 
                                transition-colors ${
                       isSelected
                         ? 'bg-blue-50 dark:bg-blue-900/30'
                         : 'hover:bg-gray-50 dark:hover:bg-gray-700'
                     }`}
                   >
-                    <span className="flex-1" style={{ color: isSelected ? '#1e3a8a' : '#000000' }}>{option.name}</span>
+                    <div className="flex-1">
+                      <div style={{ color: isSelected ? '#1e3a8a' : '#000000' }} className="text-sm font-medium">
+                        {option.name}
+                      </div>
+                      {option.secondaryText && (
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                          {option.secondaryText}
+                        </div>
+                      )}
+                    </div>
                     {isSelected && (
-                      <CheckIcon className="h-4 w-4 text-blue-600" />
+                      <CheckIcon className="h-4 w-4 text-blue-600 flex-shrink-0 ml-2" />
                     )}
                   </div>
                 );

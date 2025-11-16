@@ -23,6 +23,7 @@ export const GroupFormUniversal: React.FC<GroupFormUniversalProps> = ({
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [students, setStudents] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     loadData();
@@ -161,6 +162,19 @@ export const GroupFormUniversal: React.FC<GroupFormUniversalProps> = ({
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Студенты
         </label>
+        
+        {/* Поиск студентов */}
+        <div className="mb-2">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Поиск по имени или логину..."
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+            disabled={isSubmitting}
+          />
+        </div>
+
         <div className="max-h-48 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg p-3 bg-white dark:bg-gray-700">
           {students.length === 0 ? (
             <p className="text-gray-500 dark:text-gray-400 text-center py-4">
@@ -168,20 +182,32 @@ export const GroupFormUniversal: React.FC<GroupFormUniversalProps> = ({
             </p>
           ) : (
             <div className="space-y-2">
-              {students.map((student) => (
-                <label key={student.id} className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 p-2 rounded">
-                  <input
-                    type="checkbox"
-                    checked={(formData.studentIds || []).includes(student.id)}
-                    onChange={() => handleStudentToggle(student.id)}
-                    disabled={isSubmitting}
-                    className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
-                  />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">
-                    {student.login}
-                  </span>
-                </label>
-              ))}
+              {students
+                .filter((student) => {
+                  const searchLower = searchTerm.toLowerCase();
+                  const nameMatch = student.name?.toLowerCase().includes(searchLower);
+                  const loginMatch = student.login?.toLowerCase().includes(searchLower);
+                  return nameMatch || loginMatch;
+                })
+                .map((student) => (
+                  <label key={student.id} className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 p-2 rounded">
+                    <input
+                      type="checkbox"
+                      checked={(formData.studentIds || []).includes(student.id)}
+                      onChange={() => handleStudentToggle(student.id)}
+                      disabled={isSubmitting}
+                      className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        {student.name || student.login}
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {student.login}
+                      </div>
+                    </div>
+                  </label>
+                ))}
             </div>
           )}
         </div>

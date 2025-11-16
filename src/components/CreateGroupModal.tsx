@@ -27,7 +27,10 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
     level: '',
     subjectId: '',
     studentIds: [],
-    organizationId: organizationId
+    organizationId: organizationId,
+    paymentType: 0,
+    monthlyPrice: 0,
+    courseEndDate: null
   });
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [students, setStudents] = useState<User[]>([]);
@@ -46,7 +49,10 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
         level: '',
         subjectId: '',
         studentIds: [],
-        organizationId: organizationId
+        organizationId: organizationId,
+        paymentType: 0,
+        monthlyPrice: 0,
+        courseEndDate: null
       });
       setError(null);
     }

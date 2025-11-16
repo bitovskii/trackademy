@@ -218,6 +218,67 @@ export const GroupFormUniversal: React.FC<GroupFormUniversalProps> = ({
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.studentIds}</p>
         )}
       </div>
+
+      {/* Тип оплаты и стоимость */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Тип оплаты *
+          </label>
+          <select
+            value={formData.paymentType || 1}
+            onChange={(e) => setFormData((prev: GroupFormData) => ({ ...prev, paymentType: parseInt(e.target.value) }))}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            disabled={isSubmitting}
+            required
+          >
+            <option value={1}>Ежемесячный</option>
+            <option value={2}>Единоразовый за весь курс</option>
+          </select>
+          {errors.paymentType && (
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.paymentType}</p>
+          )}
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            {formData.paymentType === 2 ? 'Стоимость курса' : 'Стоимость в месяц'}
+          </label>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={formData.monthlyPrice || ''}
+            onChange={(e) => setFormData((prev: GroupFormData) => ({ ...prev, monthlyPrice: e.target.value ? parseFloat(e.target.value) : 0 }))}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            placeholder="0.00"
+            disabled={isSubmitting}
+          />
+          {errors.monthlyPrice && (
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.monthlyPrice}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Дата окончания курса */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Дата окончания курса
+        </label>
+        <input
+          type="date"
+          value={formData.courseEndDate || ''}
+          onChange={(e) => setFormData((prev: GroupFormData) => ({ ...prev, courseEndDate: e.target.value || null }))}
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          disabled={isSubmitting}
+        />
+        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          Необязательное поле. Укажите планируемую дату окончания курса
+        </p>
+        {errors.courseEndDate && (
+          <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.courseEndDate}</p>
+        )}
+      </div>
     </div>
   );
 };

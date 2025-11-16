@@ -840,7 +840,9 @@ export default function PaymentsPage() {
                                 {group.code}
                               </span>
                               <span>•</span>
-                              <span>{group.subject?.subjectName}</span>
+                              <span>
+                                {typeof group.subject === 'object' ? group.subject?.subjectName : group.subject}
+                              </span>
                               <span>•</span>
                               <span className="font-medium">{group.students?.length || 0} студентов</span>
                             </div>

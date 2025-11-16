@@ -15,6 +15,7 @@ import { useColumnVisibility, ColumnVisibilityControl } from '../../components/u
 import { useApiToast } from '../../hooks/useApiToast';
 import { GroupStudentsModal } from '../../components/GroupStudentsModal';
 import { CreatePaymentModal } from '../../components/CreatePaymentModal';
+import { BaseModal } from '../../components/ui/BaseModal';
 
 export default function GroupsPage() {
   const { isAuthenticated, user } = useAuth();
@@ -26,7 +27,6 @@ export default function GroupsPage() {
   const [tableLoading, setTableLoading] = useState(false);
   const [deletingGroup, setDeletingGroup] = useState<Group | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [viewingGroup, setViewingGroup] = useState<Group | null>(null);
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
 
   // Состояния для модалок платежей
@@ -35,6 +35,11 @@ export default function GroupsPage() {
   const [isCreatePaymentModalOpen, setIsCreatePaymentModalOpen] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   const [selectedStudentName, setSelectedStudentName] = useState<string>('');
+
+  // Состояния для модалки просмотра деталей группы
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [viewingGroup, setViewingGroup] = useState<Group | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   // Фильтры для групп
   const [filters, setFilters] = useState<{
@@ -63,7 +68,10 @@ export default function GroupsPage() {
     level: '',
     subjectId: '',
     studentIds: [] as string[],
-    organizationId: ''
+    organizationId: '',
+    paymentType: 1,
+    monthlyPrice: 0,
+    courseEndDate: undefined
   });
   
   // Toast уведомления для API операций
@@ -223,10 +231,14 @@ export default function GroupsPage() {
         name: group.name,
         code: group.code,
         level: group.level,
-        subjectId: group.subject.subjectId,
+        subjectId: typeof group.subject === 'object' ? group.subject.subjectId : group.subject,
         studentIds: group.students.map(s => s.studentId),
-        organizationId: '' // Заполним из контекста или API
-      });
+        organizationId: '',
+        paymentType: group.paymentType || 1,
+        monthlyPrice: group.monthlyPrice || 0,
+        courseEndDate: group.courseEndDate ? group.courseEndDate.split('T')[0] : undefined
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any);
     }
   };
 
@@ -238,10 +250,18 @@ export default function GroupsPage() {
     }
   };
 
-  const handleView = (id: string) => {
-    const group = groups.find(g => g.id === id);
-    if (group) {
-      setViewingGroup(group);
+  const handleView = async (id: string) => {
+    try {
+      setDetailLoading(true);
+      setIsDetailModalOpen(true);
+      
+      const groupDetail = await AuthenticatedApiService.get<Group>(`/Group/${id}`);
+      setViewingGroup(groupDetail);
+    } catch (error) {
+      console.error('Error loading group details:', error);
+      setIsDetailModalOpen(false);
+    } finally {
+      setDetailLoading(false);
     }
   };
 
@@ -284,6 +304,8 @@ export default function GroupsPage() {
     const dataToSend = {
       ...formData,
       organizationId: organizationId,
+      paymentType: formData.paymentType || 1,
+      courseEndDate: formData.courseEndDate ? new Date(formData.courseEndDate).toISOString() : null,
     };
 
     const result = await createOperation(
@@ -303,8 +325,14 @@ export default function GroupsPage() {
       throw new Error('ID группы не найден');
     }
     
+    const dataToSend = {
+      ...formData,
+      paymentType: formData.paymentType || 1,
+      courseEndDate: formData.courseEndDate ? new Date(formData.courseEndDate).toISOString() : null,
+    };
+    
     const result = await updateOperation(
-      () => AuthenticatedApiService.put(`/Group/${editingGroupId}`, formData),
+      () => AuthenticatedApiService.put(`/Group/${editingGroupId}`, dataToSend),
       'группу'
     );
     
@@ -583,7 +611,17 @@ export default function GroupsPage() {
                   </thead>
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                     {groups.map((group, index) => (
-                      <tr key={group.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200">
+                      <tr 
+                        key={group.id} 
+                        className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200 cursor-pointer"
+                        onClick={(e) => {
+                          // Не открывать модалку если кликнули на кнопки действий
+                          const target = e.target as HTMLElement;
+                          if (!target.closest('button')) {
+                            handleView(group.id);
+                          }
+                        }}
+                      >
                         {isColumnVisible('number') && (
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
@@ -613,7 +651,9 @@ export default function GroupsPage() {
                         )}
                         {isColumnVisible('subject') && (
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-gray-900 dark:text-gray-100">{group.subject.subjectName}</div>
+                            <div className="text-gray-900 dark:text-gray-100">
+                              {typeof group.subject === 'object' ? group.subject.subjectName : group.subject}
+                            </div>
                           </td>
                         )}
                         {isColumnVisible('students') && (
@@ -680,7 +720,9 @@ export default function GroupsPage() {
                     </div>
                     <div className="flex items-center space-x-3 text-sm">
                       <span className="font-medium text-gray-700 dark:text-gray-300">Предмет:</span>
-                      <span className="text-gray-600 dark:text-gray-400">{group.subject.subjectName}</span>
+                      <span className="text-gray-600 dark:text-gray-400">
+                        {typeof group.subject === 'object' ? group.subject.subjectName : group.subject}
+                      </span>
                     </div>
                     <div className="flex items-center space-x-3 text-sm">
                       <span className="font-medium text-gray-700 dark:text-gray-300">Студенты:</span>
@@ -746,97 +788,6 @@ export default function GroupsPage() {
         message={`Вы уверены, что хотите удалить группу "${deletingGroup?.name}"? Это действие нельзя отменить.`}
       />
 
-      {/* View Group Students Modal */}
-      {viewingGroup && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto">
-          {/* Backdrop with blur */}
-          <div 
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" 
-            onClick={() => setViewingGroup(null)}
-          ></div>
-          
-          {/* Modal container */}
-          <div className="flex items-center justify-center min-h-screen p-4">
-            <div className="relative bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 w-full max-w-md transform transition-all">
-              {/* Header with gradient */}
-              <div className="bg-gradient-to-r from-teal-500 to-cyan-600 px-6 py-4 rounded-t-2xl">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-white/20 rounded-lg">
-                    <UserGroupIcon className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-white">{viewingGroup.name}</h3>
-                    <p className="text-white/80 text-sm">
-                      {viewingGroup.subject.subjectName} • {viewingGroup.level}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Content */}
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
-                    Студенты в группе
-                  </h4>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400">
-                    {viewingGroup.students.length} {viewingGroup.students.length === 1 ? 'студент' :
-                      viewingGroup.students.length < 5 ? 'студента' : 'студентов'}
-                  </span>
-                </div>
-                
-                <div className="max-h-60 overflow-y-auto">
-                  {viewingGroup.students.length === 0 ? (
-                    <div className="text-center py-8">
-                      <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-full w-12 h-12 mx-auto mb-3">
-                        <UserGroupIcon className="h-6 w-6 text-gray-400 mx-auto mt-1" />
-                      </div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        В группе пока нет студентов
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {viewingGroup.students.map((student, index) => (
-                        <div key={index} className="flex items-center p-3 bg-gray-50/80 dark:bg-gray-700/50 rounded-xl hover:bg-gray-100/80 dark:hover:bg-gray-600/50 transition-colors">
-                          <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-xl flex items-center justify-center">
-                            <span className="text-white font-bold text-sm">
-                              {(student.studentName || 'U').charAt(0)?.toUpperCase()}
-                            </span>
-                          </div>
-                          <div className="ml-3 flex-1">
-                            <p className="text-sm font-medium text-gray-900 dark:text-white">
-                              {student.studentName || 'Имя не указано'}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                
-                <div className="mt-6 pt-4 border-t border-gray-200/50 dark:border-gray-700/50">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                    Код группы: <span className="font-semibold text-teal-600 dark:text-teal-400">{viewingGroup.code}</span>
-                  </p>
-                </div>
-              </div>
-              
-              {/* Footer */}
-              <div className="px-6 py-4 border-t border-gray-200/50 dark:border-gray-700/50 rounded-b-2xl">
-                <button
-                  type="button"
-                  onClick={() => setViewingGroup(null)}
-                  className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-medium py-2.5 px-4 rounded-xl transition-all duration-200 hover:shadow-lg hover:scale-105"
-                >
-                  Закрыть
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Universal Group Modal */}
       <UniversalModal
         isOpen={groupModal.isOpen}
@@ -854,6 +805,9 @@ export default function GroupsPage() {
           subjectId: '',
           studentIds: [],
           organizationId: user?.organizationId || '',
+          paymentType: 1,
+          monthlyPrice: 0,
+          courseEndDate: null,
           ...(groupModal.editData || {})
         }}
         data={groupModal.editData || undefined}
@@ -862,11 +816,12 @@ export default function GroupsPage() {
           groupModal.closeModal();
         }}
         validate={createGroupValidator}
-        onSave={async (data: GroupFormData) => {
+        onSave={async (data: Record<string, unknown>) => {
+          const groupData = data as unknown as GroupFormData;
           if (groupModal.mode === 'create') {
-            await handleCreateGroup(data);
+            await handleCreateGroup(groupData);
           } else {
-            await handleEditGroup(data);
+            await handleEditGroup(groupData);
           }
         }}
         submitText={groupModal.getConfig().submitText}
@@ -874,8 +829,8 @@ export default function GroupsPage() {
       >
         {({ formData, setFormData, errors, setErrors, isSubmitting }) => (
           <GroupFormUniversal 
-            formData={formData}
-            setFormData={setFormData}
+            formData={formData as unknown as GroupFormData}
+            setFormData={setFormData as unknown as (data: GroupFormData | ((prev: GroupFormData) => GroupFormData)) => void}
             errors={errors}
             setErrors={setErrors}
             isSubmitting={isSubmitting}
@@ -903,6 +858,157 @@ export default function GroupsPage() {
         groupName={selectedGroup?.name || ''}
         onSuccess={handlePaymentSuccess}
       />
+
+      {/* Модалка просмотра деталей группы */}
+      <BaseModal
+        isOpen={isDetailModalOpen}
+        onClose={() => {
+          setIsDetailModalOpen(false);
+          setViewingGroup(null);
+        }}
+        title="Детали группы"
+        customBackground="bg-gray-800 dark:bg-gray-800"
+        gradientFrom="from-teal-500"
+        gradientTo="to-cyan-600"
+        maxWidth="4xl"
+      >
+        {detailLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500"></div>
+          </div>
+        ) : viewingGroup ? (
+          <div className="space-y-6">
+            {/* Основная информация */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Название группы
+                </label>
+                <div className="bg-gray-700 rounded-lg p-4">
+                  <div className="text-white font-medium">{viewingGroup.name}</div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Код группы
+                </label>
+                <div className="bg-gray-700 rounded-lg p-4">
+                  <div className="text-white">{viewingGroup.code || '—'}</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Уровень
+                </label>
+                <div className="bg-gray-700 rounded-lg p-4">
+                  <div className="text-white">{viewingGroup.level || '—'}</div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Предмет
+                </label>
+                <div className="bg-gray-700 rounded-lg p-4">
+                  <div className="text-white font-medium">
+                    {typeof viewingGroup.subject === 'object' && viewingGroup.subject?.subjectName 
+                      ? viewingGroup.subject.subjectName 
+                      : typeof viewingGroup.subject === 'string' 
+                        ? viewingGroup.subject 
+                        : '—'}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Информация об оплате */}
+            <div className="border-t border-gray-700 pt-6">
+              <h3 className="text-lg font-medium text-white mb-4">Условия оплаты</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    Тип оплаты
+                  </label>
+                  <div className="bg-gray-700 rounded-lg p-4">
+                    <div className="text-white">
+                      {viewingGroup.paymentType === 1 ? '💳 Ежемесячный' : 
+                       viewingGroup.paymentType === 2 ? '💰 Единоразовый' : '—'}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    {viewingGroup.paymentType === 2 ? 'Стоимость курса' : 'Стоимость в месяц'}
+                  </label>
+                  <div className="bg-gray-700 rounded-lg p-4">
+                    <div className="text-white font-medium">
+                      {viewingGroup.monthlyPrice > 0 ? `${viewingGroup.monthlyPrice.toLocaleString()} ₸` : 'Бесплатно'}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    Окончание курса
+                  </label>
+                  <div className="bg-gray-700 rounded-lg p-4">
+                    <div className="text-white">
+                      {viewingGroup.courseEndDate 
+                        ? new Date(viewingGroup.courseEndDate).toLocaleDateString('ru-RU')
+                        : '—'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Список студентов */}
+            <div className="border-t border-gray-700 pt-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-white">
+                  Студенты
+                  <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-teal-500/20 text-teal-300">
+                    {viewingGroup.students.length}
+                  </span>
+                </h3>
+              </div>
+              
+              {viewingGroup.students.length === 0 ? (
+                <div className="bg-gray-700 rounded-lg p-8 text-center">
+                  <p className="text-gray-400">В группе пока нет студентов</p>
+                </div>
+              ) : (
+                <div className="bg-gray-700 rounded-lg divide-y divide-gray-600 max-h-96 overflow-y-auto">
+                  {viewingGroup.students.map((student, index) => (
+                    <div 
+                      key={student.studentId} 
+                      className="p-4 hover:bg-gray-600/50 transition-colors"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-lg flex items-center justify-center">
+                          <span className="text-white font-semibold text-sm">{index + 1}</span>
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-white font-medium">{student.studentName}</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-400">
+            Группа не найдена
+          </div>
+        )}
+      </BaseModal>
     </div>
   );
 }

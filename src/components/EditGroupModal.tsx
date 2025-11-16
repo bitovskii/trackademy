@@ -29,7 +29,10 @@ const EditGroupModal: React.FC<EditGroupModalProps> = ({
     level: '',
     subjectId: '',
     studentIds: [],
-    organizationId: organizationId
+    organizationId: organizationId,
+    paymentType: 0,
+    monthlyPrice: 0,
+    courseEndDate: null
   });
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [students, setStudents] = useState<User[]>([]);
@@ -44,9 +47,12 @@ const EditGroupModal: React.FC<EditGroupModalProps> = ({
         name: group.name,
         code: group.code,
         level: group.level,
-        subjectId: group.subject.subjectId,
+        subjectId: typeof group.subject === 'object' ? group.subject.subjectId : group.subject,
         studentIds: group.students.map(s => s.studentId),
-        organizationId: organizationId
+        organizationId: organizationId,
+        paymentType: group.paymentType || 0,
+        monthlyPrice: group.monthlyPrice || 0,
+        courseEndDate: group.courseEndDate || null
       });
       loadSubjects();
       loadStudents();

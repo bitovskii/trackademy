@@ -66,30 +66,41 @@ export const createSubjectValidator = (data: SubjectFormData) => {
   return errors;
 };
 
-export const createGroupValidator = (data: GroupFormData) => {
+export const createGroupValidator = (data: Record<string, unknown>) => {
   const errors: Record<string, string> = {};
 
+  const formData = data as unknown as GroupFormData;
+
   // Название, код и уровень группы не обязательны
-  // if (!data.name?.trim()) {
+  // if (!formData.name?.trim()) {
   //   errors.name = 'Название группы обязательно';
   // }
 
-  // if (!data.code?.trim()) {
+  // if (!formData.code?.trim()) {
   //   errors.code = 'Код группы обязателен';
   // }
 
-  // if (!data.level?.trim()) {
+  // if (!formData.level?.trim()) {
   //   errors.level = 'Уровень обязателен';
   // }
 
-  if (!data.subjectId?.trim()) {
+  if (!formData.subjectId?.trim()) {
     errors.subjectId = 'Предмет обязателен';
   }
 
   // Студенты не обязательны, но могут быть добавлены позже
-  // if (!data.studentIds || data.studentIds.length === 0) {
+  // if (!formData.studentIds || formData.studentIds.length === 0) {
   //   errors.studentIds = 'Выберите хотя бы одного студента';
   // }
+
+  // Валидация новых полей
+  if (formData.paymentType && ![1, 2].includes(formData.paymentType)) {
+    errors.paymentType = 'Неверный тип оплаты';
+  }
+
+  if (formData.monthlyPrice !== undefined && formData.monthlyPrice < 0) {
+    errors.monthlyPrice = 'Стоимость не может быть отрицательной';
+  }
 
   return errors;
 };

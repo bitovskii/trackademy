@@ -14,8 +14,11 @@ export interface Group {
   code: string;
   level: string;
   description?: string;
-  subject: GroupSubject;
+  subject: GroupSubject | string;
   students: GroupStudent[];
+  paymentType: number;
+  monthlyPrice: number;
+  courseEndDate: string | null;
 }
 
 export interface GroupFormData {
@@ -26,7 +29,26 @@ export interface GroupFormData {
   subjectId: string;
   studentIds: string[];
   organizationId: string;
+  paymentType: number;
+  monthlyPrice: number;
+  courseEndDate?: string | null;
 }
+
+export const PaymentType = {
+  Monthly: 1,
+  OneTime: 2
+} as const;
+
+export const getPaymentTypeLabel = (type: number): string => {
+  switch (type) {
+    case PaymentType.Monthly:
+      return 'Ежемесячный';
+    case PaymentType.OneTime:
+      return 'Единоразовый';
+    default:
+      return 'Не указан';
+  }
+};
 
 export interface GroupsResponse {
   items: Group[];

@@ -1,7 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { Lesson, getTimeSlots, getLessonsForDay, getWeekDays, formatTime, generateSubjectColor, getLessonStatusColor } from '@/types/Lesson';
 import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
+import OverlappingLessonsModal from './OverlappingLessonsModal';
 
 interface WeekViewProps {
   date: Date;
@@ -9,9 +11,84 @@ interface WeekViewProps {
   onLessonClick: (lesson: Lesson) => void;
 }
 
+interface TimeSlot {
+  lessons: Lesson[];
+  startTime: string;
+  endTime: string;
+}
+
+// Helper function to check if two time ranges overlap
+function timeRangesOverlap(start1: string, end1: string, start2: string, end2: string): boolean {
+  const toMinutes = (time: string) => {
+    const [h, m] = time.split(':').map(Number);
+    return h * 60 + m;
+  };
+  
+  const s1 = toMinutes(start1);
+  const e1 = toMinutes(end1);
+  const s2 = toMinutes(start2);
+  const e2 = toMinutes(end2);
+  
+  return s1 < e2 && s2 < e1;
+}
+
+// Group overlapping lessons together
+function groupOverlappingLessons(lessonsList: Lesson[]): TimeSlot[] {
+  if (lessonsList.length === 0) return [];
+  
+  const sorted = [...lessonsList].sort((a, b) => {
+    const timeA = a.startTime.localeCompare(b.startTime);
+    if (timeA !== 0) return timeA;
+    return a.endTime.localeCompare(b.endTime);
+  });
+  
+  const groups: TimeSlot[] = [];
+  const used = new Set<string>();
+  
+  for (let i = 0; i < sorted.length; i++) {
+    if (used.has(sorted[i].id)) continue;
+    
+    const overlapping: Lesson[] = [sorted[i]];
+    used.add(sorted[i].id);
+    
+    for (let j = i + 1; j < sorted.length; j++) {
+      if (used.has(sorted[j].id)) continue;
+      
+      const hasOverlap = overlapping.some(lesson => 
+        timeRangesOverlap(lesson.startTime, lesson.endTime, sorted[j].startTime, sorted[j].endTime)
+      );
+      
+      if (hasOverlap) {
+        overlapping.push(sorted[j]);
+        used.add(sorted[j].id);
+      }
+    }
+    
+    const maxEndTime = overlapping.reduce((max, l) => l.endTime > max ? l.endTime : max, overlapping[0].endTime);
+    
+    groups.push({
+      lessons: overlapping,
+      startTime: overlapping[0].startTime,
+      endTime: maxEndTime
+    });
+  }
+  
+  return groups;
+}
+
 export default function WeekView({ date, lessons, onLessonClick }: WeekViewProps) {
   const timeSlots = getTimeSlots(); // 08:00 - 23:00
   const weekDays = getWeekDays(date);
+  
+  const [overlappingModal, setOverlappingModal] = useState<{
+    isOpen: boolean;
+    lessons: Lesson[];
+    timeSlot: string;
+  }>({
+    isOpen: false,
+    lessons: [],
+    timeSlot: ''
+  });
 
   const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
@@ -100,6 +177,7 @@ export default function WeekView({ date, lessons, onLessonClick }: WeekViewProps
           {/* Absolutely positioned lessons for each day */}
           {weekDays.map((day, dayIndex) => {
             const dayLessons = getLessonsForDay(lessons, day);
+            const timeSlotGroups = groupOverlappingLessons(dayLessons);
             
             return (
               <div
@@ -112,31 +190,72 @@ export default function WeekView({ date, lessons, onLessonClick }: WeekViewProps
                   zIndex: 10
                 }}
               >
-                {dayLessons.map((lesson) => {
-                  const position = getLessonPosition(lesson);
+                {timeSlotGroups.map((slot, idx) => {
+                  const hasOverlap = slot.lessons.length > 1;
+                  const position = getLessonPosition(slot.lessons[0]);
                   
-                  return (
-                    <div
-                      key={lesson.id}
-                      className="absolute left-1 right-1 pointer-events-auto"
-                      style={{
-                        top: `${position.top}px`,
-                        height: `${position.height}px`
-                      }}
-                    >
-                      <WeekLessonBlock
-                        lesson={lesson}
-                        onClick={() => onLessonClick(lesson)}
-                        height={position.height}
-                      />
-                    </div>
-                  );
+                  if (hasOverlap) {
+                    return (
+                      <div
+                        key={`overlap-${idx}`}
+                        className="absolute left-1 right-1 pointer-events-auto cursor-pointer"
+                        style={{
+                          top: `${position.top}px`,
+                          height: `${position.height}px`
+                        }}
+                        onClick={() => setOverlappingModal({
+                          isOpen: true,
+                          lessons: slot.lessons,
+                          timeSlot: `${formatTime(slot.startTime)} - ${formatTime(slot.endTime)}`
+                        })}
+                      >
+                        <div className="w-full h-full p-1.5 rounded text-xs bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/30 dark:to-amber-800/30 border border-amber-300 dark:border-amber-600 hover:shadow-sm transition-all overflow-hidden">
+                          <div className="flex flex-col h-full justify-between">
+                            <div>
+                              <span className="font-semibold text-amber-900 dark:text-amber-100 line-clamp-1">
+                                {slot.lessons.length} {slot.lessons.length === 1 ? 'занятие' : slot.lessons.length < 5 ? 'занятия' : 'занятий'}
+                              </span>
+                            </div>
+                            <div className="text-amber-700 dark:text-amber-300 text-[10px] mt-auto">
+                              {formatTime(slot.startTime)}-{formatTime(slot.endTime)}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  } else {
+                    const lesson = slot.lessons[0];
+                    return (
+                      <div
+                        key={lesson.id}
+                        className="absolute left-1 right-1 pointer-events-auto"
+                        style={{
+                          top: `${position.top}px`,
+                          height: `${position.height}px`
+                        }}
+                      >
+                        <WeekLessonBlock
+                          lesson={lesson}
+                          onClick={() => onLessonClick(lesson)}
+                          height={position.height}
+                        />
+                      </div>
+                    );
+                  }
                 })}
               </div>
             );
           })}
         </div>
       </div>
+      
+      <OverlappingLessonsModal
+        isOpen={overlappingModal.isOpen}
+        onClose={() => setOverlappingModal({ isOpen: false, lessons: [], timeSlot: '' })}
+        lessons={overlappingModal.lessons}
+        timeSlot={overlappingModal.timeSlot}
+        onLessonClick={onLessonClick}
+      />
     </div>
   );
 }

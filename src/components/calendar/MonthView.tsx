@@ -1,7 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { Lesson, getLessonsForDay, getCalendarGrid, generateSubjectColor, formatTime } from '@/types/Lesson';
 import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
+import OverlappingLessonsModal from './OverlappingLessonsModal';
 
 interface MonthViewProps {
   date: Date;
@@ -9,10 +11,85 @@ interface MonthViewProps {
   onLessonClick: (lesson: Lesson) => void;
 }
 
+interface TimeSlot {
+  lessons: Lesson[];
+  startTime: string;
+  endTime: string;
+}
+
+// Helper function to check if two time ranges overlap
+function timeRangesOverlap(start1: string, end1: string, start2: string, end2: string): boolean {
+  const toMinutes = (time: string) => {
+    const [h, m] = time.split(':').map(Number);
+    return h * 60 + m;
+  };
+  
+  const s1 = toMinutes(start1);
+  const e1 = toMinutes(end1);
+  const s2 = toMinutes(start2);
+  const e2 = toMinutes(end2);
+  
+  return s1 < e2 && s2 < e1;
+}
+
+// Group overlapping lessons together
+function groupOverlappingLessons(lessonsList: Lesson[]): TimeSlot[] {
+  if (lessonsList.length === 0) return [];
+  
+  const sorted = [...lessonsList].sort((a, b) => {
+    const timeA = a.startTime.localeCompare(b.startTime);
+    if (timeA !== 0) return timeA;
+    return a.endTime.localeCompare(b.endTime);
+  });
+  
+  const groups: TimeSlot[] = [];
+  const used = new Set<string>();
+  
+  for (let i = 0; i < sorted.length; i++) {
+    if (used.has(sorted[i].id)) continue;
+    
+    const overlapping: Lesson[] = [sorted[i]];
+    used.add(sorted[i].id);
+    
+    for (let j = i + 1; j < sorted.length; j++) {
+      if (used.has(sorted[j].id)) continue;
+      
+      const hasOverlap = overlapping.some(lesson => 
+        timeRangesOverlap(lesson.startTime, lesson.endTime, sorted[j].startTime, sorted[j].endTime)
+      );
+      
+      if (hasOverlap) {
+        overlapping.push(sorted[j]);
+        used.add(sorted[j].id);
+      }
+    }
+    
+    const maxEndTime = overlapping.reduce((max, l) => l.endTime > max ? l.endTime : max, overlapping[0].endTime);
+    
+    groups.push({
+      lessons: overlapping,
+      startTime: overlapping[0].startTime,
+      endTime: maxEndTime
+    });
+  }
+  
+  return groups;
+}
+
 export default function MonthView({ date, lessons, onLessonClick }: MonthViewProps) {
   const calendarDays = getCalendarGrid(date);
   const currentMonth = date.getMonth();
   const today = new Date();
+  
+  const [overlappingModal, setOverlappingModal] = useState<{
+    isOpen: boolean;
+    lessons: Lesson[];
+    timeSlot: string;
+  }>({
+    isOpen: false,
+    lessons: [],
+    timeSlot: ''
+  });
 
   const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
@@ -73,25 +150,73 @@ export default function MonthView({ date, lessons, onLessonClick }: MonthViewPro
 
                 {/* Lessons */}
                 <div className="space-y-1">
-                  {dayLessons.slice(0, 3).map((lesson) => (
-                    <MonthLessonBlock
-                      key={lesson.id}
-                      lesson={lesson}
-                      onClick={() => onLessonClick(lesson)}
-                    />
-                  ))}
-                  
-                  {dayLessons.length > 3 && (
-                    <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-1">
-                      +{dayLessons.length - 3} еще
-                    </div>
-                  )}
+                  {(() => {
+                    const timeSlotGroups = groupOverlappingLessons(dayLessons);
+                    const displaySlots = timeSlotGroups.slice(0, 3);
+                    
+                    return (
+                      <>
+                        {displaySlots.map((slot, idx) => {
+                          const hasOverlap = slot.lessons.length > 1;
+                          
+                          if (hasOverlap) {
+                            return (
+                              <div
+                                key={`overlap-${idx}`}
+                                onClick={() => setOverlappingModal({
+                                  isOpen: true,
+                                  lessons: slot.lessons,
+                                  timeSlot: `${formatTime(slot.startTime)} - ${formatTime(slot.endTime)}`
+                                })}
+                                className="text-xs p-1 rounded cursor-pointer hover:shadow-sm transition-all truncate
+                                           bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-800/50 border border-amber-300 dark:border-amber-600"
+                                style={{ 
+                                  borderLeft: '3px solid #f59e0b',
+                                  paddingLeft: '6px'
+                                }}
+                                title={`${slot.lessons.length} накладывающихся ${slot.lessons.length === 1 ? 'занятие' : slot.lessons.length < 5 ? 'занятия' : 'занятий'} (${formatTime(slot.startTime)}-${formatTime(slot.endTime)})`}
+                              >
+                                <div className="flex items-center gap-1 font-semibold text-amber-900 dark:text-amber-100">
+                                  <span className="line-clamp-1 flex-1 min-w-0">
+                                    {formatTime(slot.startTime)} • {slot.lessons.length} {slot.lessons.length === 1 ? 'занятие' : slot.lessons.length < 5 ? 'занятия' : 'занятий'}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          } else {
+                            const lesson = slot.lessons[0];
+                            return (
+                              <MonthLessonBlock
+                                key={lesson.id}
+                                lesson={lesson}
+                                onClick={() => onLessonClick(lesson)}
+                              />
+                            );
+                          }
+                        })}
+                        
+                        {timeSlotGroups.length > 3 && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-1">
+                            +{timeSlotGroups.length - 3} еще
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             );
           })}
         </div>
       </div>
+      
+      <OverlappingLessonsModal
+        isOpen={overlappingModal.isOpen}
+        onClose={() => setOverlappingModal({ isOpen: false, lessons: [], timeSlot: '' })}
+        lessons={overlappingModal.lessons}
+        timeSlot={overlappingModal.timeSlot}
+        onLessonClick={onLessonClick}
+      />
     </div>
   );
 }

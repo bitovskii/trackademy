@@ -9,9 +9,75 @@ interface DayViewProps {
   onLessonClick: (lesson: Lesson) => void;
 }
 
+interface TimeSlot {
+  lessons: Lesson[];
+  startTime: string;
+  endTime: string;
+}
+
+// Helper function to check if two time ranges overlap
+function timeRangesOverlap(start1: string, end1: string, start2: string, end2: string): boolean {
+  const toMinutes = (time: string) => {
+    const [h, m] = time.split(':').map(Number);
+    return h * 60 + m;
+  };
+  
+  const s1 = toMinutes(start1);
+  const e1 = toMinutes(end1);
+  const s2 = toMinutes(start2);
+  const e2 = toMinutes(end2);
+  
+  return s1 < e2 && s2 < e1;
+}
+
+// Group overlapping lessons together
+function groupOverlappingLessons(lessonsList: Lesson[]): TimeSlot[] {
+  if (lessonsList.length === 0) return [];
+  
+  const sorted = [...lessonsList].sort((a, b) => {
+    const timeA = a.startTime.localeCompare(b.startTime);
+    if (timeA !== 0) return timeA;
+    return a.endTime.localeCompare(b.endTime);
+  });
+  
+  const groups: TimeSlot[] = [];
+  const used = new Set<string>();
+  
+  for (let i = 0; i < sorted.length; i++) {
+    if (used.has(sorted[i].id)) continue;
+    
+    const overlapping: Lesson[] = [sorted[i]];
+    used.add(sorted[i].id);
+    
+    for (let j = i + 1; j < sorted.length; j++) {
+      if (used.has(sorted[j].id)) continue;
+      
+      const hasOverlap = overlapping.some(lesson => 
+        timeRangesOverlap(lesson.startTime, lesson.endTime, sorted[j].startTime, sorted[j].endTime)
+      );
+      
+      if (hasOverlap) {
+        overlapping.push(sorted[j]);
+        used.add(sorted[j].id);
+      }
+    }
+    
+    const maxEndTime = overlapping.reduce((max, l) => l.endTime > max ? l.endTime : max, overlapping[0].endTime);
+    
+    groups.push({
+      lessons: overlapping,
+      startTime: overlapping[0].startTime,
+      endTime: maxEndTime
+    });
+  }
+  
+  return groups;
+}
+
 export default function DayView({ date, lessons, onLessonClick }: DayViewProps) {
   const timeSlots = getTimeSlots(); // 08:00 - 23:00
   const dayLessons = getLessonsForDay(lessons, date);
+  const timeSlotGroups = groupOverlappingLessons(dayLessons);
 
   // Calculate lesson position and height
   const getLessonPosition = (lesson: Lesson) => {
@@ -74,26 +140,53 @@ export default function DayView({ date, lessons, onLessonClick }: DayViewProps) 
 
           {/* Absolutely positioned lessons */}
           <div className="absolute inset-0 left-16 pointer-events-none">
-            {dayLessons.map((lesson) => {
-              const position = getLessonPosition(lesson);
+            {timeSlotGroups.map((slot, idx) => {
+              const hasOverlap = slot.lessons.length > 1;
+              const position = getLessonPosition(slot.lessons[0]);
               
-              return (
-                <div
-                  key={lesson.id}
-                  className="absolute left-2 right-2 pointer-events-auto"
-                  style={{
-                    top: `${position.top}px`,
-                    height: `${position.height}px`,
-                    zIndex: 10
-                  }}
-                >
-                  <LessonBlock
-                    lesson={lesson}
-                    onClick={() => onLessonClick(lesson)}
-                    height={position.height}
-                  />
-                </div>
-              );
+              if (hasOverlap) {
+                // Show overlapping lessons side by side
+                return (
+                  <div
+                    key={`overlap-${idx}`}
+                    className="absolute left-2 right-2 pointer-events-auto flex gap-2"
+                    style={{
+                      top: `${position.top}px`,
+                      height: `${position.height}px`,
+                      zIndex: 10
+                    }}
+                  >
+                    {slot.lessons.map((lesson) => (
+                      <div key={lesson.id} className="flex-1">
+                        <LessonBlock
+                          lesson={lesson}
+                          onClick={() => onLessonClick(lesson)}
+                          height={position.height}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                );
+              } else {
+                const lesson = slot.lessons[0];
+                return (
+                  <div
+                    key={lesson.id}
+                    className="absolute left-2 right-2 pointer-events-auto"
+                    style={{
+                      top: `${position.top}px`,
+                      height: `${position.height}px`,
+                      zIndex: 10
+                    }}
+                  >
+                    <LessonBlock
+                      lesson={lesson}
+                      onClick={() => onLessonClick(lesson)}
+                      height={position.height}
+                    />
+                  </div>
+                );
+              }
             })}
           </div>
         </div>

@@ -2,11 +2,18 @@ import React, { useState, useMemo } from 'react';
 import { Schedule, formatTimeRange } from '../../types/Schedule';
 import { DaysOfWeekDisplay } from './DaysOfWeekDisplay';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { OverlappingSchedulesModal } from './OverlappingSchedulesModal';
 
 interface ScheduleCalendarProps {
   schedules: Schedule[];
   viewType: 'day' | 'week' | 'month';
   onEventClick?: (schedule: Schedule) => void;
+}
+
+interface TimeSlot {
+  start: number;
+  end: number;
+  schedules: Schedule[];
 }
 
 export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
@@ -15,6 +22,63 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
   onEventClick
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [overlappingModal, setOverlappingModal] = useState<{
+    isOpen: boolean;
+    schedules: Schedule[];
+    timeSlot: string;
+  }>({
+    isOpen: false,
+    schedules: [],
+    timeSlot: ''
+  });
+
+  // Helper function to check if two time ranges overlap
+  const timeRangesOverlap = (start1: string, end1: string, start2: string, end2: string): boolean => {
+    const [h1, m1] = start1.split(':').map(Number);
+    const [h2, m2] = end1.split(':').map(Number);
+    const [h3, m3] = start2.split(':').map(Number);
+    const [h4, m4] = end2.split(':').map(Number);
+    
+    const start1Time = h1 * 60 + m1;
+    const end1Time = h2 * 60 + m2;
+    const start2Time = h3 * 60 + m3;
+    const end2Time = h4 * 60 + m4;
+    
+    return start1Time < end2Time && start2Time < end1Time;
+  };
+
+  // Group overlapping schedules into time slots
+  const groupOverlappingSchedules = (schedulesList: Schedule[]): TimeSlot[] => {
+    if (schedulesList.length === 0) return [];
+    
+    const timeSlots: TimeSlot[] = [];
+    const processed = new Set<string>();
+    
+    schedulesList.forEach((schedule) => {
+      if (processed.has(schedule.id)) return;
+      
+      const [startH, startM] = schedule.startTime.split(':').map(Number);
+      const [endH, endM] = schedule.endTime.split(':').map(Number);
+      const start = startH + startM / 60;
+      const end = endH + endM / 60;
+      
+      // Find all schedules that overlap with this one
+      const overlapping = schedulesList.filter((other) => 
+        timeRangesOverlap(schedule.startTime, schedule.endTime, other.startTime, other.endTime)
+      );
+      
+      // Mark all as processed
+      overlapping.forEach(s => processed.add(s.id));
+      
+      timeSlots.push({
+        start,
+        end,
+        schedules: overlapping
+      });
+    });
+    
+    return timeSlots;
+  };
 
   // Helper functions
   const startOfWeek = (date: Date) => {
@@ -76,7 +140,29 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
   const renderDayView = () => {
     const dayOfWeek = currentDate.getDay() || 7; // Convert Sunday (0) to 7
     const daySchedules = getSchedulesForDay(dayOfWeek, currentDate);
+    const timeSlots = groupOverlappingSchedules(daySchedules);
     const hours = Array.from({ length: 16 }, (_, i) => i + 8); // 8:00 to 23:00
+
+    // Calculate schedule position and height
+    const getSchedulePosition = (schedule: Schedule) => {
+      const [startHour, startMin] = schedule.startTime.split(':').map(Number);
+      const [endHour, endMin] = schedule.endTime.split(':').map(Number);
+      
+      const startTotalMin = startHour * 60 + startMin;
+      const endTotalMin = endHour * 60 + endMin;
+      
+      // First time slot is 08:00 (8 * 60 = 480 minutes from midnight)
+      const firstSlotMin = 8 * 60;
+      
+      // Calculate position relative to the first time slot (60px per hour)
+      const topOffset = ((startTotalMin - firstSlotMin) / 60) * 60;
+      const height = ((endTotalMin - startTotalMin) / 60) * 60;
+      
+      return {
+        top: Math.max(0, topOffset),
+        height: Math.max(30, height)
+      };
+    };
 
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
@@ -118,110 +204,125 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
               </div>
             </div>
           ) : (
-            <div className="grid gap-6" style={{ gridTemplateColumns: '70px 1fr' }}>
-              {/* Time column */}
-              <div className="space-y-1">
+            <div className="flex-1 overflow-y-auto">
+              <div className="relative">
+                {/* Time slots grid */}
                 {hours.map((hour) => (
-                  <div key={hour} className="h-16 flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="text-lg font-bold text-gray-900 dark:text-white">
-                        {hour.toString().padStart(2, '0')}
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                        00
-                      </div>
+                  <div
+                    key={hour}
+                    className="flex border-b border-gray-100 dark:border-gray-700 min-h-[60px]"
+                  >
+                    {/* Time label */}
+                    <div className="w-16 flex-shrink-0 p-2 text-sm text-gray-500 dark:text-gray-400 border-r border-gray-100 dark:border-gray-700">
+                      {hour.toString().padStart(2, '0')}:00
+                    </div>
+
+                    {/* Empty schedule area */}
+                    <div className="flex-1 p-2 relative">
+                      {/* This space will be filled by absolutely positioned schedules */}
                     </div>
                   </div>
                 ))}
-              </div>
-              
-              {/* Events column */}
-              <div className="space-y-1 relative">
-                {/* Background time grid */}
-                <div className="absolute inset-0">
-                  {hours.map((hour, index) => (
-                    <div 
-                      key={hour} 
-                      className="h-16 border-b border-gray-200 dark:border-gray-700 last:border-b-0"
-                      style={{ marginBottom: '4px' }}
-                    >
-                      {/* Half-hour line */}
-                      <div className="absolute left-0 right-0 h-px bg-gray-100 dark:bg-gray-800" style={{ top: '32px' }}></div>
-                    </div>
-                  ))}
-                </div>
                 
-                {/* Render lessons as absolute positioned blocks */}
-                {daySchedules.map((schedule, scheduleIndex) => {
-                  const startHour = parseInt(schedule.startTime.split(':')[0]);
-                  const startMinute = parseInt(schedule.startTime.split(':')[1]);
-                  const endHour = parseInt(schedule.endTime.split(':')[0]);
-                  const endMinute = parseInt(schedule.endTime.split(':')[1]);
-                  
-                  const startTime = startHour + (startMinute / 60);
-                  const endTime = endHour + (endMinute / 60);
-                  const duration = endTime - startTime;
-                  const isShortLesson = duration < 1; // Урок меньше часа
-                  
-                  // Calculate position and height
-                  const topOffset = (startTime - 8) * 68; // 64px height + 4px gap
-                  const height = Math.max(80, duration * 68 - 4); // minimum 80px, subtract gap
-                  
-                  return (
-                    <div
-                      key={`${schedule.id}-${scheduleIndex}`}
-                      className="absolute left-0 right-0 bg-gradient-to-r from-violet-100 to-violet-50 dark:from-violet-900/40 dark:to-violet-900/20 rounded-xl border-l-4 border-violet-500 shadow-md cursor-pointer hover:shadow-lg hover:from-violet-200 hover:to-violet-100 dark:hover:from-violet-900/60 dark:hover:to-violet-900/30 transition-all duration-200 overflow-hidden"
-                      style={{
-                        top: `${topOffset}px`,
-                        height: `${height}px`,
-                        zIndex: 10
-                      }}
-                      onClick={() => onEventClick?.(schedule)}
-                    >
-                      <div className="p-3 h-full flex flex-col overflow-hidden">
-                        <div className="flex justify-between items-start mb-2 min-h-0">
-                          <h4 className="font-semibold text-violet-900 dark:text-violet-200 text-sm leading-tight truncate flex-1 mr-2">
-                            {schedule.subject.subjectName}
-                          </h4>
-                          <span className="text-xs font-medium text-violet-700 dark:text-violet-300 bg-white/80 dark:bg-gray-800/80 px-2 py-1 rounded-lg whitespace-nowrap">
-                            {formatTimeRange(schedule.startTime, schedule.endTime)}
-                          </span>
+                {/* Absolutely positioned schedules */}
+                <div className="absolute inset-0 left-16 pointer-events-none">
+                  {timeSlots.map((slot, slotIndex) => {
+                    const hasOverlap = slot.schedules.length > 1;
+                    const position = getSchedulePosition(slot.schedules[0]);
+                    
+                    if (hasOverlap) {
+                      // Show overlapping schedules side by side
+                      return (
+                        <div
+                          key={`slot-${slotIndex}`}
+                          className="absolute left-2 right-2 pointer-events-auto flex gap-2"
+                          style={{
+                            top: `${position.top}px`,
+                            height: `${position.height}px`,
+                            zIndex: 10
+                          }}
+                        >
+                          {slot.schedules.map((schedule) => {
+                            const isShortSchedule = position.height < 60;
+                            
+                            return (
+                              <div
+                                key={schedule.id}
+                                className="flex-1 bg-white dark:bg-gray-700 rounded-lg border-l-4 border-violet-500 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 overflow-hidden"
+                                onClick={() => onEventClick?.(schedule)}
+                              >
+                                <div className="p-2.5 h-full flex flex-col overflow-hidden">
+                                  <div className="flex justify-between items-start mb-1">
+                                    <h4 className="font-medium text-gray-900 dark:text-white text-sm line-clamp-1 flex-1">
+                                      {schedule.subject.subjectName}
+                                    </h4>
+                                  </div>
+                                  {!isShortSchedule && (
+                                    <div className="space-y-1 text-xs text-gray-700 dark:text-gray-300">
+                                      <div className="line-clamp-1">
+                                        <span className="font-medium">Группа:</span> {schedule.group.name}
+                                      </div>
+                                      <div className="line-clamp-1">
+                                        <span className="font-medium">Преподаватель:</span> {schedule.teacher.name}
+                                      </div>
+                                      <div className="line-clamp-1">
+                                        <span className="font-medium">Кабинет:</span> {schedule.room.name}
+                                      </div>
+                                    </div>
+                                  )}
+                                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-auto">
+                                    {formatTimeRange(schedule.startTime, schedule.endTime)}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                        {!isShortLesson && (
-                          <div className="flex-1 min-h-0 overflow-hidden">
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2 min-h-0">
-                                <div className="w-1.5 h-1.5 bg-violet-500 rounded-full flex-shrink-0"></div>
-                                <span className="text-xs text-gray-700 dark:text-gray-300 truncate">
+                      );
+                    } else {
+                      // Show single schedule
+                      const schedule = slot.schedules[0];
+                      const isShortSchedule = position.height < 60;
+                      
+                      return (
+                        <div
+                          key={schedule.id}
+                          className="absolute left-2 right-2 pointer-events-auto bg-white dark:bg-gray-700 rounded-lg border-l-4 border-violet-500 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 overflow-hidden"
+                          style={{
+                            top: `${position.top}px`,
+                            height: `${position.height}px`,
+                            zIndex: 10
+                          }}
+                          onClick={() => onEventClick?.(schedule)}
+                        >
+                          <div className="p-2.5 h-full flex flex-col overflow-hidden">
+                            <div className="flex justify-between items-start mb-1">
+                              <h4 className="font-medium text-gray-900 dark:text-white text-sm line-clamp-1 flex-1">
+                                {schedule.subject.subjectName}
+                              </h4>
+                            </div>
+                            {!isShortSchedule && (
+                              <div className="space-y-1 text-xs text-gray-700 dark:text-gray-300">
+                                <div className="line-clamp-1">
                                   <span className="font-medium">Группа:</span> {schedule.group.name}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2 min-h-0">
-                                <div className="w-1.5 h-1.5 bg-violet-500 rounded-full flex-shrink-0"></div>
-                                <span className="text-xs text-gray-700 dark:text-gray-300 truncate">
+                                </div>
+                                <div className="line-clamp-1">
                                   <span className="font-medium">Преподаватель:</span> {schedule.teacher.name}
-                                </span>
+                                </div>
+                                <div className="line-clamp-1">
+                                  <span className="font-medium">Кабинет:</span> {schedule.room.name}
+                                </div>
                               </div>
-                              <div className="flex items-center gap-2 min-h-0">
-                                <div className="w-1.5 h-1.5 bg-violet-500 rounded-full flex-shrink-0"></div>
-                                <span className="text-xs text-gray-700 dark:text-gray-300 truncate">
-                                  <span className="font-medium">Аудитория:</span> {schedule.room.name}
-                                </span>
-                              </div>
+                            )}
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-auto">
+                              {formatTimeRange(schedule.startTime, schedule.endTime)}
                             </div>
                           </div>
-                        )}
-                        {isShortLesson && (
-                          <div className="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300 truncate">
-                            <span className="font-medium">{schedule.group.name}</span>
-                            <span>•</span>
-                            <span className="truncate">{schedule.room.name}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+                        </div>
+                      );
+                    }
+                  })}
+                </div>
               </div>
             </div>
           )}
@@ -251,57 +352,10 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
     const weekDays = getDaysInRange(weekStart, new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000));
     const hours = Array.from({ length: 16 }, (_, i) => i + 8); // 8:00 to 23:00
 
-    // Создаем сетку для размещения уроков
-    const createTimeGrid = (day: Date, dayOfWeek: number) => {
+    // Get time slots with overlap detection for each day
+    const getTimeSlotsForDay = (day: Date, dayOfWeek: number) => {
       const daySchedules = getSchedulesForDay(dayOfWeek, day);
-      const grid: Array<{ 
-        hour: number; 
-        schedule?: Schedule; 
-        isStart?: boolean; 
-        isMiddle?: boolean; 
-        isEnd?: boolean 
-      }> = [];
-      
-      hours.forEach(hour => {
-        let cellData: { 
-          hour: number; 
-          schedule?: Schedule; 
-          isStart?: boolean; 
-          isMiddle?: boolean; 
-          isEnd?: boolean 
-        } = { hour };
-        
-        // Находим урок, который должен отображаться в этом часе
-        const scheduleForHour = daySchedules.find(schedule => {
-          const startHour = parseInt(schedule.startTime.split(':')[0]);
-          const startMinute = parseInt(schedule.startTime.split(':')[1]);
-          const endHour = parseInt(schedule.endTime.split(':')[0]);
-          const endMinute = parseInt(schedule.endTime.split(':')[1]);
-          
-          const lessonStart = startHour + (startMinute / 60);
-          const lessonEnd = endHour + (endMinute / 60);
-          
-          return lessonStart <= hour && hour < lessonEnd;
-        });
-        
-        if (scheduleForHour) {
-          const startHour = parseInt(scheduleForHour.startTime.split(':')[0]);
-          const endHour = parseInt(scheduleForHour.endTime.split(':')[0]);
-          const endMinute = parseInt(scheduleForHour.endTime.split(':')[1]);
-          
-          cellData = {
-            hour,
-            schedule: scheduleForHour,
-            isStart: hour === startHour,
-            isMiddle: hour > startHour && hour < endHour,
-            isEnd: hour === endHour && endMinute === 0 // Урок заканчивается ровно в начале часа
-          };
-        }
-        
-        grid.push(cellData);
-      });
-      
-      return grid;
+      return groupOverlappingSchedules(daySchedules);
     };
 
     return (
@@ -334,56 +388,104 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
           })}
         </div>
 
-        {/* Time grid */}
-        <div className="grid grid-cols-8">
-          {hours.map((hour) => (
-            <React.Fragment key={hour}>
-              {/* Time column */}
-              <div className="border-r border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 p-2 text-center">
-                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                  {hour.toString().padStart(2, '0')}:00
-                </span>
-              </div>
-              
-              {/* Day columns */}
-              {weekDays.map((day, dayIndex) => {
-                const dayOfWeek = day.getDay() || 7;
-                const timeGrid = createTimeGrid(day, dayOfWeek);
-                const cellData = timeGrid.find(cell => cell.hour === hour);
+        {/* Time grid with relative positioning for lessons */}
+        <div className="relative">
+          {/* Background grid */}
+          <div className="grid grid-cols-8">
+            {hours.map((hour) => (
+              <React.Fragment key={hour}>
+                {/* Time column */}
+                <div className="border-r border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 p-2 text-center">
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    {hour.toString().padStart(2, '0')}:00
+                  </span>
+                </div>
                 
-                return (
+                {/* Day columns (empty cells for background) */}
+                {weekDays.map((day, dayIndex) => (
                   <div 
                     key={`${dayIndex}-${hour}`} 
-                    className="border-r border-b border-gray-200 dark:border-gray-600 last:border-r-0 p-1 min-h-[60px] relative"
+                    className="border-r border-b border-gray-200 dark:border-gray-600 last:border-r-0 min-h-[64px]"
+                  />
+                ))}
+              </React.Fragment>
+            ))}
+          </div>
+
+          {/* Lessons overlay */}
+          {weekDays.map((day, dayIndex) => {
+            const dayOfWeek = day.getDay() || 7;
+            const timeSlots = getTimeSlotsForDay(day, dayOfWeek);
+            const columnWidth = 100 / 8; // 8 columns total (1 time + 7 days)
+            const columnLeft = columnWidth * (dayIndex + 1); // +1 to skip time column
+
+            return timeSlots.map((slot, slotIndex) => {
+              const hasOverlap = slot.schedules.length > 1;
+              const duration = slot.end - slot.start;
+              const topOffset = (slot.start - 8) * 64; // 64px per hour
+              const height = Math.max(60, duration * 64);
+
+              if (hasOverlap) {
+                // Show overlapping indicator
+                return (
+                  <div
+                    key={`day-${dayIndex}-slot-${slotIndex}`}
+                    className="absolute bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/40 dark:to-orange-900/40 rounded border-l-2 border-amber-500 cursor-pointer hover:from-amber-200 hover:to-orange-200 dark:hover:from-amber-900/60 dark:hover:to-orange-900/60 transition-all shadow-sm hover:shadow-md p-2"
+                    style={{
+                      left: `${columnLeft}%`,
+                      width: `${columnWidth}%`,
+                      top: `${topOffset}px`,
+                      height: `${height}px`,
+                      zIndex: 20
+                    }}
+                    onClick={() => setOverlappingModal({
+                      isOpen: true,
+                      schedules: slot.schedules,
+                      timeSlot: formatTimeRange(slot.schedules[0].startTime, slot.schedules[0].endTime)
+                    })}
                   >
-                    {cellData?.schedule && cellData.isStart && cellData.schedule && (
-                      <div 
-                        className="absolute inset-1 bg-violet-100 dark:bg-violet-900/30 rounded text-xs cursor-pointer hover:bg-violet-200 dark:hover:bg-violet-900/50 transition-colors border border-violet-300 dark:border-violet-600 p-2"
-                        style={{
-                          height: `${calculateLessonHeight(cellData.schedule) - 4}px`, // -4px для padding
-                          zIndex: 10
-                        }}
-                        onClick={() => onEventClick?.(cellData.schedule!)}
-                      >
-                        <div className="font-medium text-violet-800 dark:text-violet-300 truncate mb-1">
-                          {cellData.schedule.subject.subjectName}
-                        </div>
-                        <div className="text-violet-600 dark:text-violet-400 text-xs mb-1">
-                          {formatTimeRange(cellData.schedule.startTime, cellData.schedule.endTime)}
-                        </div>
-                        <div className="text-gray-600 dark:text-gray-400 truncate text-xs">
-                          {cellData.schedule.group.name}
-                        </div>
-                        <div className="text-gray-600 dark:text-gray-400 truncate text-xs">
-                          {cellData.schedule.teacher.name}
-                        </div>
+                    <div className="h-full flex flex-col items-center justify-center text-center px-1">
+                      <div className="text-lg font-bold text-amber-800 dark:text-amber-300">
+                        {slot.schedules.length}
                       </div>
-                    )}
+                      <div className="text-xs text-amber-700 dark:text-amber-400">
+                        {slot.schedules.length === 1 ? 'занятие' : slot.schedules.length < 5 ? 'занятия' : 'занятий'}
+                      </div>
+                    </div>
                   </div>
                 );
-              })}
-            </React.Fragment>
-          ))}
+              } else {
+                // Show single schedule
+                const schedule = slot.schedules[0];
+                return (
+                  <div
+                    key={`day-${dayIndex}-schedule-${schedule.id}`}
+                    className="absolute bg-gradient-to-r from-violet-100 to-violet-50 dark:from-violet-900/40 dark:to-violet-900/20 rounded border-l-2 border-violet-500 cursor-pointer hover:from-violet-200 hover:to-violet-100 dark:hover:from-violet-900/60 dark:hover:to-violet-900/30 transition-all shadow-sm hover:shadow-md p-2"
+                    style={{
+                      left: `${columnLeft}%`,
+                      width: `${columnWidth}%`,
+                      top: `${topOffset}px`,
+                      height: `${height}px`,
+                      zIndex: 20
+                    }}
+                    onClick={() => onEventClick?.(schedule)}
+                  >
+                    <div className="h-full overflow-hidden">
+                      <div className="font-medium text-violet-800 dark:text-violet-300 truncate text-xs mb-1">
+                        {schedule.subject.subjectName}
+                      </div>
+                      <div className="text-violet-600 dark:text-violet-400 text-xs mb-1">
+                        {formatTimeRange(schedule.startTime, schedule.endTime)}
+                      </div>
+                      <div className="text-gray-600 dark:text-gray-400 truncate text-xs">
+                        {schedule.group.name}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+            });
+          })}
         </div>
       </div>
     );
@@ -434,22 +536,54 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
                   {day.getDate()}
                 </div>
                 <div className="space-y-1">
-                  {daySchedules.slice(0, 3).map((schedule, idx) => (
-                    <div 
-                      key={`${schedule.id}-${idx}`}
-                      className="text-xs p-1 bg-violet-100 dark:bg-violet-900/30 rounded cursor-pointer hover:bg-violet-200 dark:hover:bg-violet-900/50 transition-colors"
-                      onClick={() => onEventClick?.(schedule)}
-                    >
-                      <div className="font-medium text-violet-800 dark:text-violet-300 truncate">
-                        {schedule.subject.subjectName}
-                      </div>
-                    </div>
-                  ))}
-                  {daySchedules.length > 3 && (
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      +{daySchedules.length - 3} еще
-                    </div>
-                  )}
+                  {(() => {
+                    const timeSlots = groupOverlappingSchedules(daySchedules);
+                    const displaySlots = timeSlots.slice(0, 3);
+                    
+                    return (
+                      <>
+                        {displaySlots.map((slot, idx) => {
+                          const hasOverlap = slot.schedules.length > 1;
+                          
+                          if (hasOverlap) {
+                            return (
+                              <div 
+                                key={`slot-${idx}`}
+                                className="text-xs p-1 bg-amber-100 dark:bg-amber-900/30 rounded cursor-pointer hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors border border-amber-300 dark:border-amber-600"
+                                onClick={() => setOverlappingModal({
+                                  isOpen: true,
+                                  schedules: slot.schedules,
+                                  timeSlot: formatTimeRange(slot.schedules[0].startTime, slot.schedules[0].endTime)
+                                })}
+                              >
+                                <div className="font-medium text-amber-800 dark:text-amber-300 truncate">
+                                  {slot.schedules.length} {slot.schedules.length === 1 ? 'занятие' : slot.schedules.length < 5 ? 'занятия' : 'занятий'} • {formatTimeRange(slot.schedules[0].startTime, slot.schedules[0].endTime)}
+                                </div>
+                              </div>
+                            );
+                          } else {
+                            const schedule = slot.schedules[0];
+                            return (
+                              <div 
+                                key={`${schedule.id}-${idx}`}
+                                className="text-xs p-1 bg-violet-100 dark:bg-violet-900/30 rounded cursor-pointer hover:bg-violet-200 dark:hover:bg-violet-900/50 transition-colors"
+                                onClick={() => onEventClick?.(schedule)}
+                              >
+                                <div className="font-medium text-violet-800 dark:text-violet-300 truncate">
+                                  {schedule.subject.subjectName}
+                                </div>
+                              </div>
+                            );
+                          }
+                        })}
+                        {timeSlots.length > 3 && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            +{timeSlots.length - 3} еще
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             );
@@ -482,38 +616,49 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
   };
 
   return (
-    <div className="space-y-4">
-      {/* Navigation Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-          {getTitle()}
-        </h2>
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => navigateDate('prev')}
-            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          >
-            <ChevronLeftIcon className="h-5 w-5" />
-          </button>
-          <button
-            onClick={() => setCurrentDate(new Date())}
-            className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          >
-            Сегодня
-          </button>
-          <button
-            onClick={() => navigateDate('next')}
-            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          >
-            <ChevronRightIcon className="h-5 w-5" />
-          </button>
+    <>
+      <div className="space-y-4">
+        {/* Navigation Header */}
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+            {getTitle()}
+          </h2>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => navigateDate('prev')}
+              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            >
+              <ChevronLeftIcon className="h-5 w-5" />
+            </button>
+            <button
+              onClick={() => setCurrentDate(new Date())}
+              className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            >
+              Сегодня
+            </button>
+            <button
+              onClick={() => navigateDate('next')}
+              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            >
+              <ChevronRightIcon className="h-5 w-5" />
+            </button>
+          </div>
         </div>
+
+        {/* Calendar Content */}
+        {viewType === 'day' && renderDayView()}
+        {viewType === 'week' && renderWeekView()}
+        {viewType === 'month' && renderMonthView()}
       </div>
 
-      {/* Calendar Content */}
-      {viewType === 'day' && renderDayView()}
-      {viewType === 'week' && renderWeekView()}
-      {viewType === 'month' && renderMonthView()}
-    </div>
+      {/* Overlapping Schedules Modal */}
+      <OverlappingSchedulesModal
+        isOpen={overlappingModal.isOpen}
+        onClose={() => setOverlappingModal({ isOpen: false, schedules: [], timeSlot: '' })}
+        schedules={overlappingModal.schedules}
+        timeSlot={overlappingModal.timeSlot}
+        onScheduleClick={onEventClick}
+      />
+    </>
   );
 };

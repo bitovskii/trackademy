@@ -106,6 +106,9 @@ export const formatDaysOfWeek = (daysOfWeek: number[]): string => {
 
 export const formatTime = (timeString: string): string => {
   // Convert "09:00:00" to "09:00"
+  if (!timeString || typeof timeString !== 'string') {
+    return '';
+  }
   return timeString.substring(0, 5);
 };
 

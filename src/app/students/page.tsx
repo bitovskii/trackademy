@@ -16,7 +16,6 @@ import Link from 'next/link';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import { useColumnVisibility, ColumnVisibilityControl } from '../../components/ui/ColumnVisibilityControl';
 import { PhoneInput } from '@/components/ui/PhoneInput';
-import { EmailInput } from '@/components/ui/EmailInput';
 import { useApiToast } from '../../hooks/useApiToast';
 import { PasswordInput } from '@/components/ui/PasswordInput';
 import { cleanUserFormData } from '../../utils/apiHelpers';
@@ -38,7 +37,6 @@ export default function StudentsPage() {
   const userModal = useUniversalModal('user', {
     login: '',
     fullName: '',
-    email: '',
     password: '',
     phone: '',
     parentPhone: '',
@@ -418,7 +416,6 @@ export default function StudentsPage() {
     userModal.openEditModal({
       login: editUser.login,
       fullName: editUser.name,
-      email: editUser.email,
       password: '', // Пароль не заполняем при редактировании
       phone: editUser.phone,
       parentPhone: editUser.parentPhone || '',
@@ -628,7 +625,6 @@ export default function StudentsPage() {
                 id: user.id,
                 login: user.login,
                 name: user.fullName,
-                email: user.email,
                 phone: '',
                 parentPhone: '',
                 birthday: '',
@@ -668,7 +664,6 @@ export default function StudentsPage() {
         initialData={{
           login: '',
           fullName: '',
-          email: '',
           password: '',
           phone: '',
           parentPhone: '',
@@ -766,18 +761,6 @@ export default function StudentsPage() {
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="Введите полное имя"
                   required
-                />
-              </div>
-
-              {/* Email */}
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Email
-                </label>
-                <EmailInput
-                  value={(formData.email as string) || ''}
-                  onChange={(value: string) => setFormData((prev: Record<string, unknown>) => ({ ...prev, email: value }))}
-                  error={_errors.email}
                 />
               </div>
 

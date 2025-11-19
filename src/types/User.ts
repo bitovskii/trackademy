@@ -7,7 +7,6 @@ export interface User {
   id: string;
   login: string;
   name: string;
-  email: string;
   phone: string;
   parentPhone: string | null;
   birthday: string | null;
@@ -22,7 +21,6 @@ export interface UserFormData {
   id?: string;
   login: string;
   fullName: string;
-  email: string | null;
   password?: string;
   phone: string | null;
   parentPhone?: string | null;
@@ -39,7 +37,6 @@ export interface ImportedUser {
   fullName: string;
   login: string;
   generatedPassword: string;
-  email: string;
   phone: string;
   role: string;
 }
@@ -47,7 +44,6 @@ export interface ImportedUser {
 export interface ImportError {
   rowNumber: number;
   fullName: string;
-  email: string;
   phone: string;
   errors: string[];
 }

@@ -18,12 +18,6 @@ export const createUserValidator = (data: UserFormData & { id?: string }) => {
     errors.fullName = 'Полное имя обязательно';
   }
 
-  if (!data.email?.trim()) {
-    errors.email = 'Email обязателен';
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
-    errors.email = 'Некорректный формат email';
-  }
-
   if (!data.password && !data.id) { // password required only for create
     errors.password = 'Пароль обязателен';
   } else if (data.password && data.password.length < 6) {

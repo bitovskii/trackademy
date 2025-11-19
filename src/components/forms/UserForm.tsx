@@ -3,7 +3,6 @@
 import React from 'react';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { PhoneInput } from '../ui/PhoneInput';
-import { EmailInput } from '../ui/EmailInput';
 import { UserFormData } from '../../types/User';
 
 interface UserFormProps {
@@ -128,23 +127,6 @@ export const UserForm: React.FC<UserFormProps> = ({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Email */}
-        <EmailInput
-          label="Email"
-          name="email"
-          value={formData.email || ''}
-          onChange={(value) => {
-            setFormData(prev => ({ ...prev, email: value }));
-            if (errors.email) {
-              setErrors(prev => ({ ...prev, email: '' }));
-            }
-          }}
-          error={errors.email}
-          required
-          placeholder="example@domain.com"
-          showSuggestions={true}
-        />
-
         {/* Password */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

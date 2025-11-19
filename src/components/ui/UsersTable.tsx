@@ -36,7 +36,7 @@ export const UsersTable: React.FC<UsersTableProps> = ({
     { key: 'contacts', label: 'Контакты' },
     { key: 'role', label: 'Роль' },
     { key: 'group', label: 'Группа' },
-    { key: 'actions', label: 'Действия', required: !!(currentUser && canManageUsers(currentUser.role)) }
+    { key: 'actions', label: 'Действия' }
   ]);
 
   // Используем внешнюю функцию видимости колонок если предоставлена, иначе внутреннюю
@@ -189,7 +189,6 @@ export const UsersTable: React.FC<UsersTableProps> = ({
                 )}
                 {isColumnVisible('contacts') && (
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900 dark:text-white">{user.email}</div>
                     <div className="text-sm text-gray-500 dark:text-gray-400">{user.phone}</div>
                   </td>
                 )}
@@ -203,9 +202,12 @@ export const UsersTable: React.FC<UsersTableProps> = ({
                 {isColumnVisible('group') && (
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     {user.groups.length > 0 
-                      ? user.groups.map((group: string | { id: string; name?: string; groupName?: string }) => 
-                          typeof group === 'string' ? group : group.name || group.groupName || group
-                        ).join(', ') 
+                      ? (() => {
+                          const groupNames = user.groups.map((group: string | { id: string; name?: string; groupName?: string }) => 
+                            typeof group === 'string' ? group : group.name || group.groupName || group
+                          ).join(', ');
+                          return groupNames.length > 30 ? groupNames.substring(0, 30) + '...' : groupNames;
+                        })()
                       : '-'
                     }
                   </td>
@@ -289,7 +291,6 @@ export const UsersTable: React.FC<UsersTableProps> = ({
                 <div className="mt-1 space-y-1">
                   {isColumnVisible('contacts') && (
                     <>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
                       <p className="text-sm text-gray-500 dark:text-gray-400">{user.phone}</p>
                     </>
                   )}

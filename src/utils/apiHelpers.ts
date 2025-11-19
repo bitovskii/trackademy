@@ -46,9 +46,6 @@ export const cleanUserFormData = (formData: UserFormData): UserFormData => {
   const cleaned = { ...formData };
   
   // Convert empty strings to null for optional and nullable fields
-  if (!cleaned.email || cleaned.email.trim() === '') {
-    cleaned.email = null;
-  }
   if (!cleaned.phone || cleaned.phone.replace(/\D/g, '').length === 0) {
     cleaned.phone = null;
   }

@@ -185,10 +185,6 @@ export const CreatePaymentModal: React.FC<CreatePaymentModalProps> = ({
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     <div>
-                      <span className="text-gray-500 dark:text-gray-400">Email:</span>
-                      <span className="ml-2 text-gray-900 dark:text-white">{userData.email}</span>
-                    </div>
-                    <div>
                       <span className="text-gray-500 dark:text-gray-400">Телефон:</span>
                       <span className="ml-2 text-gray-900 dark:text-white">{userData.phone}</span>
                     </div>

@@ -21,7 +21,6 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({
     fullName: '', // Combined name field
     login: '', // Separate login field
-    email: '',
     password: '',
     phone: '+7', // Initialize with +7 prefix
     role: 1, // Default to Student
@@ -57,7 +56,6 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
       const registrationData = {
         fullName: formData.fullName,
         login: formData.login,
-        email: formData.email,
         password: formData.password,
         phone: formData.phone,
         role: formData.role,
@@ -70,7 +68,6 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
       setFormData({
         fullName: '',
         login: '',
-        email: '',
         password: '',
         phone: '+7',
         role: 1,
@@ -183,21 +180,6 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
               onChange={handleChange}
               required
               placeholder="username"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>

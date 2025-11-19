@@ -15,7 +15,6 @@ interface ProfileEditModalProps {
     id: string;
     fullName: string;
     login: string;
-    email: string;
     role: string;
   } | null;
   isDataLoading?: boolean;
@@ -24,7 +23,6 @@ interface ProfileEditModalProps {
 interface ProfileFormData {
   login: string;
   fullName: string;
-  email: string;
   phone: string;
   parentPhone: string;
   birthday: string;
@@ -47,7 +45,6 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
   const [formData, setFormData] = useState<ProfileFormData>({
     login: '',
     fullName: '',
-    email: '',
     phone: '',
     parentPhone: '',
     birthday: '',
@@ -64,7 +61,6 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
         setFormData({
           login: typedData.login || '',
           fullName: typedData.name || typedData.fullName || '',
-          email: typedData.email || '',
           phone: typedData.phone || '',
           parentPhone: typedData.parentPhone || '',
           birthday: typedData.birthday ? typedData.birthday.split('T')[0] : '', // Преобразуем в YYYY-MM-DD
@@ -96,7 +92,7 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.login.trim() || !formData.fullName.trim() || !formData.email.trim()) {
+    if (!formData.login.trim() || !formData.fullName.trim()) {
       showError('Пожалуйста, заполните все обязательные поля');
       return;
     }
@@ -107,7 +103,6 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
       const userFormData: UserFormData = {
         login: formData.login,
         fullName: formData.fullName,
-        email: formData.email,
         phone: formData.phone,
         parentPhone: formData.parentPhone || null,
         birthday: formData.birthday || null,
@@ -201,21 +196,6 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
               type="text"
               name="fullName"
               value={formData.fullName}
-              onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-300/50 dark:border-gray-600/50 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 dark:bg-gray-700/80 text-gray-900 dark:text-white shadow-sm transition-all duration-200 hover:shadow-md"
-              required
-            />
-          </div>
-
-          {/* Email */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Email <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
               onChange={handleInputChange}
               className="w-full px-4 py-3 border border-gray-300/50 dark:border-gray-600/50 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 dark:bg-gray-700/80 text-gray-900 dark:text-white shadow-sm transition-all duration-200 hover:shadow-md"
               required

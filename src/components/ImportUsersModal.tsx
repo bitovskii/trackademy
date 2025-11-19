@@ -28,6 +28,7 @@ export const ImportUsersModal: React.FC<ImportUsersModalProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fixingError, setFixingError] = useState<ImportError | null>(null);
   const [isFixModalOpen, setIsFixModalOpen] = useState(false);
+  const [isDownloadingTemplate, setIsDownloadingTemplate] = useState(false);
 
   if (!isOpen) return null;
 
@@ -113,6 +114,8 @@ export const ImportUsersModal: React.FC<ImportUsersModalProps> = ({
   };
 
   const handleDownloadTemplate = async () => {
+    setIsDownloadingTemplate(true);
+    setError(null);
     try {
       const token = localStorage.getItem('authToken');
       const response = await fetch('https://trackademy.onrender.com/api/User/download-template', {
@@ -142,6 +145,8 @@ export const ImportUsersModal: React.FC<ImportUsersModalProps> = ({
       window.URL.revokeObjectURL(url);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка при скачивании шаблона');
+    } finally {
+      setIsDownloadingTemplate(false);
     }
   };
 
@@ -153,7 +158,6 @@ export const ImportUsersModal: React.FC<ImportUsersModalProps> = ({
   const handleCreateFixedUser = async (userData: {
     login: string;
     fullName: string;
-    email: string;
     password: string;
     phone: string;
     parentPhone: string;
@@ -166,7 +170,6 @@ export const ImportUsersModal: React.FC<ImportUsersModalProps> = ({
     const cleanUserData = cleanUserFormData({
       login: userData.login,
       fullName: userData.fullName,
-      email: userData.email || null,
       password: userData.password,
       phone: userData.phone || null,
       parentPhone: userData.parentPhone || null,
@@ -239,10 +242,23 @@ export const ImportUsersModal: React.FC<ImportUsersModalProps> = ({
               <div className="mb-6">
                 <button
                   onClick={handleDownloadTemplate}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 hover:scale-105"
+                  disabled={isDownloadingTemplate}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                 >
-                  <DocumentArrowDownIcon className="w-5 h-5" />
-                  <span className="font-medium">Скачать шаблон Excel</span>
+                  {isDownloadingTemplate ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span className="font-medium">Загрузка...</span>
+                    </>
+                  ) : (
+                    <>
+                      <DocumentArrowDownIcon className="w-5 h-5" />
+                      <span className="font-medium">Скачать шаблон Excel</span>
+                    </>
+                  )}
                 </button>
               </div>
 
@@ -398,7 +414,7 @@ export const ImportUsersModal: React.FC<ImportUsersModalProps> = ({
                                 {error.fullName}
                               </p>
                               <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                                Email: {error.email} | Телефон: {error.phone}
+                                Телефон: {error.phone}
                               </p>
                               <ul className="space-y-1 mb-3">
                                 {error.errors.map((err, errIndex) => (

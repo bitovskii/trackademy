@@ -4,7 +4,6 @@ interface User {
   id: string; // Changed to string since API returns GUID
   fullName: string;
   login: string;
-  email: string;
   role: string; // Changed to string since API returns role names like "Administrator"
   roleId?: number; // Role ID for easier role checking (1=Student, 2=Admin, 3=Teacher, 4=Owner)
   organizationId?: string;
@@ -25,7 +24,6 @@ interface AuthContextType {
 interface RegisterData {
   fullName: string;
   login: string;
-  email: string;
   password: string;
   phone: string;
   role: number; // Keep as number for registration API
@@ -68,7 +66,6 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
         lastName: lastName,
         fullName: userData.fullName,
         login: userData.login,
-        email: userData.email,
         phone: userData.phone,
         password: userData.password,
         role: userData.role,
@@ -150,7 +147,6 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
         id: result.user.id,
         fullName: result.user.fullName,
         login: result.user.login,
-        email: result.user.email,
         role: result.user.role,
         roleId: result.user.roleId,
         organizationId: result.user.organizationId,

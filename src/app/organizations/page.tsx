@@ -156,7 +156,6 @@ function OrganizationsPage() {
     const adminData: UserFormData = {
       login: formData.login as string,
       fullName: formData.fullName as string,
-      email: null,
       password: formData.password as string,
       phone: formData.phone as string,
       role: 2,

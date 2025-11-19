@@ -29,7 +29,6 @@ const UserModal: React.FC<UserModalProps> = ({
   const [formData, setFormData] = useState<UserFormData>({
     login: '',
     fullName: '',
-    email: null,
     password: '',
     phone: null,
     parentPhone: null,
@@ -55,7 +54,6 @@ const UserModal: React.FC<UserModalProps> = ({
       setFormData({
         login: user.login || '',
         fullName: user.name || '',
-        email: user.email || null,
         password: '', // Never pre-fill password
         phone: formatPhoneDisplay(user.phone || ''),
         parentPhone: formatPhoneDisplay(user.parentPhone || ''),
@@ -72,7 +70,6 @@ const UserModal: React.FC<UserModalProps> = ({
     setFormData({
       login: '',
       fullName: '',
-      email: null,
       password: '',
       phone: null,
       parentPhone: null,
@@ -118,12 +115,6 @@ const UserModal: React.FC<UserModalProps> = ({
 
     if (!formData.fullName.trim()) {
       newErrors.fullName = 'Полное имя обязательно';
-    }
-
-    if (!formData.email?.trim()) {
-      newErrors.email = 'Email обязателен';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Некорректный формат email';
     }
 
     // Password is required only for create mode
@@ -336,28 +327,6 @@ const UserModal: React.FC<UserModalProps> = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Email */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Email *
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email || ''}
-              onChange={handleInputChange}
-              className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-${currentConfig.focusColor}-500 focus:border-transparent transition-colors ${
-                errors.email 
-                  ? 'border-red-400 bg-red-50 dark:bg-red-900/20' 
-                  : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
-              } text-gray-900 dark:text-white`}
-              placeholder="example@email.com"
-            />
-            {errors.email && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.email}</p>
-            )}
-          </div>
-
           {/* Password - only show for create mode or if user wants to change it in edit mode */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

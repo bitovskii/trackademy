@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { XMarkIcon, ExclamationTriangleIcon, UserPlusIcon } from '@heroicons/react/24/outline';
 import { ImportError } from '../types/User';
 import { PhoneInput } from './ui/PhoneInput';
-import { EmailInput } from './ui/EmailInput';
 import { PasswordInput } from './ui/PasswordInput';
 
 interface FixImportErrorModalProps {
@@ -14,7 +13,6 @@ interface FixImportErrorModalProps {
   onCreateUser: (userData: {
     login: string;
     fullName: string;
-    email: string;
     password: string;
     phone: string;
     parentPhone: string;
@@ -36,7 +34,6 @@ export const FixImportErrorModal: React.FC<FixImportErrorModalProps> = ({
   const [formData, setFormData] = useState({
     login: '',
     fullName: '',
-    email: '',
     password: '',
     phone: '',
     parentPhone: '',
@@ -64,7 +61,6 @@ export const FixImportErrorModal: React.FC<FixImportErrorModalProps> = ({
       setFormData({
         login: generateLogin(errorData.fullName),
         fullName: errorData.fullName,
-        email: errorData.email || '',
         password: '',
         phone: errorData.phone || '',
         parentPhone: '',
@@ -93,10 +89,6 @@ export const FixImportErrorModal: React.FC<FixImportErrorModalProps> = ({
       newErrors.password = 'Пароль обязателен';
     } else if (formData.password.length < 6) {
       newErrors.password = 'Пароль должен содержать минимум 6 символов';
-    }
-
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Некорректный формат email';
     }
 
     if (formData.phone && !/^\+?[\d\s\-()]+$/.test(formData.phone)) {
@@ -135,7 +127,6 @@ export const FixImportErrorModal: React.FC<FixImportErrorModalProps> = ({
       setFormData({
         login: '',
         fullName: '',
-        email: '',
         password: '',
         phone: '',
         parentPhone: '',
@@ -233,19 +224,6 @@ export const FixImportErrorModal: React.FC<FixImportErrorModalProps> = ({
               {errors.fullName && (
                 <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.fullName}</p>
               )}
-            </div>
-
-            {/* Email */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Email
-              </label>
-              <EmailInput
-                value={formData.email}
-                onChange={(value) => setFormData({ ...formData, email: value })}
-                error={errors.email}
-                disabled={isSubmitting}
-              />
             </div>
 
             {/* Password */}

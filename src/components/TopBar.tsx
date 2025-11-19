@@ -82,7 +82,6 @@ const TopBar: React.FC = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-gray-900 dark:text-white text-sm">{user.fullName}</div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400 truncate">{user.email}</div>
                           <div className="text-xs text-gray-400 dark:text-gray-500">
                             {getRoleName(user.role)}
                           </div>

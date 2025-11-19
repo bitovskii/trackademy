@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
-import { UserIcon, EnvelopeIcon, BuildingOfficeIcon, IdentificationIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
+import { UserIcon, BuildingOfficeIcon, IdentificationIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import ProfileEditModal from '../../components/ProfileEditModal';
 import ChangePasswordModal from '../../components/ChangePasswordModal';
@@ -13,7 +13,6 @@ interface ProfileData {
   id: string;
   login: string;
   fullName: string;
-  email: string;
   role: string;
   organizationId: string;
   organizationNames: string;
@@ -251,16 +250,6 @@ export default function Profile() {
                     <p className="text-sm text-gray-900 dark:text-white font-medium flex items-center">
                       <IdentificationIcon className="h-4 w-4 mr-2 text-blue-500" />
                       {displayData?.login || 'Не указано'}
-                    </p>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email</label>
-                  <div className="bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-700 dark:to-gray-600 rounded-lg px-4 py-3 border border-gray-200/50 dark:border-gray-600/50">
-                    <p className="text-sm text-gray-900 dark:text-white font-medium flex items-center">
-                      <EnvelopeIcon className="h-4 w-4 mr-2 text-blue-500" />
-                      {displayData?.email || 'Не указано'}
                     </p>
                   </div>
                 </div>

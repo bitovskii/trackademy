@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Organization, OrganizationFormData } from '../../types/Organization';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
 import { PhoneIcon, MapPinIcon, PencilIcon, TrashIcon, PlusIcon, BuildingOfficeIcon } from '@heroicons/react/24/outline';
@@ -317,11 +317,11 @@ function OrganizationsPage() {
           setEditingOrganizationId(null);
           organizationModal.closeModal();
         }}
-        onSave={async (data: OrganizationFormData) => {
+        onSave={async (data: Record<string, unknown>) => {
           if (organizationModal.mode === 'create') {
-            await handleSaveCreate(data);
+            await handleSaveCreate(data as unknown as OrganizationFormData);
           } else {
-            await handleSaveEdit(data);
+            await handleSaveEdit(data as unknown as OrganizationFormData);
           }
         }}
         submitText={organizationModal.getConfig().submitText}
@@ -335,7 +335,7 @@ function OrganizationsPage() {
               </label>
               <input
                 type="text"
-                value={formData.name || ''}
+                value={(formData.name as string) || ''}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 placeholder="Введите название организации"
@@ -346,7 +346,7 @@ function OrganizationsPage() {
             <div>
               <PhoneInput
                 label="Телефон"
-                value={formData.phone || ''}
+                value={(formData.phone as string) || ''}
                 onChange={(value) => setFormData(prev => ({ ...prev, phone: value }))}
                 placeholder="+7 (___) ___-__-__"
                 required
@@ -359,7 +359,7 @@ function OrganizationsPage() {
                 Адрес <span className="text-red-500">*</span>
               </label>
               <textarea
-                value={formData.address || ''}
+                value={(formData.address as string) || ''}
                 onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 placeholder="Введите адрес организации"

@@ -210,15 +210,15 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
                 {hours.map((hour) => (
                   <div
                     key={hour}
-                    className="flex border-b border-gray-100 dark:border-gray-700 min-h-[60px]"
+                    className="flex border-b border-gray-100 dark:border-gray-700 h-[60px]"
                   >
                     {/* Time label */}
-                    <div className="w-16 flex-shrink-0 p-2 text-sm text-gray-500 dark:text-gray-400 border-r border-gray-100 dark:border-gray-700">
+                    <div className="w-16 flex-shrink-0 flex items-center justify-end pr-3 text-sm text-gray-500 dark:text-gray-400 border-r border-gray-100 dark:border-gray-700">
                       {hour.toString().padStart(2, '0')}:00
                     </div>
 
                     {/* Empty schedule area */}
-                    <div className="flex-1 p-2 relative">
+                    <div className="flex-1 relative">
                       {/* This space will be filled by absolutely positioned schedules */}
                     </div>
                   </div>

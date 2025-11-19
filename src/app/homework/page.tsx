@@ -111,10 +111,10 @@ export default function HomeworkPage() {
         requestBody.groupId = currentFilters.groupId;
       }
       if (currentFilters.fromDate) {
-        requestBody.fromDate = new Date(currentFilters.fromDate).toISOString();
+        requestBody.fromDate = currentFilters.fromDate; // Only date, no time
       }
       if (currentFilters.toDate) {
-        requestBody.toDate = new Date(currentFilters.toDate).toISOString();
+        requestBody.toDate = currentFilters.toDate; // Only date, no time
       }
 
       const response = await loadOperation(
@@ -221,10 +221,10 @@ export default function HomeworkPage() {
         requestBody.status = parseInt(currentFilters.status) as SubmissionStatus;
       }
       if (currentFilters.fromDate) {
-        requestBody.fromDate = new Date(currentFilters.fromDate).toISOString();
+        requestBody.fromDate = currentFilters.fromDate; // Only date, no time
       }
       if (currentFilters.toDate) {
-        requestBody.toDate = new Date(currentFilters.toDate).toISOString();
+        requestBody.toDate = currentFilters.toDate; // Only date, no time
       }
 
       const response = await loadOperation(

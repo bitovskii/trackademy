@@ -216,15 +216,24 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
         
         <div className="flex items-center space-x-2">
           {(startDate || endDate) && (
-            <button
+            <div
               onClick={(e) => {
                 e.stopPropagation();
                 clearDates();
               }}
-              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  clearDates();
+                }
+              }}
+              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors cursor-pointer"
             >
               <XMarkIcon className="h-4 w-4 text-gray-400" />
-            </button>
+            </div>
           )}
         </div>
       </button>

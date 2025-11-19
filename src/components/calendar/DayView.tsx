@@ -124,15 +124,15 @@ export default function DayView({ date, lessons, onLessonClick }: DayViewProps) 
           {timeSlots.map((timeSlot) => (
             <div
               key={timeSlot}
-              className="flex border-b border-gray-100 dark:border-gray-700 min-h-[60px]"
+              className="flex border-b border-gray-100 dark:border-gray-700 h-[60px]"
             >
               {/* Time label */}
-              <div className="w-16 flex-shrink-0 p-2 text-sm text-gray-500 dark:text-gray-400 border-r border-gray-100 dark:border-gray-700">
+              <div className="w-16 flex-shrink-0 flex items-center justify-end pr-3 text-sm font-medium text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-600">
                 {timeSlot}
               </div>
 
               {/* Empty lesson area */}
-              <div className="flex-1 p-2 relative">
+              <div className="flex-1 relative">
                 {/* This space will be filled by absolutely positioned lessons */}
               </div>
             </div>
@@ -142,33 +142,52 @@ export default function DayView({ date, lessons, onLessonClick }: DayViewProps) 
           <div className="absolute inset-0 left-16 pointer-events-none">
             {timeSlotGroups.map((slot, idx) => {
               const hasOverlap = slot.lessons.length > 1;
-              const position = getLessonPosition(slot.lessons[0]);
               
               if (hasOverlap) {
                 // Show overlapping lessons side by side
+                // Find earliest start and latest end for the container
+                const positions = slot.lessons.map(l => getLessonPosition(l));
+                const minTop = Math.min(...positions.map(p => p.top));
+                const maxBottom = Math.max(...positions.map(p => p.top + p.height));
+                const containerHeight = maxBottom - minTop;
+                
                 return (
                   <div
                     key={`overlap-${idx}`}
                     className="absolute left-2 right-2 pointer-events-auto flex gap-2"
                     style={{
-                      top: `${position.top}px`,
-                      height: `${position.height}px`,
+                      top: `${minTop}px`,
+                      height: `${containerHeight}px`,
                       zIndex: 10
                     }}
                   >
-                    {slot.lessons.map((lesson) => (
-                      <div key={lesson.id} className="flex-1">
-                        <LessonBlock
-                          lesson={lesson}
-                          onClick={() => onLessonClick(lesson)}
-                          height={position.height}
-                        />
-                      </div>
-                    ))}
+                    {slot.lessons.map((lesson) => {
+                      const lessonPos = getLessonPosition(lesson);
+                      const offsetTop = lessonPos.top - minTop;
+                      
+                      return (
+                        <div key={lesson.id} className="flex-1 relative" style={{ height: '100%' }}>
+                          <div 
+                            className="absolute left-0 right-0"
+                            style={{
+                              top: `${offsetTop}px`,
+                              height: `${lessonPos.height}px`
+                            }}
+                          >
+                            <LessonBlock
+                              lesson={lesson}
+                              onClick={() => onLessonClick(lesson)}
+                              height={lessonPos.height}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 );
               } else {
                 const lesson = slot.lessons[0];
+                const position = getLessonPosition(lesson);
                 return (
                   <div
                     key={lesson.id}

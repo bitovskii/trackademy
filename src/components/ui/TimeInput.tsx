@@ -83,6 +83,41 @@ export const TimeInput: React.FC<TimeInputProps> = ({
     const input = target as HTMLInputElement;
     const { selectionStart, selectionEnd } = input;
 
+    // Обработка Backspace для удаления двоеточия
+    if (key === 'Backspace' && selectionStart === selectionEnd) {
+      const pos = selectionStart || 0;
+      // Если курсор перед двоеточием или после него, разрешаем удаление
+      if (displayValue[pos - 1] === ':' || displayValue[pos] === ':') {
+        e.preventDefault();
+        const newValue = displayValue.slice(0, pos - 1) + displayValue.slice(pos);
+        setDisplayValue(newValue);
+        onChange(newValue.trim() === '' ? null : newValue);
+        setTimeout(() => {
+          if (inputRef.current) {
+            inputRef.current.setSelectionRange(pos - 1, pos - 1);
+          }
+        }, 0);
+        return;
+      }
+    }
+
+    // Обработка Delete для удаления двоеточия
+    if (key === 'Delete' && selectionStart === selectionEnd) {
+      const pos = selectionStart || 0;
+      if (displayValue[pos] === ':') {
+        e.preventDefault();
+        const newValue = displayValue.slice(0, pos) + displayValue.slice(pos + 1);
+        setDisplayValue(newValue);
+        onChange(newValue.trim() === '' ? null : newValue);
+        setTimeout(() => {
+          if (inputRef.current) {
+            inputRef.current.setSelectionRange(pos, pos);
+          }
+        }, 0);
+        return;
+      }
+    }
+
     // Разрешаем навигационные клавиши
     if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'Tab', 'Delete', 'Backspace'].includes(key)) {
       return;

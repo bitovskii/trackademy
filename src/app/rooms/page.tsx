@@ -35,7 +35,7 @@ export default function RoomsPage() {
   // Универсальная система модалов для комнат
   const roomModal = useUniversalModal('room', {
     name: '',
-    capacity: 0
+    capacity: ''
   });
 
   // API Toast уведомления
@@ -160,7 +160,7 @@ export default function RoomsPage() {
       setEditingRoomId(id);
       roomModal.openEditModal({
         name: room.name,
-        capacity: room.capacity
+        capacity: room.capacity.toString()
       });
     }
   };
@@ -502,18 +502,23 @@ export default function RoomsPage() {
         maxWidth="md"
         initialData={{
           name: '',
-          capacity: 1
+          capacity: ''
         }}
         data={roomModal.editData || undefined}
         onClose={() => {
           setEditingRoomId(null);
           roomModal.closeModal();
         }}
-        onSave={async (data: RoomFormData) => {
+        onSave={async (data: Record<string, unknown>) => {
+          const roomData: RoomFormData = {
+            name: data.name as string,
+            capacity: parseInt(data.capacity as string) || 1
+          };
+          
           if (roomModal.mode === 'create') {
-            await handleSaveCreate(data);
+            await handleSaveCreate(roomData);
           } else {
-            await handleSaveEdit(data);
+            await handleSaveEdit(roomData);
           }
         }}
         submitText={roomModal.getConfig().submitText}
@@ -527,7 +532,7 @@ export default function RoomsPage() {
               </label>
               <input
                 type="text"
-                value={formData.name || ''}
+                value={(formData.name as string) || ''}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 placeholder="Введите название комнаты"
@@ -541,8 +546,8 @@ export default function RoomsPage() {
               </label>
               <input
                 type="number"
-                value={formData.capacity || 1}
-                onChange={(e) => setFormData(prev => ({ ...prev, capacity: parseInt(e.target.value) || 1 }))}
+                value={(formData.capacity as string) || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, capacity: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 placeholder="Введите вместимость"
                 min="1"

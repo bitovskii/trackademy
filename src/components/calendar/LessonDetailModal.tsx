@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { AuthenticatedApiService } from '@/services/AuthenticatedApiService';
 import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
 import { useToast } from '@/contexts/ToastContext';
+import { TimeInput } from '@/components/ui/TimeInput';
 
 interface LessonDetailModalProps {
   lesson: Lesson;
@@ -268,7 +269,8 @@ export default function LessonDetailModal({ lesson, isOpen, onClose, onUpdate }:
         <div className="flex justify-between items-center p-6 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 bg-gray-50 dark:bg-gray-900/50">
           <div className="flex gap-3">
             {/* Show action buttons for Planned and Moved lessons, but not for Cancelled */}
-            {(lesson.lessonStatus === 'Planned' || lesson.lessonStatus === 'Moved') && (isAdministrator || isTeacher || isOwner) && (
+            {/* Показываем кнопки только на вкладке "Детали" */}
+            {activeTab === 'details' && (lesson.lessonStatus === 'Planned' || lesson.lessonStatus === 'Moved') && (isAdministrator || isTeacher || isOwner) && (
               <>
                 <button
                   onClick={() => setIsMoveModalOpen(true)}
@@ -386,10 +388,9 @@ export default function LessonDetailModal({ lesson, isOpen, onClose, onUpdate }:
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Время начала <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="time"
+                  <TimeInput
                     value={moveStartTime}
-                    onChange={(e) => setMoveStartTime(e.target.value)}
+                    onChange={(val) => setMoveStartTime(val || '')}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
                              bg-white dark:bg-gray-700 text-gray-900 dark:text-white
                              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -400,10 +401,9 @@ export default function LessonDetailModal({ lesson, isOpen, onClose, onUpdate }:
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Время окончания <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="time"
+                  <TimeInput
                     value={moveEndTime}
-                    onChange={(e) => setMoveEndTime(e.target.value)}
+                    onChange={(val) => setMoveEndTime(val || '')}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
                              bg-white dark:bg-gray-700 text-gray-900 dark:text-white
                              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"

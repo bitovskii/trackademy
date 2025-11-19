@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { Organization, OrganizationFormData } from '../../types/Organization';
+import { UserFormData } from '../../types/User';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
-import { PhoneIcon, MapPinIcon, PencilIcon, TrashIcon, PlusIcon, BuildingOfficeIcon } from '@heroicons/react/24/outline';
+import { PhoneIcon, MapPinIcon, PencilIcon, TrashIcon, PlusIcon, BuildingOfficeIcon, UserPlusIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../../contexts/AuthContext';
 import Link from 'next/link';
 
@@ -11,6 +12,7 @@ import UniversalModal from '../../components/ui/UniversalModal';
 import { useUniversalModal } from '../../hooks/useUniversalModal';
 import { DeleteConfirmationModal } from '../../components/ui/DeleteConfirmationModal';
 import { PhoneInput } from '../../components/ui/PhoneInput';
+import { PasswordInput } from '../../components/ui/PasswordInput';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import OwnerProtectedRoute from '../../components/OwnerProtectedRoute';
 import { useApiToast } from '../../hooks/useApiToast';
@@ -30,6 +32,18 @@ function OrganizationsPage() {
     phone: '',
     address: ''
   });
+
+  // Модалка для создания администратора
+  const adminModal = useUniversalModal('user', {
+    login: '',
+    fullName: '',
+    password: '',
+    phone: '',
+    role: 2,
+    organizationId: ''
+  });
+
+  const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | null>(null);
   
   // Toast уведомления для API операций
   const { createOperation, updateOperation, deleteOperation, loadOperation } = useApiToast();
@@ -127,6 +141,36 @@ function OrganizationsPage() {
   const handleCreate = () => {
     setEditingOrganizationId(null);
     organizationModal.openCreateModal();
+  };
+
+  const handleAddAdmin = (organizationId: string) => {
+    setSelectedOrganizationId(organizationId);
+    adminModal.openCreateModal();
+  };
+
+  const handleSaveAdmin = async (formData: Record<string, unknown>) => {
+    if (!selectedOrganizationId) {
+      throw new Error('ID организации не найден');
+    }
+
+    const adminData: UserFormData = {
+      login: formData.login as string,
+      fullName: formData.fullName as string,
+      email: null,
+      password: formData.password as string,
+      phone: formData.phone as string,
+      role: 2,
+      organizationId: selectedOrganizationId,
+      isTrial: false
+    };
+
+    const result = await createOperation(
+      () => AuthenticatedApiService.createUser(adminData),
+      'администратора'
+    );
+
+    setSelectedOrganizationId(null);
+    adminModal.closeModal();
   };
 
   const handleSaveCreate = async (formData: OrganizationFormData) => {
@@ -263,6 +307,13 @@ function OrganizationsPage() {
                       </div>
                       <div className="flex space-x-2">
                         <button
+                          onClick={() => handleAddAdmin(organization.id.toString())}
+                          className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                          title="Добавить администратора"
+                        >
+                          <UserPlusIcon className="h-4 w-4" />
+                        </button>
+                        <button
                           onClick={() => handleEdit(organization.id)}
                           className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
                           title="Редактировать"
@@ -364,6 +415,86 @@ function OrganizationsPage() {
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 placeholder="Введите адрес организации"
                 rows={3}
+                required
+              />
+            </div>
+          </div>
+        )}
+      </UniversalModal>
+
+      {/* Admin Creation Modal */}
+      <UniversalModal
+        isOpen={adminModal.isOpen}
+        mode="create"
+        title="Добавить администратора"
+        subtitle="Создайте нового администратора для организации"
+        icon={UserPlusIcon}
+        gradientFrom="green-500"
+        gradientTo="emerald-600"
+        maxWidth="lg"
+        initialData={{
+          login: '',
+          fullName: '',
+          password: '',
+          phone: ''
+        }}
+        onClose={() => {
+          setSelectedOrganizationId(null);
+          adminModal.closeModal();
+        }}
+        onSave={handleSaveAdmin}
+        submitText="Создать администратора"
+        loadingText="Создание администратора..."
+      >
+        {({ formData, setFormData }) => (
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Логин <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={(formData.login as string) || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, login: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="Введите логин"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                ФИО <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={(formData.fullName as string) || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="Введите ФИО"
+                required
+              />
+            </div>
+
+            <div>
+              <PhoneInput
+                label="Телефон"
+                value={(formData.phone as string) || ''}
+                onChange={(value) => setFormData(prev => ({ ...prev, phone: value }))}
+                placeholder="+7 (___) ___-__-__"
+                required
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Пароль <span className="text-red-500">*</span>
+              </label>
+              <PasswordInput
+                value={(formData.password as string) || ''}
+                onChange={(value) => setFormData(prev => ({ ...prev, password: value }))}
+                placeholder="Введите пароль"
                 required
               />
             </div>

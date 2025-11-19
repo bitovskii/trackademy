@@ -204,7 +204,7 @@ export class AuthenticatedApiService {
   }
 
   static async createUser(userData: UserFormData): Promise<ApiResponse<User>> {
-    return this.post('/User', userData);
+    return this.post('/User/create', userData);
   }
 
   static async getUsers(filters: {

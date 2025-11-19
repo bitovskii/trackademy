@@ -717,20 +717,20 @@ export default function StudentsPage() {
                   {formData.role === 1 && <div className="absolute top-2 right-2 w-3 h-3 bg-emerald-500 rounded-full"></div>}
                 </label>
                 <label className={`relative flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
-                  formData.role === 2 ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' : 'border-gray-200 dark:border-gray-600'
+                  formData.role === 3 ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' : 'border-gray-200 dark:border-gray-600'
                 }`}>
                   <input
                     type="radio"
                     name="role"
-                    value={2}
-                    checked={formData.role === 2}
+                    value={3}
+                    checked={formData.role === 3}
                     onChange={(e) => setFormData((prev: Record<string, unknown>) => ({ ...prev, role: Number.parseInt(e.target.value) }))}
                     className="sr-only"
                   />
-                  <span className={`text-sm font-medium ${formData.role === 2 ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-700 dark:text-gray-300'}`}>
+                  <span className={`text-sm font-medium ${formData.role === 3 ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-700 dark:text-gray-300'}`}>
                     Преподаватель
                   </span>
-                  {formData.role === 2 && <div className="absolute top-2 right-2 w-3 h-3 bg-emerald-500 rounded-full"></div>}
+                  {formData.role === 3 && <div className="absolute top-2 right-2 w-3 h-3 bg-emerald-500 rounded-full"></div>}
                 </label>
               </div>
               </fieldset>

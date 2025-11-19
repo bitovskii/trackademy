@@ -78,10 +78,11 @@ export default function StudentsPage() {
   const filtersRef = useRef(filters);
   filtersRef.current = filters;
   
-  const pageSize = 10;
+  const [pageSize, setPageSize] = useState(10);
 
-  const loadStudents = useCallback(async (page: number, isTableOnly: boolean = true) => {
-    console.log('loadStudents called with page:', page);
+  const loadStudents = useCallback(async (page: number, isTableOnly: boolean = true, customPageSize?: number) => {
+    const actualPageSize = customPageSize ?? pageSize;
+    console.log('loadStudents called with page:', page, 'pageSize:', actualPageSize);
     
     // Ранняя проверка аутентификации
     if (!isAuthenticated) {
@@ -147,7 +148,7 @@ export default function StudentsPage() {
       const data = await AuthenticatedApiService.getUsers({
         organizationId,
         pageNumber: page,
-        pageSize,
+        pageSize: actualPageSize,
         search: searchTerm || undefined,
         roleIds: currentFilters.roleIds.length > 0 ? currentFilters.roleIds : undefined,
         groupIds: currentFilters.groupIds.length > 0 ? currentFilters.groupIds : undefined
@@ -173,7 +174,7 @@ export default function StudentsPage() {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.organizationId, debouncedSearchTerm, isAuthenticated]);
+  }, [user?.organizationId, debouncedSearchTerm, isAuthenticated, pageSize]);
 
   const loadGroups = useCallback(async () => {
     try {
@@ -238,8 +239,14 @@ export default function StudentsPage() {
     loadStudents(page, true); // Only update table
   }, [isAuthenticated, loadStudents]);
 
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1);
+    loadStudents(1, true, newPageSize);
+  };
+
   const renderPagination = () => {
-    if (totalPages <= 1) return null;
+    if (totalPages <= 1 && totalCount <= pageSize) return null;
 
     const pageNumbers = [];
     const maxVisiblePages = 5;
@@ -256,9 +263,9 @@ export default function StudentsPage() {
     }
 
     return (
-      <div className="flex items-center justify-between">
-        {/* Info */}
-        <div className="flex-1">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        {/* Info and Page Size Selector */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <p className="text-sm text-gray-600 dark:text-gray-400">
             Показано{' '}
             <span className="font-medium text-gray-900 dark:text-white">
@@ -274,6 +281,25 @@ export default function StudentsPage() {
             </span>
             {' '}результатов
           </p>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600 dark:text-gray-400">
+              На странице:
+            </label>
+            <select
+              value={pageSize}
+              onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+              className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg
+                       bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={30}>30</option>
+              <option value={40}>40</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+          </div>
         </div>
 
         {/* Navigation */}

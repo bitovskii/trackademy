@@ -30,7 +30,7 @@ export default function SubjectsPage() {
   const [tableLoading, setTableLoading] = useState(false);
   const [deletingSubject, setDeletingSubject] = useState<Subject | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const pageSize = 10;
+  const [pageSize, setPageSize] = useState(10);
 
   // Универсальная система модалов
   const subjectModal = useUniversalModal('subject', {
@@ -49,7 +49,8 @@ export default function SubjectsPage() {
     { key: 'actions', label: 'Действия', required: true }
   ]);
 
-  const loadSubjects = useCallback(async (page: number = currentPage, isTableOnly: boolean = true) => {
+  const loadSubjects = useCallback(async (page: number = currentPage, isTableOnly: boolean = true, customPageSize?: number) => {
+    const actualPageSize = customPageSize ?? pageSize;
     if (isTableOnly) {
       setTableLoading(true);
     }
@@ -65,7 +66,7 @@ export default function SubjectsPage() {
 
       const requestBody = {
         pageNumber: page,
-        pageSize: pageSize,
+        pageSize: actualPageSize,
         organizationId: organizationId
       };
 
@@ -87,7 +88,7 @@ export default function SubjectsPage() {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.organizationId]);
+  }, [user?.organizationId, pageSize]);
 
   useEffect(() => {
     if (isAuthenticated && user?.organizationId) {
@@ -211,8 +212,14 @@ export default function SubjectsPage() {
     setDeletingSubject(null);
   };
 
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1);
+    loadSubjects(1, true, newPageSize);
+  };
+
   const renderPagination = () => {
-    if (totalPages <= 1) return null;
+    if (totalPages <= 1 && totalCount <= pageSize) return null;
 
     const pageNumbers = [];
     const maxVisiblePages = 5;
@@ -256,10 +263,31 @@ export default function SubjectsPage() {
 
           {/* Desktop Pagination */}
           <div className="hidden sm:flex sm:items-center sm:justify-between w-full">
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              Показано <span className="font-semibold text-blue-600 dark:text-blue-400">{(currentPage - 1) * pageSize + 1}</span> до{' '}
-              <span className="font-semibold text-blue-600 dark:text-blue-400">{Math.min(currentPage * pageSize, totalCount)}</span> из{' '}
-              <span className="font-semibold text-purple-600 dark:text-purple-400">{totalCount}</span> результатов
+            <div className="flex items-center gap-4">
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Показано <span className="font-semibold text-blue-600 dark:text-blue-400">{(currentPage - 1) * pageSize + 1}</span> до{' '}
+                <span className="font-semibold text-blue-600 dark:text-blue-400">{Math.min(currentPage * pageSize, totalCount)}</span> из{' '}
+                <span className="font-semibold text-purple-600 dark:text-purple-400">{totalCount}</span> результатов
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-600 dark:text-gray-400">
+                  На странице:
+                </label>
+                <select
+                  value={pageSize}
+                  onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                  className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg
+                           bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={30}>30</option>
+                  <option value={40}>40</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
             </div>
             <div className="flex items-center space-x-1">
               <button

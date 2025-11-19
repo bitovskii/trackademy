@@ -75,7 +75,7 @@ export default function SchedulesPage() {
   // Toast уведомления для API операций
   const { createOperation, updateOperation, deleteOperation, loadOperation } = useApiToast();
 
-  const pageSize = 10;
+  const [pageSize, setPageSize] = useState(10);
 
   // Управление видимостью колонок
   const { columns, toggleColumn, isColumnVisible } = useColumnVisibility([
@@ -90,7 +90,8 @@ export default function SchedulesPage() {
     { key: 'actions', label: 'Действия', required: true }
   ]);
 
-  const loadSchedules = useCallback(async (page: number = currentPage, isTableOnly: boolean = true) => {
+  const loadSchedules = useCallback(async (page: number = currentPage, isTableOnly: boolean = true, customPageSize?: number) => {
+    const actualPageSize = customPageSize ?? pageSize;
     if (isTableOnly) {
       setTableLoading(true);
     }
@@ -99,7 +100,7 @@ export default function SchedulesPage() {
       const requestBody: ScheduleFilters = {
         ...filters,
         pageNumber: page,
-        pageSize: isTableOnly ? pageSize : 1000, // Load all for calendar views
+        pageSize: isTableOnly ? actualPageSize : 1000, // Load all for calendar views
         organizationId: user?.organizationId || ''
       };
 
@@ -128,7 +129,7 @@ export default function SchedulesPage() {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.organizationId, filters.groupId, filters.subjectId, filters.teacherId, filters.roomId]);
+  }, [user?.organizationId, filters.groupId, filters.subjectId, filters.teacherId, filters.roomId, pageSize]);
 
   const loadFilterData = useCallback(async () => {
     try {
@@ -500,8 +501,15 @@ export default function SchedulesPage() {
     );
   }
 
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1);
+    setFilters({ ...filters, pageNumber: 1, pageSize: newPageSize });
+    loadSchedules(1, true, newPageSize);
+  };
+
   const renderPagination = () => {
-    if (totalPages <= 1) return null;
+    if (totalPages <= 1 && totalCount <= pageSize) return null;
 
     const pageNumbers = [];
     const maxVisiblePages = 5;
@@ -518,8 +526,8 @@ export default function SchedulesPage() {
     }
 
     return (
-      <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm px-6 py-4 flex items-center justify-between border-t border-gray-200/50 dark:border-gray-700/50">
-        <div className="flex-1 flex justify-between sm:hidden">
+      <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-t border-gray-200/50 dark:border-gray-700/50">
+        <div className="flex-1 flex justify-between sm:hidden w-full">
           <button
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
@@ -535,13 +543,32 @@ export default function SchedulesPage() {
             Следующая
           </button>
         </div>
-        <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-          <div>
+        <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between w-full">
+          <div className="flex items-center gap-4">
             <p className="text-sm text-gray-700 dark:text-gray-300">
               Показано <span className="font-medium">{((currentPage - 1) * pageSize) + 1}</span> по{' '}
               <span className="font-medium">{Math.min(currentPage * pageSize, totalCount)}</span> из{' '}
               <span className="font-medium">{totalCount}</span> результатов
             </p>
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-600 dark:text-gray-400">
+                На странице:
+              </label>
+              <select
+                value={pageSize}
+                onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg
+                         bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={30}>30</option>
+                <option value={40}>40</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
           </div>
           <div>
             <nav className="relative z-0 inline-flex rounded-lg shadow-sm -space-x-px" aria-label="Pagination">

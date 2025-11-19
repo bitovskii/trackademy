@@ -77,7 +77,7 @@ export default function GroupsPage() {
   // Toast уведомления для API операций
   const { createOperation, updateOperation, deleteOperation, loadOperation } = useApiToast();
   
-  const pageSize = 10;
+  const [pageSize, setPageSize] = useState(10);
 
   // Управление видимостью колонок
   const { columns, toggleColumn, isColumnVisible } = useColumnVisibility([
@@ -90,7 +90,8 @@ export default function GroupsPage() {
     { key: 'actions', label: 'Действия', required: true }
   ]);
 
-  const loadGroups = useCallback(async (page: number = currentPage, isTableOnly: boolean = true) => {
+  const loadGroups = useCallback(async (page: number = currentPage, isTableOnly: boolean = true, customPageSize?: number) => {
+    const actualPageSize = customPageSize ?? pageSize;
     if (isTableOnly) {
       setTableLoading(true);
     }
@@ -115,7 +116,7 @@ export default function GroupsPage() {
         search?: string;
       } = {
         pageNumber: page,
-        pageSize: pageSize,
+        pageSize: actualPageSize,
         organizationId: organizationId
       };
 
@@ -154,7 +155,7 @@ export default function GroupsPage() {
       setTableLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.organizationId]);
+  }, [user?.organizationId, pageSize]);
 
   // Load subjects for filter
   const loadSubjects = useCallback(async () => {
@@ -357,8 +358,14 @@ export default function GroupsPage() {
     setDeletingGroup(null);
   };
 
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1);
+    loadGroups(1, true, newPageSize);
+  };
+
   const renderPagination = () => {
-    if (totalPages <= 1) return null;
+    if (totalPages <= 1 && totalCount <= pageSize) return null;
 
     const pageNumbers = [];
     const maxVisiblePages = 5;
@@ -376,8 +383,8 @@ export default function GroupsPage() {
 
     return (
       <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-lg rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex-1 flex justify-between sm:hidden">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex-1 flex justify-between sm:hidden w-full">
             <button
               onClick={() => loadGroups(currentPage - 1, true)}
               disabled={currentPage === 1}
@@ -394,13 +401,32 @@ export default function GroupsPage() {
             </button>
           </div>
           
-          <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-            <div>
+          <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between w-full">
+            <div className="flex items-center gap-4">
               <p className="text-sm text-gray-700 dark:text-gray-300">
                 Показано <span className="font-medium">{((currentPage - 1) * pageSize) + 1}</span> по{' '}
                 <span className="font-medium">{Math.min(currentPage * pageSize, totalCount)}</span> из{' '}
                 <span className="font-medium">{totalCount}</span> результатов
               </p>
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-600 dark:text-gray-400">
+                  На странице:
+                </label>
+                <select
+                  value={pageSize}
+                  onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                  className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg
+                           bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={30}>30</option>
+                  <option value={40}>40</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
             </div>
             
             <div className="flex space-x-2">

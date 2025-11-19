@@ -50,7 +50,7 @@ export default function PaymentsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
-  const pageSize = 10;
+  const [pageSize, setPageSize] = useState(10);
 
   // Фильтры
   const [filters, setFilters] = useState<Partial<PaymentFilters>>({
@@ -132,7 +132,8 @@ export default function PaymentsPage() {
   }, [isAuthenticated, user?.organizationId]);
 
   // Загрузка списка платежей
-  const loadPayments = useCallback(async (page: number = currentPage) => {
+  const loadPayments = useCallback(async (page: number = currentPage, customPageSize?: number) => {
+    const actualPageSize = customPageSize ?? pageSize;
     if (!isAuthenticated || !user?.organizationId) {
       return;
     }
@@ -143,7 +144,7 @@ export default function PaymentsPage() {
       const paymentFilters: PaymentFilters = {
         organizationId: user.organizationId!,
         page,
-        pageSize,
+        pageSize: actualPageSize,
         ...filters
       };
       
@@ -713,11 +714,37 @@ export default function PaymentsPage() {
                 </div>
 
                 {/* Пагинация */}
-                {totalPages > 1 && (
+                {(totalPages > 1 || totalCount > pageSize) && (
                   <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm text-gray-700 dark:text-gray-300">
-                        Показано {((currentPage - 1) * pageSize) + 1} - {Math.min(currentPage * pageSize, totalCount)} из {totalCount}
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                        <div className="text-sm text-gray-700 dark:text-gray-300">
+                          Показано {((currentPage - 1) * pageSize) + 1} - {Math.min(currentPage * pageSize, totalCount)} из {totalCount}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <label className="text-sm text-gray-600 dark:text-gray-400">
+                            На странице:
+                          </label>
+                          <select
+                            value={pageSize}
+                            onChange={(e) => {
+                              const newPageSize = Number(e.target.value);
+                              setPageSize(newPageSize);
+                              setCurrentPage(1);
+                              loadPayments(1, newPageSize);
+                            }}
+                            className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg
+                                     bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          >
+                            <option value={10}>10</option>
+                            <option value={20}>20</option>
+                            <option value={30}>30</option>
+                            <option value={40}>40</option>
+                            <option value={50}>50</option>
+                            <option value={100}>100</option>
+                          </select>
+                        </div>
                       </div>
                       <div className="flex space-x-2">
                         <button

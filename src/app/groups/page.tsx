@@ -944,7 +944,6 @@ export default function GroupsPage() {
               <div className="bg-gray-700 rounded-lg p-4">
                 <div className="text-gray-400 text-sm">
                   Группа создана и готова к использованию
-                  </div>
                 </div>
               </div>
             </div>

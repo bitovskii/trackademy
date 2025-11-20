@@ -29,9 +29,6 @@ export interface GroupFormData {
   subjectId: string;
   studentIds: string[];
   organizationId: string;
-  paymentType: number;
-  monthlyPrice: number;
-  courseEndDate?: string | null;
 }
 
 export const PaymentType = {

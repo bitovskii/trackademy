@@ -68,10 +68,7 @@ export default function GroupsPage() {
     level: '',
     subjectId: '',
     studentIds: [] as string[],
-    organizationId: '',
-    paymentType: 1,
-    monthlyPrice: 0,
-    courseEndDate: undefined
+    organizationId: ''
   });
   
   // Toast уведомления для API операций
@@ -234,10 +231,7 @@ export default function GroupsPage() {
         level: group.level,
         subjectId: typeof group.subject === 'object' ? group.subject.subjectId : group.subject,
         studentIds: group.students.map(s => s.studentId),
-        organizationId: '',
-        paymentType: group.paymentType || 1,
-        monthlyPrice: group.monthlyPrice || 0,
-        courseEndDate: group.courseEndDate ? group.courseEndDate.split('T')[0] : undefined
+        organizationId: ''
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
     }
@@ -304,9 +298,7 @@ export default function GroupsPage() {
 
     const dataToSend = {
       ...formData,
-      organizationId: organizationId,
-      paymentType: formData.paymentType || 1,
-      courseEndDate: formData.courseEndDate ? new Date(formData.courseEndDate).toISOString() : null,
+      organizationId: organizationId
     };
 
     const result = await createOperation(
@@ -327,9 +319,7 @@ export default function GroupsPage() {
     }
     
     const dataToSend = {
-      ...formData,
-      paymentType: formData.paymentType || 1,
-      courseEndDate: formData.courseEndDate ? new Date(formData.courseEndDate).toISOString() : null,
+      ...formData
     };
     
     const result = await updateOperation(
@@ -831,9 +821,6 @@ export default function GroupsPage() {
           subjectId: '',
           studentIds: [],
           organizationId: user?.organizationId || '',
-          paymentType: 1,
-          monthlyPrice: 0,
-          courseEndDate: null,
           ...(groupModal.editData || {})
         }}
         data={groupModal.editData || undefined}
@@ -951,43 +938,12 @@ export default function GroupsPage() {
               </div>
             </div>
 
-            {/* Информация об оплате */}
+            {/* Информация об оплате - удалено */}
             <div className="border-t border-gray-700 pt-6">
-              <h3 className="text-lg font-medium text-white mb-4">Условия оплаты</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">
-                    Тип оплаты
-                  </label>
-                  <div className="bg-gray-700 rounded-lg p-4">
-                    <div className="text-white">
-                      {viewingGroup.paymentType === 1 ? '💳 Ежемесячный' : 
-                       viewingGroup.paymentType === 2 ? '💰 Единоразовый' : '—'}
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">
-                    {viewingGroup.paymentType === 2 ? 'Стоимость курса' : 'Стоимость в месяц'}
-                  </label>
-                  <div className="bg-gray-700 rounded-lg p-4">
-                    <div className="text-white font-medium">
-                      {viewingGroup.monthlyPrice > 0 ? `${viewingGroup.monthlyPrice.toLocaleString()} ₸` : 'Бесплатно'}
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">
-                    Окончание курса
-                  </label>
-                  <div className="bg-gray-700 rounded-lg p-4">
-                    <div className="text-white">
-                      {viewingGroup.courseEndDate 
-                        ? new Date(viewingGroup.courseEndDate).toLocaleDateString('ru-RU')
-                        : '—'}
-                    </div>
+              <h3 className="text-lg font-medium text-white mb-4">Дополнительная информация</h3>
+              <div className="bg-gray-700 rounded-lg p-4">
+                <div className="text-gray-400 text-sm">
+                  Группа создана и готова к использованию
                   </div>
                 </div>
               </div>

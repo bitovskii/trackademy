@@ -33,7 +33,7 @@ export default function SubjectsPage() {
   const [pageSize, setPageSize] = useState(10);
 
   // Универсальная система модалов
-  const subjectModal = useUniversalModal('subject', {
+  const subjectModal = useUniversalModal<SubjectFormData>('subject', {
     name: '',
     description: ''
   });
@@ -46,6 +46,7 @@ export default function SubjectsPage() {
     { key: 'number', label: '№', required: true },
     { key: 'name', label: 'Название предмета', required: true },
     { key: 'description', label: 'Описание', required: false },
+    { key: 'price', label: 'Цена', required: false },
     { key: 'actions', label: 'Действия', required: true }
   ]);
 
@@ -163,7 +164,12 @@ export default function SubjectsPage() {
   const handleEdit = (id: string) => {
     const subject = subjects.find(s => s.id === id);
     if (subject) {
-      subjectModal.openEditModal(subject);
+      subjectModal.openEditModal({
+        id: subject.id,
+        name: subject.name,
+        description: subject.description,
+        price: subject.price ?? undefined
+      } as SubjectFormData & { id: string });
     }
   };
 
@@ -409,6 +415,11 @@ export default function SubjectsPage() {
                         Описание
                       </th>
                     )}
+                    {isColumnVisible('price') && (
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                        Цена
+                      </th>
+                    )}
                     {isColumnVisible('actions') && (
                       <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
                         Действия
@@ -441,6 +452,17 @@ export default function SubjectsPage() {
                           <div className="text-sm text-gray-600 dark:text-gray-300 max-w-xs truncate" title={subject.description}>
                             {subject.description || (
                               <span className="italic text-gray-400 dark:text-gray-500">Описание отсутствует</span>
+                            )}
+                          </div>
+                        </td>
+                      )}
+                      {isColumnVisible('price') && (
+                        <td className="px-6 py-4">
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">
+                            {subject.price !== undefined && subject.price !== null ? (
+                              <span>{subject.price.toLocaleString()} тенге</span>
+                            ) : (
+                              <span className="italic text-gray-400 dark:text-gray-500">Не указана</span>
                             )}
                           </div>
                         </td>
@@ -509,6 +531,13 @@ export default function SubjectsPage() {
                     <div className="mt-3 p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-gray-200/30 dark:border-gray-600/30">
                       <div className="text-sm text-gray-600 dark:text-gray-300">
                         {subject.description}
+                      </div>
+                    </div>
+                  )}
+                  {subject.price !== undefined && subject.price !== null && (
+                    <div className="mt-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200/30 dark:border-green-600/30">
+                      <div className="text-sm font-medium text-green-700 dark:text-green-300">
+                        Цена: {subject.price.toLocaleString()} тенге
                       </div>
                     </div>
                   )}

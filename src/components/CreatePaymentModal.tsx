@@ -15,6 +15,7 @@ interface CreatePaymentModalProps {
   studentName: string;
   groupId: string;
   groupName: string;
+  groupPrice?: number;
   onSuccess: () => void;
 }
 
@@ -25,6 +26,7 @@ export const CreatePaymentModal: React.FC<CreatePaymentModalProps> = ({
   studentName,
   groupId,
   groupName,
+  groupPrice,
   onSuccess
 }) => {
   const { createOperation } = useApiToast();
@@ -55,6 +57,20 @@ export const CreatePaymentModal: React.FC<CreatePaymentModalProps> = ({
       loadUserData();
     }
   }, [isOpen, studentId]);
+
+  // Автоматически заполняем сумму ценой из группы при открытии модалки
+  useEffect(() => {
+    if (isOpen && groupPrice && groupPrice > 0) {
+      setFormData(prev => ({
+        ...prev,
+        originalAmount: groupPrice
+      }));
+      setDisplayValues(prev => ({
+        ...prev,
+        originalAmount: groupPrice.toString()
+      }));
+    }
+  }, [isOpen, groupPrice]);
 
   // Обновляем studentId и groupId в formData когда они изменяются
   useEffect(() => {
@@ -188,6 +204,14 @@ export const CreatePaymentModal: React.FC<CreatePaymentModalProps> = ({
                       <span className="text-gray-500 dark:text-gray-400">Телефон:</span>
                       <span className="ml-2 text-gray-900 dark:text-white">{userData.phone}</span>
                     </div>
+                    {groupPrice && groupPrice > 0 && (
+                      <div>
+                        <span className="text-gray-500 dark:text-gray-400">Цена группы:</span>
+                        <span className="ml-2 text-green-600 dark:text-green-400 font-semibold">
+                          {groupPrice.toLocaleString()} тенге
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

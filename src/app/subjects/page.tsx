@@ -35,7 +35,9 @@ export default function SubjectsPage() {
   // Универсальная система модалов
   const subjectModal = useUniversalModal<SubjectFormData>('subject', {
     name: '',
-    description: ''
+    description: '',
+    price: 0,
+    paymentType: 1
   });
 
   // API Toast уведомления
@@ -47,6 +49,7 @@ export default function SubjectsPage() {
     { key: 'name', label: 'Название предмета', required: true },
     { key: 'description', label: 'Описание', required: false },
     { key: 'price', label: 'Цена', required: false },
+    { key: 'paymentType', label: 'Тип оплаты', required: false },
     { key: 'actions', label: 'Действия', required: true }
   ]);
 
@@ -168,7 +171,8 @@ export default function SubjectsPage() {
         id: subject.id,
         name: subject.name,
         description: subject.description,
-        price: subject.price ?? undefined
+        price: subject.price,
+        paymentType: subject.paymentType
       } as SubjectFormData & { id: string });
     }
   };
@@ -420,6 +424,11 @@ export default function SubjectsPage() {
                         Цена
                       </th>
                     )}
+                    {isColumnVisible('paymentType') && (
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                        Тип оплаты
+                      </th>
+                    )}
                     {isColumnVisible('actions') && (
                       <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
                         Действия
@@ -459,11 +468,20 @@ export default function SubjectsPage() {
                       {isColumnVisible('price') && (
                         <td className="px-6 py-4">
                           <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            {subject.price !== undefined && subject.price !== null ? (
-                              <span>{subject.price.toLocaleString()} тенге</span>
-                            ) : (
-                              <span className="italic text-gray-400 dark:text-gray-500">Не указана</span>
-                            )}
+                            <span>{subject.price.toLocaleString()} тенге</span>
+                          </div>
+                        </td>
+                      )}
+                      {isColumnVisible('paymentType') && (
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900 dark:text-white">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              subject.paymentType === 1 
+                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' 
+                                : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                            }`}>
+                              {subject.paymentType === 1 ? 'Ежемесячный' : 'Единоразовый'}
+                            </span>
                           </div>
                         </td>
                       )}
@@ -534,13 +552,20 @@ export default function SubjectsPage() {
                       </div>
                     </div>
                   )}
-                  {subject.price !== undefined && subject.price !== null && (
-                    <div className="mt-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200/30 dark:border-green-600/30">
+                  <div className="mt-3 grid grid-cols-2 gap-3">
+                    <div className="p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200/30 dark:border-green-600/30">
+                      <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">Цена</div>
                       <div className="text-sm font-medium text-green-700 dark:text-green-300">
-                        Цена: {subject.price.toLocaleString()} тенге
+                        {subject.price.toLocaleString()} тенге
                       </div>
                     </div>
-                  )}
+                    <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200/30 dark:border-blue-600/30">
+                      <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">Тип оплаты</div>
+                      <div className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                        {subject.paymentType === 1 ? 'Ежемесячный' : 'Единоразовый'}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>

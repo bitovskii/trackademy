@@ -16,9 +16,6 @@ export interface Group {
   description?: string;
   subject: GroupSubject | string;
   students: GroupStudent[];
-  paymentType: number;
-  monthlyPrice: number;
-  courseEndDate: string | null;
 }
 
 export interface GroupFormData {

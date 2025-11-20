@@ -15,7 +15,7 @@ interface CreatePaymentModalProps {
   studentName: string;
   groupId: string;
   groupName: string;
-  groupPrice?: number;
+  subjectId: string;
   onSuccess: () => void;
 }
 
@@ -26,13 +26,14 @@ export const CreatePaymentModal: React.FC<CreatePaymentModalProps> = ({
   studentName,
   groupId,
   groupName,
-  groupPrice,
+  subjectId,
   onSuccess
 }) => {
   const { createOperation } = useApiToast();
   const [loading, setLoading] = useState(false);
   const [loadingUser, setLoadingUser] = useState(false);
   const [userData, setUserData] = useState<User | null>(null);
+  const [subjectPrice, setSubjectPrice] = useState<number | null>(null);
   const [formData, setFormData] = useState<CreatePaymentRequest>({
     studentId,
     groupId,
@@ -51,26 +52,27 @@ export const CreatePaymentModal: React.FC<CreatePaymentModalProps> = ({
     discountPercentage: ''
   });
 
-  // Загружаем данные пользователя при открытии модалки
+  // Загружаем данные пользователя и предмета при открытии модалки
   useEffect(() => {
     if (isOpen && studentId) {
       loadUserData();
+      loadSubjectData();
     }
-  }, [isOpen, studentId]);
+  }, [isOpen, studentId, subjectId]);
 
-  // Автоматически заполняем сумму ценой из группы при открытии модалки
+  // Автоматически заполняем сумму ценой из предмета при открытии модалки
   useEffect(() => {
-    if (isOpen && groupPrice && groupPrice > 0) {
+    if (isOpen && subjectPrice && subjectPrice > 0) {
       setFormData(prev => ({
         ...prev,
-        originalAmount: groupPrice
+        originalAmount: subjectPrice
       }));
       setDisplayValues(prev => ({
         ...prev,
-        originalAmount: groupPrice.toString()
+        originalAmount: subjectPrice.toString()
       }));
     }
-  }, [isOpen, groupPrice]);
+  }, [isOpen, subjectPrice]);
 
   // Обновляем studentId и groupId в formData когда они изменяются
   useEffect(() => {
@@ -90,6 +92,15 @@ export const CreatePaymentModal: React.FC<CreatePaymentModalProps> = ({
       console.error('Error loading user data:', error);
     } finally {
       setLoadingUser(false);
+    }
+  };
+
+  const loadSubjectData = async () => {
+    try {
+      const subject = await UserApiService.get<{ price: number }>(`/Subject/${subjectId}`);
+      setSubjectPrice(subject.price);
+    } catch (error) {
+      console.error('Error loading subject data:', error);
     }
   };
 
@@ -204,11 +215,11 @@ export const CreatePaymentModal: React.FC<CreatePaymentModalProps> = ({
                       <span className="text-gray-500 dark:text-gray-400">Телефон:</span>
                       <span className="ml-2 text-gray-900 dark:text-white">{userData.phone}</span>
                     </div>
-                    {groupPrice && groupPrice > 0 && (
+                    {subjectPrice && subjectPrice > 0 && (
                       <div>
-                        <span className="text-gray-500 dark:text-gray-400">Цена группы:</span>
+                        <span className="text-gray-500 dark:text-gray-400">Цена предмета:</span>
                         <span className="ml-2 text-green-600 dark:text-green-400 font-semibold">
-                          {groupPrice.toLocaleString()} тенге
+                          {subjectPrice.toLocaleString()} тенге
                         </span>
                       </div>
                     )}

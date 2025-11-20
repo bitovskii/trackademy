@@ -991,7 +991,7 @@ export default function PaymentsPage() {
           studentName={selectedStudent.name}
           groupId={selectedGroup.id}
           groupName={selectedGroup.name}
-          groupPrice={selectedGroup.monthlyPrice}
+          subjectId={typeof selectedGroup.subject === 'object' ? selectedGroup.subject.subjectId : selectedGroup.subject}
           onSuccess={() => {
             setShowPaymentModal(false);
             setSelectedStudent(null);

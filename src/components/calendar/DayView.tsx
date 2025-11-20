@@ -62,11 +62,13 @@ function groupOverlappingLessons(lessonsList: Lesson[]): TimeSlot[] {
       }
     }
     
+    // Находим минимальное время начала и максимальное время окончания
+    const minStartTime = overlapping.reduce((min, l) => l.startTime < min ? l.startTime : min, overlapping[0].startTime);
     const maxEndTime = overlapping.reduce((max, l) => l.endTime > max ? l.endTime : max, overlapping[0].endTime);
     
     groups.push({
       lessons: overlapping,
-      startTime: overlapping[0].startTime,
+      startTime: minStartTime,
       endTime: maxEndTime
     });
   }

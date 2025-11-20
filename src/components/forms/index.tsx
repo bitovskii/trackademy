@@ -168,7 +168,7 @@ export const SubjectForm: React.FC<SubjectFormProps> = ({
       {/* Price */}
       <div>
         <label htmlFor="subjectPrice" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Цена
+          Цена *
         </label>
         <input
           id="subjectPrice"
@@ -176,7 +176,7 @@ export const SubjectForm: React.FC<SubjectFormProps> = ({
           name="price"
           value={formData.price ?? ''}
           onChange={(e) => {
-            const value = e.target.value === '' ? undefined : Number(e.target.value);
+            const value = e.target.value === '' ? 0 : Number(e.target.value);
             setFormData((prev: SubjectFormData) => ({
               ...prev,
               price: value
@@ -185,10 +185,52 @@ export const SubjectForm: React.FC<SubjectFormProps> = ({
               setErrors(prev => ({ ...prev, price: '' }));
             }
           }}
-          className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors ${
+            errors.price 
+              ? 'border-red-400 bg-red-50 dark:bg-red-900/20' 
+              : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
+          } text-gray-900 dark:text-white`}
           placeholder="Введите цену"
           min="0"
+          required
         />
+        {errors.price && (
+          <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.price}</p>
+        )}
+      </div>
+
+      {/* Payment Type */}
+      <div>
+        <label htmlFor="subjectPaymentType" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Тип оплаты *
+        </label>
+        <select
+          id="subjectPaymentType"
+          name="paymentType"
+          value={formData.paymentType ?? 1}
+          onChange={(e) => {
+            const value = Number(e.target.value);
+            setFormData((prev: SubjectFormData) => ({
+              ...prev,
+              paymentType: value
+            }));
+            if (errors.paymentType) {
+              setErrors(prev => ({ ...prev, paymentType: '' }));
+            }
+          }}
+          className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors ${
+            errors.paymentType 
+              ? 'border-red-400 bg-red-50 dark:bg-red-900/20' 
+              : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
+          } text-gray-900 dark:text-white`}
+          required
+        >
+          <option value={1}>Ежемесячный</option>
+          <option value={2}>Единоразовый</option>
+        </select>
+        {errors.paymentType && (
+          <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.paymentType}</p>
+        )}
       </div>
     </div>
   );

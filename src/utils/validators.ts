@@ -57,6 +57,14 @@ export const createSubjectValidator = (data: SubjectFormData) => {
     errors.name = 'Название предмета обязательно';
   }
 
+  if (data.price === undefined || data.price === null || data.price < 0) {
+    errors.price = 'Цена обязательна и должна быть неотрицательной';
+  }
+
+  if (!data.paymentType || (data.paymentType !== 1 && data.paymentType !== 2)) {
+    errors.paymentType = 'Выберите тип оплаты';
+  }
+
   return errors;
 };
 

@@ -174,7 +174,7 @@ export const SubjectForm: React.FC<SubjectFormProps> = ({
           id="subjectPrice"
           type="number"
           name="price"
-          value={formData.price ?? ''}
+          value={formData.price === 0 ? '' : formData.price}
           onChange={(e) => {
             const value = e.target.value === '' ? 0 : Number(e.target.value);
             setFormData((prev: SubjectFormData) => ({

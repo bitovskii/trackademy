@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
 import { BookOpenIcon, PencilIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
-import { Subject, SubjectFormData } from '../../types/Subject';
+import { Subject, SubjectFormData, getPaymentTypeLabel } from '../../types/Subject';
 import { UniversalModal, useUniversalModal, SubjectForm, createSubjectValidator } from '../../components';
 import { DeleteConfirmationModal } from '../../components/ui/DeleteConfirmationModal';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
@@ -476,11 +476,11 @@ export default function SubjectsPage() {
                         <td className="px-6 py-4">
                           <div className="text-sm text-gray-900 dark:text-white">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              subject.paymentType === 1 
+                              Number(subject.paymentType) === 1 
                                 ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' 
                                 : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
                             }`}>
-                              {subject.paymentType === 1 ? 'Ежемесячный' : 'Единоразовый'}
+                              {getPaymentTypeLabel(Number(subject.paymentType))}
                             </span>
                           </div>
                         </td>
@@ -562,7 +562,7 @@ export default function SubjectsPage() {
                     <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200/30 dark:border-blue-600/30">
                       <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">Тип оплаты</div>
                       <div className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                        {subject.paymentType === 1 ? 'Ежемесячный' : 'Единоразовый'}
+                        {getPaymentTypeLabel(Number(subject.paymentType))}
                       </div>
                     </div>
                   </div>

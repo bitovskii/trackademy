@@ -20,6 +20,8 @@ const EditSubjectModal: React.FC<EditSubjectModalProps> = ({
   const [formData, setFormData] = useState<SubjectFormData>({
     name: '',
     description: '',
+    price: 0,
+    paymentType: 1,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,6 +31,8 @@ const EditSubjectModal: React.FC<EditSubjectModalProps> = ({
       setFormData({
         name: subject.name,
         description: subject.description,
+        price: subject.price,
+        paymentType: subject.paymentType,
       });
     }
   }, [subject]);

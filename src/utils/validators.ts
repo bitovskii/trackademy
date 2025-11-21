@@ -61,7 +61,8 @@ export const createSubjectValidator = (data: SubjectFormData) => {
     errors.price = 'Цена обязательна и должна быть неотрицательной';
   }
 
-  if (!data.paymentType || (data.paymentType !== 1 && data.paymentType !== 2)) {
+  const paymentTypeNum = Number(data.paymentType);
+  if (!paymentTypeNum || (paymentTypeNum !== 1 && paymentTypeNum !== 2)) {
     errors.paymentType = 'Выберите тип оплаты';
   }
 
@@ -94,15 +95,6 @@ export const createGroupValidator = (data: Record<string, unknown>) => {
   // if (!formData.studentIds || formData.studentIds.length === 0) {
   //   errors.studentIds = 'Выберите хотя бы одного студента';
   // }
-
-  // Валидация новых полей
-  if (formData.paymentType && ![1, 2].includes(formData.paymentType)) {
-    errors.paymentType = 'Неверный тип оплаты';
-  }
-
-  if (formData.monthlyPrice !== undefined && formData.monthlyPrice < 0) {
-    errors.monthlyPrice = 'Стоимость не может быть отрицательной';
-  }
 
   return errors;
 };

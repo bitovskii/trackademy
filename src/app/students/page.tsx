@@ -52,7 +52,8 @@ export default function StudentsPage() {
   const [filters, setFilters] = useState<UserFiltersType>({
     search: '',
     roleIds: [],
-    groupIds: []
+    groupIds: [],
+    isTrial: undefined
   });
   const [groups, setGroups] = useState<Array<{id: string, name: string}>>([]);
   const [tableLoading, setTableLoading] = useState(false);
@@ -151,7 +152,8 @@ export default function StudentsPage() {
         pageSize: actualPageSize,
         search: searchTerm || undefined,
         roleIds: currentFilters.roleIds.length > 0 ? currentFilters.roleIds : undefined,
-        groupIds: currentFilters.groupIds.length > 0 ? currentFilters.groupIds : undefined
+        groupIds: currentFilters.groupIds.length > 0 ? currentFilters.groupIds : undefined,
+        isTrial: currentFilters.isTrial
       });
       
       setStudents(data.items);

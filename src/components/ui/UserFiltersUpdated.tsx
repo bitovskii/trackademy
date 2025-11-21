@@ -14,6 +14,7 @@ export interface UserFilters {
   search: string;
   roleIds: number[];
   groupIds: string[];
+  isTrial?: boolean;
 }
 
 interface Group {
@@ -44,7 +45,8 @@ export const UserFilters: React.FC<UserFiltersProps> = ({
   const [filters, setFilters] = useState<UserFilters>({
     search: '',
     roleIds: [],
-    groupIds: []
+    groupIds: [],
+    isTrial: undefined
   });
 
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -67,18 +69,25 @@ export const UserFilters: React.FC<UserFiltersProps> = ({
     onFilterChange(newFilters);
   };
 
+  const handleTrialChange = (value: boolean | undefined) => {
+    const newFilters = { ...filters, isTrial: value };
+    setFilters(newFilters);
+    onFilterChange(newFilters);
+  };
+
   const clearFilters = () => {
     const newFilters = {
       search: '',
       roleIds: [],
-      groupIds: []
+      groupIds: [],
+      isTrial: undefined
     };
     setFilters(newFilters);
     onFilterChange(newFilters);
     setShowAdvanced(false);
   };
 
-  const hasActiveFilters = filters.search || filters.roleIds.length > 0 || filters.groupIds.length > 0;
+  const hasActiveFilters = filters.search || filters.roleIds.length > 0 || filters.groupIds.length > 0 || filters.isTrial !== undefined;
 
   return (
     <div className="space-y-4">
@@ -133,39 +142,83 @@ export const UserFilters: React.FC<UserFiltersProps> = ({
 
       {/* Advanced Filters */}
       {showAdvanced && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
-          {/* Role Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Роли
-            </label>
-            <MultiSelect
-              options={roleOptions.map(role => ({ 
-                id: role.id.toString(), 
-                name: role.name
-              }))}
-              selectedValues={filters.roleIds.map(id => id.toString())}
-              onChange={(values) => handleRoleChange(values.map(v => parseInt(v)))}
-              placeholder="Выберите роли..."
-              disabled={isLoading}
-            />
+        <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Role Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Роли
+              </label>
+              <MultiSelect
+                options={roleOptions.map(role => ({ 
+                  id: role.id.toString(), 
+                  name: role.name
+                }))}
+                selectedValues={filters.roleIds.map(id => id.toString())}
+                onChange={(values) => handleRoleChange(values.map(v => parseInt(v)))}
+                placeholder="Выберите роли..."
+                disabled={isLoading}
+              />
+            </div>
+
+            {/* Group Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Группы
+              </label>
+              <MultiSelect
+                options={groups.map(group => ({ 
+                  id: group.id, 
+                  name: group.name
+                }))}
+                selectedValues={filters.groupIds}
+                onChange={handleGroupChange}
+                placeholder="Выберите группы..."
+                disabled={isLoading}
+              />
+            </div>
           </div>
 
-          {/* Group Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Группы
+          {/* Trial Filter */}
+          <div className="flex items-center space-x-4 pt-2 border-t border-gray-200 dark:border-gray-600">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Пробные пользователи:
             </label>
-            <MultiSelect
-              options={groups.map(group => ({ 
-                id: group.id, 
-                name: group.name
-              }))}
-              selectedValues={filters.groupIds}
-              onChange={handleGroupChange}
-              placeholder="Выберите группы..."
-              disabled={isLoading}
-            />
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => handleTrialChange(undefined)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  filters.isTrial === undefined
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
+                }`}
+                disabled={isLoading}
+              >
+                Все
+              </button>
+              <button
+                onClick={() => handleTrialChange(true)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  filters.isTrial === true
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
+                }`}
+                disabled={isLoading}
+              >
+                Пробные
+              </button>
+              <button
+                onClick={() => handleTrialChange(false)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  filters.isTrial === false
+                    ? 'bg-green-500 text-white'
+                    : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
+                }`}
+                disabled={isLoading}
+              >
+                Обычные
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -217,6 +270,26 @@ export const UserFilters: React.FC<UserFiltersProps> = ({
               </span>
             ) : null;
           })}
+
+          {filters.isTrial !== undefined && (
+            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm ${
+              filters.isTrial 
+                ? 'bg-orange-100 dark:bg-orange-900/50 text-orange-800 dark:text-orange-300'
+                : 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300'
+            }`}>
+              {filters.isTrial ? '🔄 Пробные' : '✓ Обычные'}
+              <button
+                onClick={() => handleTrialChange(undefined)}
+                className={`ml-2 ${
+                  filters.isTrial
+                    ? 'text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-200'
+                    : 'text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200'
+                }`}
+              >
+                <XMarkIcon className="h-3 w-3" />
+              </button>
+            </span>
+          )}
         </div>
       )}
     </div>

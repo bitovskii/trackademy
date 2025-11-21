@@ -214,6 +214,7 @@ export class AuthenticatedApiService {
     search?: string;
     groupIds?: string[];
     roleIds?: number[];
+    isTrial?: boolean;
   }): Promise<UsersResponse> {
     const body = {
       pageNumber: filters.pageNumber || 1,
@@ -221,7 +222,8 @@ export class AuthenticatedApiService {
       organizationId: filters.organizationId,
       ...(filters.search && { search: filters.search }),
       ...(filters.groupIds && filters.groupIds.length > 0 && { groupIds: filters.groupIds }),
-      ...(filters.roleIds && filters.roleIds.length > 0 && { roleIds: filters.roleIds })
+      ...(filters.roleIds && filters.roleIds.length > 0 && { roleIds: filters.roleIds }),
+      ...(filters.isTrial !== undefined && { isTrial: filters.isTrial })
     };
     
     return this.post('/User/get-users', body);

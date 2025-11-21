@@ -18,6 +18,8 @@ const CreateSubjectModal: React.FC<CreateSubjectModalProps> = ({
   const [formData, setFormData] = useState<SubjectFormData>({
     name: '',
     description: '',
+    price: 0,
+    paymentType: 1
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +31,7 @@ const CreateSubjectModal: React.FC<CreateSubjectModalProps> = ({
 
     try {
       await onSave(formData);
-      setFormData({ name: '', description: '' }); // Reset form
+      setFormData({ name: '', description: '', price: 0, paymentType: 1 }); // Reset form
       onClose();
     } catch (err) {
       setError('Не удалось создать предмет. Попробуйте еще раз.');
@@ -48,7 +50,7 @@ const CreateSubjectModal: React.FC<CreateSubjectModalProps> = ({
   };
 
   const handleClose = () => {
-    setFormData({ name: '', description: '' }); // Reset form on close
+    setFormData({ name: '', description: '', price: 0, paymentType: 1 }); // Reset form on close
     setError(null);
     onClose();
   };

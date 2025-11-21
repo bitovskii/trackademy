@@ -23,10 +23,7 @@ export const GroupForm: React.FC<GroupFormProps> = ({
     level: initialData?.level || '',
     subjectId: initialData?.subjectId || '',
     studentIds: initialData?.studentIds || [],
-    organizationId: initialData?.organizationId || '',
-    paymentType: initialData?.paymentType || 0,
-    monthlyPrice: initialData?.monthlyPrice || 0,
-    courseEndDate: initialData?.courseEndDate || null
+    organizationId: initialData?.organizationId || ''
   });
 
   const [subjects, setSubjects] = useState<Subject[]>([]);

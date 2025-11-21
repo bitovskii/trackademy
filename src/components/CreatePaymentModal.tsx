@@ -34,6 +34,15 @@ export const CreatePaymentModal: React.FC<CreatePaymentModalProps> = ({
   const [loadingUser, setLoadingUser] = useState(false);
   const [userData, setUserData] = useState<User | null>(null);
   const [subjectPrice, setSubjectPrice] = useState<number | null>(null);
+  
+  // Вычисляем дату +1 месяц от текущей
+  const getDefaultPeriodEnd = () => {
+    const today = new Date();
+    const nextMonth = new Date(today);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    return nextMonth.toISOString().split('T')[0];
+  };
+  
   const [formData, setFormData] = useState<CreatePaymentRequest>({
     studentId,
     groupId,
@@ -43,7 +52,7 @@ export const CreatePaymentModal: React.FC<CreatePaymentModalProps> = ({
     discountPercentage: 0,
     discountReason: '',
     periodStart: new Date().toISOString().split('T')[0], // Текущая дата
-    periodEnd: ''
+    periodEnd: getDefaultPeriodEnd() // +1 месяц от текущей даты
   });
 
   // Для отображения в полях ввода
@@ -128,7 +137,7 @@ export const CreatePaymentModal: React.FC<CreatePaymentModalProps> = ({
         discountPercentage: 0,
         discountReason: '',
         periodStart: new Date().toISOString().split('T')[0], // Текущая дата
-        periodEnd: ''
+        periodEnd: getDefaultPeriodEnd() // +1 месяц от текущей даты
       });
       setDisplayValues({
         originalAmount: '',
@@ -153,6 +162,18 @@ export const CreatePaymentModal: React.FC<CreatePaymentModalProps> = ({
       setFormData(prev => ({
         ...prev,
         discountPercentage: value === '' ? 0 : Number(value)
+      }));
+    } else if (name === 'periodStart') {
+      // При изменении начала периода автоматически обновляем конец периода на +1 месяц
+      const startDate = new Date(value);
+      const endDate = new Date(startDate);
+      endDate.setMonth(endDate.getMonth() + 1);
+      const newPeriodEnd = endDate.toISOString().split('T')[0];
+      
+      setFormData(prev => ({
+        ...prev,
+        periodStart: value,
+        periodEnd: newPeriodEnd
       }));
     } else {
       setFormData(prev => ({

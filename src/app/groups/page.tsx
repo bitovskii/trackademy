@@ -869,6 +869,7 @@ export default function GroupsPage() {
         studentName={selectedStudentName}
         groupId={selectedGroup?.id || ''}
         groupName={selectedGroup?.name || ''}
+        subjectId={selectedGroup ? (typeof selectedGroup.subject === 'object' ? selectedGroup.subject.subjectId : selectedGroup.subject) : ''}
         onSuccess={handlePaymentSuccess}
       />
 

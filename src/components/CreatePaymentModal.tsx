@@ -49,7 +49,8 @@ export const CreatePaymentModal: React.FC<CreatePaymentModalProps> = ({
     paymentPeriod: '',
     type: 1, // Ежемесячный по умолчанию
     originalAmount: 0,
-    discountPercentage: 0,
+    discountType: 1, // Процент по умолчанию
+    discountValue: 0,
     discountReason: '',
     periodStart: new Date().toISOString().split('T')[0], // Текущая дата
     periodEnd: getDefaultPeriodEnd() // +1 месяц от текущей даты
@@ -58,7 +59,7 @@ export const CreatePaymentModal: React.FC<CreatePaymentModalProps> = ({
   // Для отображения в полях ввода
   const [displayValues, setDisplayValues] = useState({
     originalAmount: '',
-    discountPercentage: ''
+    discountValue: ''
   });
 
   // Загружаем данные пользователя и предмета при открытии модалки
@@ -134,14 +135,15 @@ export const CreatePaymentModal: React.FC<CreatePaymentModalProps> = ({
         paymentPeriod: '',
         type: 1,
         originalAmount: 0,
-        discountPercentage: 0,
+        discountType: 1,
+        discountValue: 0,
         discountReason: '',
         periodStart: new Date().toISOString().split('T')[0], // Текущая дата
         periodEnd: getDefaultPeriodEnd() // +1 месяц от текущей даты
       });
       setDisplayValues({
         originalAmount: '',
-        discountPercentage: ''
+        discountValue: ''
       });
     }
 
@@ -157,12 +159,19 @@ export const CreatePaymentModal: React.FC<CreatePaymentModalProps> = ({
         ...prev,
         originalAmount: value === '' ? 0 : Number(value)
       }));
-    } else if (name === 'discountPercentage') {
-      setDisplayValues(prev => ({ ...prev, discountPercentage: value }));
+    } else if (name === 'discountValue') {
+      setDisplayValues(prev => ({ ...prev, discountValue: value }));
       setFormData(prev => ({
         ...prev,
-        discountPercentage: value === '' ? 0 : Number(value)
+        discountValue: value === '' ? 0 : Number(value)
       }));
+    } else if (name === 'discountType') {
+      setFormData(prev => ({
+        ...prev,
+        discountType: Number(value),
+        discountValue: 0 // Сбрасываем значение при смене типа
+      }));
+      setDisplayValues(prev => ({ ...prev, discountValue: '' }));
     } else if (name === 'periodStart') {
       // При изменении начала периода автоматически обновляем конец периода на +1 месяц
       const startDate = new Date(value);
@@ -186,7 +195,9 @@ export const CreatePaymentModal: React.FC<CreatePaymentModalProps> = ({
 
 
   // Автоматический расчет итоговой суммы
-  const finalAmount = formData.originalAmount * (1 - (formData.discountPercentage || 0) / 100);
+  const finalAmount = formData.discountType === 1 
+    ? formData.originalAmount * (1 - (formData.discountValue || 0) / 100)  // Процент
+    : formData.originalAmount - (formData.discountValue || 0);  // Фиксированная сумма
 
   if (!isOpen) return null;
 
@@ -336,27 +347,44 @@ export const CreatePaymentModal: React.FC<CreatePaymentModalProps> = ({
                     />
                   </div>
 
-                  {/* Discount Percentage */}
+                  {/* Discount Type */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Скидка (%)
+                      Тип скидки *
+                    </label>
+                    <select
+                      name="discountType"
+                      value={formData.discountType}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value={1}>Процент (%)</option>
+                      <option value={2}>Фиксированная сумма</option>
+                    </select>
+                  </div>
+
+                  {/* Discount Value */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {formData.discountType === 1 ? 'Скидка (%)' : 'Сумма скидки'}
                     </label>
                     <input
                       type="number"
-                      name="discountPercentage"
-                      value={displayValues.discountPercentage}
+                      name="discountValue"
+                      value={displayValues.discountValue}
                       onChange={handleInputChange}
-                      placeholder="0"
+                      placeholder={formData.discountType === 1 ? '0-100' : '0'}
                       min="0"
-                      max="100"
-                      step="0.01"
+                      max={formData.discountType === 1 ? '100' : String(formData.originalAmount)}
+                      step={formData.discountType === 1 ? '0.01' : '1'}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                 </div>
 
                 {/* Discount Reason */}
-                {(formData.discountPercentage || 0) > 0 && (
+                {(formData.discountValue || 0) > 0 && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Причина скидки

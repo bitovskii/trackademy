@@ -115,6 +115,27 @@ export default function WeekView({ date, lessons, onLessonClick }: WeekViewProps
     };
   };
 
+  // Calculate position for time slot (used for overlapping lessons block)
+  const getTimeSlotPosition = (startTime: string, endTime: string) => {
+    const [startHour, startMin] = startTime.split(':').map(Number);
+    const [endHour, endMin] = endTime.split(':').map(Number);
+    
+    const startTotalMin = startHour * 60 + startMin;
+    const endTotalMin = endHour * 60 + endMin;
+    
+    // First time slot is 08:00 (8 * 60 = 480 minutes from midnight)
+    const firstSlotMin = 8 * 60;
+    
+    // Calculate position relative to the first time slot
+    const topOffset = ((startTotalMin - firstSlotMin) / 60) * 60; // 60px per hour
+    const height = ((endTotalMin - startTotalMin) / 60) * 60; // 60px per hour
+    
+    return {
+      top: Math.max(0, topOffset), // Ensure non-negative
+      height: Math.max(25, height) // Minimum 25px for very short lessons
+    };
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Week header */}
@@ -194,7 +215,10 @@ export default function WeekView({ date, lessons, onLessonClick }: WeekViewProps
               >
                 {timeSlotGroups.map((slot, idx) => {
                   const hasOverlap = slot.lessons.length > 1;
-                  const position = getLessonPosition(slot.lessons[0]);
+                  // Use slot's min/max times for overlapping lessons block
+                  const position = hasOverlap 
+                    ? getTimeSlotPosition(slot.startTime, slot.endTime)
+                    : getLessonPosition(slot.lessons[0]);
                   
                   if (hasOverlap) {
                     return (

@@ -102,6 +102,27 @@ export default function DayView({ date, lessons, onLessonClick }: DayViewProps) 
     };
   };
 
+  // Calculate position for time slot (used for overlapping lessons block)
+  const getTimeSlotPosition = (startTime: string, endTime: string) => {
+    const [startHour, startMin] = startTime.split(':').map(Number);
+    const [endHour, endMin] = endTime.split(':').map(Number);
+    
+    const startTotalMin = startHour * 60 + startMin;
+    const endTotalMin = endHour * 60 + endMin;
+    
+    // First time slot is 08:00 (8 * 60 = 480 minutes from midnight)
+    const firstSlotMin = 8 * 60;
+    
+    // Calculate position relative to the first time slot
+    const topOffset = ((startTotalMin - firstSlotMin) / 60) * 60; // 60px per hour
+    const height = ((endTotalMin - startTotalMin) / 60) * 60; // 60px per hour
+    
+    return {
+      top: Math.max(0, topOffset), // Ensure non-negative
+      height: Math.max(30, height) // Minimum 30px for very short lessons
+    };
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Day header */}
@@ -146,26 +167,22 @@ export default function DayView({ date, lessons, onLessonClick }: DayViewProps) 
               const hasOverlap = slot.lessons.length > 1;
               
               if (hasOverlap) {
-                // Show overlapping lessons side by side
-                // Find earliest start and latest end for the container
-                const positions = slot.lessons.map(l => getLessonPosition(l));
-                const minTop = Math.min(...positions.map(p => p.top));
-                const maxBottom = Math.max(...positions.map(p => p.top + p.height));
-                const containerHeight = maxBottom - minTop;
+                // Use slot's min/max times for container position
+                const slotPosition = getTimeSlotPosition(slot.startTime, slot.endTime);
                 
                 return (
                   <div
                     key={`overlap-${idx}`}
                     className="absolute left-2 right-2 pointer-events-auto flex gap-2"
                     style={{
-                      top: `${minTop}px`,
-                      height: `${containerHeight}px`,
+                      top: `${slotPosition.top}px`,
+                      height: `${slotPosition.height}px`,
                       zIndex: 10
                     }}
                   >
                     {slot.lessons.map((lesson) => {
                       const lessonPos = getLessonPosition(lesson);
-                      const offsetTop = lessonPos.top - minTop;
+                      const offsetTop = lessonPos.top - slotPosition.top;
                       
                       return (
                         <div key={lesson.id} className="flex-1 relative" style={{ height: '100%' }}>

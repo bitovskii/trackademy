@@ -8,6 +8,33 @@ export const PaymentStatusEnum = {
   Refunded: 5
 } as const;
 
+export enum DiscountType {
+  Percentage = 1,
+  FixedAmount = 2
+}
+
+export const getDiscountTypeName = (type: number): string => {
+  switch (type) {
+    case DiscountType.Percentage:
+      return 'Процент';
+    case DiscountType.FixedAmount:
+      return 'Фиксированная сумма';
+    default:
+      return 'Не указан';
+  }
+};
+
+export const formatDiscount = (type: number, value: number): string => {
+  switch (type) {
+    case DiscountType.Percentage:
+      return `${value}%`;
+    case DiscountType.FixedAmount:
+      return `${value.toLocaleString()} ₸`;
+    default:
+      return '—';
+  }
+};
+
 export interface Payment {
   id: string;
   studentId: string;
@@ -18,7 +45,9 @@ export interface Payment {
   type: number;
   typeName: string;
   originalAmount: number;
-  discountPercentage: number;
+  discountType: number;
+  discountTypeName: string;
+  discountValue: number;
   amount: number;
   discountReason: string;
   periodStart: string;
@@ -50,7 +79,8 @@ export interface StudentPaymentGroup {
   lastPaymentPeriodEnd: string;
   lastPaymentDiscountReason: string;
   lastPaymentOriginalAmount: number;
-  lastPaymentDiscountPercentage: number;
+  lastPaymentDiscountType: number;
+  lastPaymentDiscountValue: number;
   payments?: Payment[];
 }
 
@@ -61,7 +91,8 @@ export interface PaymentFormData {
   paymentPeriod: string;
   type: number;
   originalAmount: number;
-  discountPercentage: number;
+  discountType: number;
+  discountValue: number;
   amount: number;
   discountReason?: string;
   periodStart: string;
@@ -113,7 +144,8 @@ export interface CreatePaymentRequest {
   paymentPeriod: string;
   type: number;
   originalAmount: number;
-  discountPercentage?: number;
+  discountType: number;
+  discountValue: number;
   discountReason?: string;
   periodStart: string;
   periodEnd: string;

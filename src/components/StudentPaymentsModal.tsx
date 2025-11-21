@@ -331,9 +331,12 @@ export const StudentPaymentsModal: React.FC<StudentPaymentsModalProps> = ({
                         <div className="text-sm font-medium text-gray-900 dark:text-white">
                           {formatAmount(payment.amount)}
                         </div>
-                        {payment.discountPercentage > 0 && (
+                        {payment.discountValue > 0 && (
                           <div className="text-xs text-gray-500 dark:text-gray-400">
-                            Скидка {payment.discountPercentage}% (было {formatAmount(payment.originalAmount)})
+                            Скидка: {payment.discountType === 1 
+                              ? `${payment.discountValue}%` 
+                              : formatAmount(payment.discountValue)} 
+                            (было {formatAmount(payment.originalAmount)})
                           </div>
                         )}
                         {payment.discountReason && (

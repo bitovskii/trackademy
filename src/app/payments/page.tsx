@@ -674,9 +674,12 @@ export default function PaymentsPage() {
                                   <div className="text-sm font-medium text-gray-900 dark:text-white">
                                     {studentPayment.lastPaymentAmount.toLocaleString('ru-RU')}₸
                                   </div>
-                                  {studentPayment.lastPaymentDiscountPercentage > 0 && (
+                                  {studentPayment.lastPaymentDiscountValue > 0 && (
                                     <div className="text-xs text-gray-500 dark:text-gray-400">
-                                      Скидка {studentPayment.lastPaymentDiscountPercentage}% (было {studentPayment.lastPaymentOriginalAmount.toLocaleString('ru-RU')}₸)
+                                      Скидка: {studentPayment.lastPaymentDiscountType === 1 
+                                        ? `${studentPayment.lastPaymentDiscountValue}%` 
+                                        : `${studentPayment.lastPaymentDiscountValue.toLocaleString('ru-RU')}₸`} 
+                                      (было {studentPayment.lastPaymentOriginalAmount.toLocaleString('ru-RU')}₸)
                                     </div>
                                   )}
                                 </div>

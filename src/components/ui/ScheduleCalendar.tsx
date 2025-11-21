@@ -14,6 +14,8 @@ interface TimeSlot {
   start: number;
   end: number;
   schedules: Schedule[];
+  startTime: string; // min start time from all schedules
+  endTime: string;   // max end time from all schedules
 }
 
 export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
@@ -70,10 +72,16 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
       // Mark all as processed
       overlapping.forEach(s => processed.add(s.id));
       
+      // Calculate min start and max end times
+      const minStartTime = overlapping.reduce((min, s) => s.startTime < min ? s.startTime : min, overlapping[0].startTime);
+      const maxEndTime = overlapping.reduce((max, s) => s.endTime > max ? s.endTime : max, overlapping[0].endTime);
+      
       timeSlots.push({
         start,
         end,
-        schedules: overlapping
+        schedules: overlapping,
+        startTime: minStartTime,
+        endTime: maxEndTime
       });
     });
     
@@ -164,6 +172,27 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
       };
     };
 
+    // Calculate position for time slot (used for overlapping schedules block)
+    const getTimeSlotPosition = (startTime: string, endTime: string) => {
+      const [startHour, startMin] = startTime.split(':').map(Number);
+      const [endHour, endMin] = endTime.split(':').map(Number);
+      
+      const startTotalMin = startHour * 60 + startMin;
+      const endTotalMin = endHour * 60 + endMin;
+      
+      // First time slot is 08:00 (8 * 60 = 480 minutes from midnight)
+      const firstSlotMin = 8 * 60;
+      
+      // Calculate position relative to the first time slot (60px per hour)
+      const topOffset = ((startTotalMin - firstSlotMin) / 60) * 60;
+      const height = ((endTotalMin - startTotalMin) / 60) * 60;
+      
+      return {
+        top: Math.max(0, topOffset),
+        height: Math.max(30, height)
+      };
+    };
+
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
         <div className="p-6">
@@ -228,7 +257,10 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
                 <div className="absolute inset-0 left-16 pointer-events-none">
                   {timeSlots.map((slot, slotIndex) => {
                     const hasOverlap = slot.schedules.length > 1;
-                    const position = getSchedulePosition(slot.schedules[0]);
+                    // Use slot's min/max times for overlapping schedules block
+                    const position = hasOverlap 
+                      ? getTimeSlotPosition(slot.startTime, slot.endTime)
+                      : getSchedulePosition(slot.schedules[0]);
                     
                     if (hasOverlap) {
                       // Show overlapping schedules side by side
@@ -421,9 +453,14 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
 
             return timeSlots.map((slot, slotIndex) => {
               const hasOverlap = slot.schedules.length > 1;
-              const duration = slot.end - slot.start;
-              const topOffset = (slot.start - 8) * 64; // 64px per hour
-              const height = Math.max(60, duration * 64);
+              
+              // Calculate position based on slot's min/max times
+              const [startH, startM] = slot.startTime.split(':').map(Number);
+              const [endH, endM] = slot.endTime.split(':').map(Number);
+              const slotStart = startH + startM / 60;
+              const slotEnd = endH + endM / 60;
+              const topOffset = (slotStart - 8) * 64; // 64px per hour
+              const height = Math.max(60, (slotEnd - slotStart) * 64);
 
               if (hasOverlap) {
                 // Show overlapping indicator
@@ -441,7 +478,7 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
                     onClick={() => setOverlappingModal({
                       isOpen: true,
                       schedules: slot.schedules,
-                      timeSlot: formatTimeRange(slot.schedules[0].startTime, slot.schedules[0].endTime)
+                      timeSlot: formatTimeRange(slot.startTime, slot.endTime)
                     })}
                   >
                     <div className="h-full flex flex-col items-center justify-center text-center px-1">
@@ -553,11 +590,11 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
                                 onClick={() => setOverlappingModal({
                                   isOpen: true,
                                   schedules: slot.schedules,
-                                  timeSlot: formatTimeRange(slot.schedules[0].startTime, slot.schedules[0].endTime)
+                                  timeSlot: formatTimeRange(slot.startTime, slot.endTime)
                                 })}
                               >
                                 <div className="font-medium text-amber-800 dark:text-amber-300 truncate">
-                                  {slot.schedules.length} {slot.schedules.length === 1 ? 'занятие' : slot.schedules.length < 5 ? 'занятия' : 'занятий'} • {formatTimeRange(slot.schedules[0].startTime, slot.schedules[0].endTime)}
+                                  {slot.schedules.length} {slot.schedules.length === 1 ? 'занятие' : slot.schedules.length < 5 ? 'занятия' : 'занятий'} • {formatTimeRange(slot.startTime, slot.endTime)}
                                 </div>
                               </div>
                             );

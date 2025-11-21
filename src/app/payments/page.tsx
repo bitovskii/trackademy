@@ -770,18 +770,21 @@ export default function PaymentsPage() {
                               </td>
                             )}
                             <td className="px-6 py-4 whitespace-nowrap text-center">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEditDiscount(studentPayment);
-                                }}
-                                className="inline-flex items-center justify-center p-2 text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors"
-                                title="Редактировать скидку"
-                              >
-                                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                              </button>
+                              {/* Показываем кнопку только для статусов: Ожидает оплаты (1) и Просрочен (3) */}
+                              {(studentPayment.lastPaymentStatus === 1 || studentPayment.lastPaymentStatus === 3) && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEditDiscount(studentPayment);
+                                  }}
+                                  className="inline-flex items-center justify-center p-2 text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors"
+                                  title="Редактировать скидку"
+                                >
+                                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                  </svg>
+                                </button>
+                              )}
                             </td>
                           </tr>
                         ))}
@@ -791,8 +794,7 @@ export default function PaymentsPage() {
                 </div>
 
                 {/* Пагинация */}
-                {(totalPages > 1 || totalCount > pageSize) && (
-                  <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+                <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                         <div className="text-sm text-gray-700 dark:text-gray-300">
@@ -816,8 +818,6 @@ export default function PaymentsPage() {
                           >
                             <option value={10}>10</option>
                             <option value={20}>20</option>
-                            <option value={30}>30</option>
-                            <option value={40}>40</option>
                             <option value={50}>50</option>
                             <option value={100}>100</option>
                           </select>
@@ -844,7 +844,6 @@ export default function PaymentsPage() {
                       </div>
                     </div>
                   </div>
-                )}
               </div>
             </>
           )}

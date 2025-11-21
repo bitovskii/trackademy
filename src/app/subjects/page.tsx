@@ -229,8 +229,9 @@ export default function SubjectsPage() {
   };
 
   const renderPagination = () => {
-    if (totalPages <= 1 && totalCount <= pageSize) return null;
-
+    // Показываем пагинацию всегда, если есть totalPages или totalCount
+    if (totalPages === 0 && totalCount === 0) return null;
+    
     const pageNumbers = [];
     const maxVisiblePages = 5;
     
@@ -292,8 +293,6 @@ export default function SubjectsPage() {
                 >
                   <option value={10}>10</option>
                   <option value={20}>20</option>
-                  <option value={30}>30</option>
-                  <option value={40}>40</option>
                   <option value={50}>50</option>
                   <option value={100}>100</option>
                 </select>

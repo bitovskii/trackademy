@@ -34,7 +34,6 @@ export default function LessonsPage() {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<CalendarView>('week');
-  const [selectedSchedule, setSelectedSchedule] = useState<string>('');
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [showLessonModal, setShowLessonModal] = useState(false);
   const [dateFrom, setDateFrom] = useState<string | undefined>(undefined);
@@ -82,7 +81,7 @@ export default function LessonsPage() {
       loadLessons();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedSchedule, selectedGroup, selectedTeacher, selectedRoom, selectedSubject, currentDate, view, dateFrom, dateTo, user]);
+  }, [selectedGroup, selectedTeacher, selectedRoom, selectedSubject, currentDate, view, dateFrom, dateTo, user]);
 
   const loadSchedules = async () => {
     if (!user?.organizationId) {
@@ -164,10 +163,7 @@ export default function LessonsPage() {
         pageSize: 1000, // Large page size for calendar views
       };
 
-      // Add schedule filter if selected
-      if (selectedSchedule) {
-        filters.scheduleId = selectedSchedule;
-      }
+
 
       // Add group filter if selected
       if (selectedGroup) {
@@ -211,7 +207,7 @@ export default function LessonsPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedSchedule, selectedGroup, selectedTeacher, selectedRoom, selectedSubject, currentDate, view, dateFrom, dateTo, user?.organizationId, loadOperation]);
+  }, [selectedGroup, selectedTeacher, selectedRoom, selectedSubject, currentDate, view, dateFrom, dateTo, user?.organizationId, loadOperation]);
 
   const getDateRangeForView = (date: Date, viewType: CalendarView): { fromDate: string; toDate: string } => {
     // Используем локальное форматирование даты для избежания UTC сдвигов
@@ -428,23 +424,6 @@ export default function LessonsPage() {
           {/* Filters Section */}
           <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-violet-50 dark:from-gray-800 dark:to-gray-700">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* Schedule Filter */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Расписание</label>
-                <select
-                  value={selectedSchedule}
-                  onChange={(e) => setSelectedSchedule(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-sm text-gray-900 dark:text-white transition-all duration-200"
-                >
-                  <option value="">Все расписания</option>
-                  {schedules.map((schedule) => (
-                    <option key={schedule.id} value={schedule.id}>
-                      {schedule.subject.subjectName} - {schedule.group.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
               {/* Group Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Группа</label>
@@ -540,11 +519,10 @@ export default function LessonsPage() {
             </div>
 
             {/* Clear filters button */}
-            {(selectedSchedule || selectedGroup || selectedTeacher || selectedRoom || selectedSubject) && (
+            {(selectedGroup || selectedTeacher || selectedRoom || selectedSubject) && (
               <div className="mt-4 flex justify-end">
                 <button
                   onClick={() => {
-                    setSelectedSchedule('');
                     setSelectedGroup('');
                     setSelectedTeacher('');
                     setSelectedRoom('');

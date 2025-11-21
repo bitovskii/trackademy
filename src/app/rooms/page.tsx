@@ -216,7 +216,8 @@ export default function RoomsPage() {
   };
 
   const renderPagination = () => {
-    if (totalPages <= 1 && totalCount <= pageSize) return null;
+    // Показываем пагинацию всегда, если есть totalPages или totalCount
+    if (totalPages === 0 && totalCount === 0) return null;
 
     const pageNumbers = [];
     const maxVisiblePages = 5;

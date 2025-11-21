@@ -283,28 +283,31 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
                                 className="flex-1 bg-white dark:bg-gray-700 rounded-lg border-l-4 border-violet-500 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 overflow-hidden"
                                 onClick={() => onEventClick?.(schedule)}
                               >
-                                <div className="p-2.5 h-full flex flex-col overflow-hidden">
-                                  <div className="flex justify-between items-start mb-1">
-                                    <h4 className="font-medium text-gray-900 dark:text-white text-sm line-clamp-1 flex-1">
+                                <div className="p-1 h-full flex flex-col justify-center overflow-hidden relative group">
+                                  {/* Tooltip при наведении */}
+                                  <div className="absolute left-0 top-full mt-1 hidden group-hover:block z-50 bg-gray-900 text-white text-xs rounded p-2 shadow-lg min-w-[200px]">
+                                    <div className="font-semibold mb-1">{schedule.subject.subjectName}</div>
+                                    <div>Группа: {schedule.group.name}</div>
+                                    <div>Время: {formatTimeRange(schedule.startTime, schedule.endTime)}</div>
+                                    <div>Кабинет: {schedule.room.name}</div>
+                                    <div>Преподаватель: {schedule.teacher.name}</div>
+                                  </div>
+
+                                  {!isShortSchedule && (
+                                    <>
+                                      <h4 className="font-medium text-gray-900 dark:text-white text-xs truncate mb-0.5">
+                                        {schedule.subject.subjectName}
+                                      </h4>
+                                      <div className="text-[10px] text-gray-500 dark:text-gray-400">
+                                        {formatTimeRange(schedule.startTime, schedule.endTime)}
+                                      </div>
+                                    </>
+                                  )}
+                                  {isShortSchedule && (
+                                    <h4 className="font-medium text-gray-900 dark:text-white text-[10px] truncate">
                                       {schedule.subject.subjectName}
                                     </h4>
-                                  </div>
-                                  {!isShortSchedule && (
-                                    <div className="space-y-1 text-xs text-gray-700 dark:text-gray-300">
-                                      <div className="line-clamp-1">
-                                        <span className="font-medium">Группа:</span> {schedule.group.name}
-                                      </div>
-                                      <div className="line-clamp-1">
-                                        <span className="font-medium">Преподаватель:</span> {schedule.teacher.name}
-                                      </div>
-                                      <div className="line-clamp-1">
-                                        <span className="font-medium">Кабинет:</span> {schedule.room.name}
-                                      </div>
-                                    </div>
                                   )}
-                                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-auto">
-                                    {formatTimeRange(schedule.startTime, schedule.endTime)}
-                                  </div>
                                 </div>
                               </div>
                             );
@@ -319,36 +322,45 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
                       return (
                         <div
                           key={schedule.id}
-                          className="absolute left-2 right-2 pointer-events-auto bg-white dark:bg-gray-700 rounded-lg border-l-4 border-violet-500 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 overflow-hidden"
+                          className="absolute left-2 right-2 pointer-events-auto bg-white dark:bg-gray-700 rounded-lg border-l-4 border-violet-500 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 overflow-hidden relative group"
                           style={{
                             top: `${position.top}px`,
                             height: `${position.height}px`,
                             zIndex: 10
                           }}
                           onClick={() => onEventClick?.(schedule)}
+                          title={`${schedule.subject.subjectName}\n${schedule.group.name}\n${formatTimeRange(schedule.startTime, schedule.endTime)}\n${schedule.room.name}\n${schedule.teacher.name}`}
                         >
-                          <div className="p-2.5 h-full flex flex-col overflow-hidden">
-                            <div className="flex justify-between items-start mb-1">
-                              <h4 className="font-medium text-gray-900 dark:text-white text-sm line-clamp-1 flex-1">
+                          {/* Tooltip при наведении */}
+                          <div className="absolute left-0 top-full mt-1 hidden group-hover:block z-50 bg-gray-900 text-white text-xs rounded p-2 shadow-lg min-w-[200px]">
+                            <div className="font-semibold mb-1">{schedule.subject.subjectName}</div>
+                            <div>Группа: {schedule.group.name}</div>
+                            <div>Время: {formatTimeRange(schedule.startTime, schedule.endTime)}</div>
+                            <div>Кабинет: {schedule.room.name}</div>
+                            <div>Преподаватель: {schedule.teacher.name}</div>
+                          </div>
+
+                          <div className="p-1 h-full flex flex-col justify-center overflow-hidden">
+                            {position.height >= 60 && (
+                              <>
+                                <h4 className="font-medium text-gray-900 dark:text-white text-xs truncate mb-0.5">
+                                  {schedule.subject.subjectName}
+                                </h4>
+                                <div className="text-[10px] text-gray-500 dark:text-gray-400">
+                                  {formatTimeRange(schedule.startTime, schedule.endTime)}
+                                </div>
+                              </>
+                            )}
+                            {position.height >= 35 && position.height < 60 && (
+                              <h4 className="font-medium text-gray-900 dark:text-white text-xs truncate">
                                 {schedule.subject.subjectName}
                               </h4>
-                            </div>
-                            {!isShortSchedule && (
-                              <div className="space-y-1 text-xs text-gray-700 dark:text-gray-300">
-                                <div className="line-clamp-1">
-                                  <span className="font-medium">Группа:</span> {schedule.group.name}
-                                </div>
-                                <div className="line-clamp-1">
-                                  <span className="font-medium">Преподаватель:</span> {schedule.teacher.name}
-                                </div>
-                                <div className="line-clamp-1">
-                                  <span className="font-medium">Кабинет:</span> {schedule.room.name}
-                                </div>
-                              </div>
                             )}
-                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-auto">
-                              {formatTimeRange(schedule.startTime, schedule.endTime)}
-                            </div>
+                            {position.height < 35 && (
+                              <h4 className="font-medium text-gray-900 dark:text-white text-[10px] truncate">
+                                {schedule.subject.subjectName}
+                              </h4>
+                            )}
                           </div>
                         </div>
                       );
@@ -497,7 +509,7 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
                 return (
                   <div
                     key={`day-${dayIndex}-schedule-${schedule.id}`}
-                    className="absolute bg-gradient-to-r from-violet-100 to-violet-50 dark:from-violet-900/40 dark:to-violet-900/20 rounded border-l-2 border-violet-500 cursor-pointer hover:from-violet-200 hover:to-violet-100 dark:hover:from-violet-900/60 dark:hover:to-violet-900/30 transition-all shadow-sm hover:shadow-md p-2"
+                    className="absolute bg-gradient-to-r from-violet-100 to-violet-50 dark:from-violet-900/40 dark:to-violet-900/20 rounded border-l-2 border-violet-500 cursor-pointer hover:from-violet-200 hover:to-violet-100 dark:hover:from-violet-900/60 dark:hover:to-violet-900/30 transition-all shadow-sm hover:shadow-md p-2 relative group"
                     style={{
                       left: `${columnLeft}%`,
                       width: `${columnWidth}%`,
@@ -506,17 +518,38 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
                       zIndex: 20
                     }}
                     onClick={() => onEventClick?.(schedule)}
+                    title={`${schedule.subject.subjectName}\n${schedule.group.name}\n${formatTimeRange(schedule.startTime, schedule.endTime)}\n${schedule.room.name}\n${schedule.teacher.name}`}
                   >
-                    <div className="h-full overflow-hidden">
-                      <div className="font-medium text-violet-800 dark:text-violet-300 truncate text-xs mb-1">
-                        {schedule.subject.subjectName}
-                      </div>
-                      <div className="text-violet-600 dark:text-violet-400 text-xs mb-1">
-                        {formatTimeRange(schedule.startTime, schedule.endTime)}
-                      </div>
-                      <div className="text-gray-600 dark:text-gray-400 truncate text-xs">
-                        {schedule.group.name}
-                      </div>
+                    {/* Tooltip при наведении */}
+                    <div className="absolute left-0 top-full mt-1 hidden group-hover:block z-50 bg-gray-900 text-white text-xs rounded p-2 shadow-lg min-w-[200px]">
+                      <div className="font-semibold mb-1">{schedule.subject.subjectName}</div>
+                      <div>Группа: {schedule.group.name}</div>
+                      <div>Время: {formatTimeRange(schedule.startTime, schedule.endTime)}</div>
+                      <div>Кабинет: {schedule.room.name}</div>
+                      <div>Преподаватель: {schedule.teacher.name}</div>
+                    </div>
+
+                    <div className="h-full overflow-hidden flex flex-col justify-center p-1">
+                      {height >= 60 && (
+                        <>
+                          <div className="font-medium text-violet-800 dark:text-violet-300 truncate text-xs mb-0.5">
+                            {schedule.subject.subjectName}
+                          </div>
+                          <div className="text-violet-600 dark:text-violet-400 text-[10px]">
+                            {formatTimeRange(schedule.startTime, schedule.endTime)}
+                          </div>
+                        </>
+                      )}
+                      {height >= 35 && height < 60 && (
+                        <div className="font-medium text-violet-800 dark:text-violet-300 truncate text-xs">
+                          {schedule.subject.subjectName}
+                        </div>
+                      )}
+                      {height < 35 && (
+                        <div className="font-medium text-violet-800 dark:text-violet-300 truncate text-[10px]">
+                          {schedule.subject.subjectName}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );

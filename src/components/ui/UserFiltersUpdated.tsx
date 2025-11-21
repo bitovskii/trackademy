@@ -216,7 +216,7 @@ export const UserFilters: React.FC<UserFiltersProps> = ({
                 }`}
                 disabled={isLoading}
               >
-                Обычные
+                Постоянные
               </button>
             </div>
           </div>
@@ -277,7 +277,7 @@ export const UserFilters: React.FC<UserFiltersProps> = ({
                 ? 'bg-orange-100 dark:bg-orange-900/50 text-orange-800 dark:text-orange-300'
                 : 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300'
             }`}>
-              {filters.isTrial ? '🔄 Пробные' : '✓ Обычные'}
+              {filters.isTrial ? '🔄 Пробные' : '✓ Постоянные'}
               <button
                 onClick={() => handleTrialChange(undefined)}
                 className={`ml-2 ${

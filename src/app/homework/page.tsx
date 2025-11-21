@@ -525,7 +525,8 @@ export default function HomeworkPage() {
   };
 
   const renderPagination = () => {
-    if (totalPages <= 1) return null;
+    // Показываем пагинацию всегда, если есть totalPages или totalCount
+    if (totalPages === 0 && totalCount === 0) return null;
 
     const pageNumbers = [];
     const maxVisiblePages = 5;
@@ -586,7 +587,8 @@ export default function HomeworkPage() {
   };
 
   const renderSubmissionsPagination = () => {
-    if (submissionsTotalPages <= 1) return null;
+    // Показываем пагинацию всегда, если есть submissionsTotalPages или submissionsTotalCount
+    if (submissionsTotalPages === 0 && submissionsTotalCount === 0) return null;
 
     const pageNumbers = [];
     const maxVisiblePages = 5;

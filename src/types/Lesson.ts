@@ -48,6 +48,10 @@ export interface LessonFilters {
   pageNumber: number;
   pageSize: number;
   scheduleId?: string;
+  groupId?: string;
+  teacherId?: string;
+  roomId?: string;
+  subjectId?: string;
   fromDate?: string; // "2025-10-28" format
   toDate?: string; // "2025-10-28" format
 }

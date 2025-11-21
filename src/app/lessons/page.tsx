@@ -3,6 +3,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CalendarView, Lesson, LessonFilters, LessonsResponse, getWeekStart, getWeekEnd, getMonthStart, getMonthEnd } from '@/types/Lesson';
 import { Schedule } from '@/types/Schedule';
+import { Group } from '@/types/Group';
+import { Room } from '@/types/Room';
+import { Subject } from '@/types/Subject';
+import { User } from '@/types/User';
 import { AuthenticatedApiService } from '@/services/AuthenticatedApiService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -36,6 +40,18 @@ export default function LessonsPage() {
   const [dateFrom, setDateFrom] = useState<string | undefined>(undefined);
   const [dateTo, setDateTo] = useState<string | undefined>(undefined);
   const [rangeViewMode, setRangeViewMode] = useState<'list' | 'calendar'>('list');
+  
+  // Filter options state
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [teachers, setTeachers] = useState<User[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  
+  // Filter selections
+  const [selectedGroup, setSelectedGroup] = useState<string>('');
+  const [selectedTeacher, setSelectedTeacher] = useState<string>('');
+  const [selectedRoom, setSelectedRoom] = useState<string>('');
+  const [selectedSubject, setSelectedSubject] = useState<string>('');
 
   // Функция для получения названия текущего дня недели
   const getCurrentDayName = () => {
@@ -56,14 +72,17 @@ export default function LessonsPage() {
   useEffect(() => {
     if (user) {
       loadSchedules();
+      loadFilterOptions();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   useEffect(() => {
     if (user) {
       loadLessons();
     }
-  }, [selectedSchedule, currentDate, view, dateFrom, dateTo, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSchedule, selectedGroup, selectedTeacher, selectedRoom, selectedSubject, currentDate, view, dateFrom, dateTo, user]);
 
   const loadSchedules = async () => {
     if (!user?.organizationId) {
@@ -88,6 +107,50 @@ export default function LessonsPage() {
     }
   };
 
+  const loadFilterOptions = async () => {
+    if (!user?.organizationId) return;
+
+    try {
+      const baseRequest = {
+        pageNumber: 1,
+        pageSize: 1000,
+        organizationId: user.organizationId
+      };
+
+      // Load groups
+      const groupsResponse = await AuthenticatedApiService.post<{ items: Group[] }>(
+        '/Group/get-groups',
+        baseRequest
+      );
+      setGroups(groupsResponse.items);
+
+      // Load teachers (role 3 = teacher)
+      const teachersResponse = await AuthenticatedApiService.getUsers({
+        organizationId: user.organizationId,
+        pageNumber: 1,
+        pageSize: 1000,
+        roleIds: [3] // 3 = teacher role
+      });
+      setTeachers(teachersResponse.items);
+
+      // Load rooms
+      const roomsResponse = await AuthenticatedApiService.post<{ items: Room[] }>(
+        '/Room/GetAllRooms',
+        baseRequest
+      );
+      setRooms(roomsResponse.items);
+
+      // Load subjects
+      const subjectsResponse = await AuthenticatedApiService.post<{ items: Subject[] }>(
+        '/Subject/GetAllSubjects',
+        baseRequest
+      );
+      setSubjects(subjectsResponse.items);
+    } catch (error) {
+      console.error('Error loading filter options:', error);
+    }
+  };
+
   const loadLessons = useCallback(async () => {
     if (!user?.organizationId) {
       console.error('User organization not found');
@@ -104,6 +167,26 @@ export default function LessonsPage() {
       // Add schedule filter if selected
       if (selectedSchedule) {
         filters.scheduleId = selectedSchedule;
+      }
+
+      // Add group filter if selected
+      if (selectedGroup) {
+        filters.groupId = selectedGroup;
+      }
+
+      // Add teacher filter if selected
+      if (selectedTeacher) {
+        filters.teacherId = selectedTeacher;
+      }
+
+      // Add room filter if selected
+      if (selectedRoom) {
+        filters.roomId = selectedRoom;
+      }
+
+      // Add subject filter if selected
+      if (selectedSubject) {
+        filters.subjectId = selectedSubject;
       }
 
       // Add date range based on current view
@@ -128,7 +211,7 @@ export default function LessonsPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedSchedule, currentDate, view, user?.organizationId]);
+  }, [selectedSchedule, selectedGroup, selectedTeacher, selectedRoom, selectedSubject, currentDate, view, dateFrom, dateTo, user?.organizationId, loadOperation]);
 
   const getDateRangeForView = (date: Date, viewType: CalendarView): { fromDate: string; toDate: string } => {
     // Используем локальное форматирование даты для избежания UTC сдвигов
@@ -344,7 +427,7 @@ export default function LessonsPage() {
         <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-lg rounded-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
           {/* Filters Section */}
           <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-violet-50 dark:from-gray-800 dark:to-gray-700">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* Schedule Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Расписание</label>
@@ -357,6 +440,74 @@ export default function LessonsPage() {
                   {schedules.map((schedule) => (
                     <option key={schedule.id} value={schedule.id}>
                       {schedule.subject.subjectName} - {schedule.group.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Group Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Группа</label>
+                <select
+                  value={selectedGroup}
+                  onChange={(e) => setSelectedGroup(e.target.value)}
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-sm text-gray-900 dark:text-white transition-all duration-200"
+                >
+                  <option value="">Все группы</option>
+                  {groups.map((group) => (
+                    <option key={group.id} value={group.id}>
+                      {group.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Teacher Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Преподаватель</label>
+                <select
+                  value={selectedTeacher}
+                  onChange={(e) => setSelectedTeacher(e.target.value)}
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-sm text-gray-900 dark:text-white transition-all duration-200"
+                >
+                  <option value="">Все преподаватели</option>
+                  {teachers.map((teacher) => (
+                    <option key={teacher.id} value={teacher.id}>
+                      {teacher.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Room Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Кабинет</label>
+                <select
+                  value={selectedRoom}
+                  onChange={(e) => setSelectedRoom(e.target.value)}
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-sm text-gray-900 dark:text-white transition-all duration-200"
+                >
+                  <option value="">Все кабинеты</option>
+                  {rooms.map((room) => (
+                    <option key={room.id} value={room.id}>
+                      {room.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Subject Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Предмет</label>
+                <select
+                  value={selectedSubject}
+                  onChange={(e) => setSelectedSubject(e.target.value)}
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-sm text-gray-900 dark:text-white transition-all duration-200"
+                >
+                  <option value="">Все предметы</option>
+                  {subjects.map((subject) => (
+                    <option key={subject.id} value={subject.id}>
+                      {subject.name}
                     </option>
                   ))}
                 </select>
@@ -387,6 +538,24 @@ export default function LessonsPage() {
                 </div>
               </div>
             </div>
+
+            {/* Clear filters button */}
+            {(selectedSchedule || selectedGroup || selectedTeacher || selectedRoom || selectedSubject) && (
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={() => {
+                    setSelectedSchedule('');
+                    setSelectedGroup('');
+                    setSelectedTeacher('');
+                    setSelectedRoom('');
+                    setSelectedSubject('');
+                  }}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Очистить фильтры
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Navigation */}

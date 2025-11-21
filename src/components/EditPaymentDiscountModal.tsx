@@ -150,20 +150,33 @@ export const EditPaymentDiscountModal: React.FC<EditPaymentDiscountModalProps> =
               {discountType === DiscountType.Percentage ? 'Размер скидки (%)' : 'Размер скидки (₸)'}
             </label>
             <input
-              type="number"
-              min="0"
-              max={discountType === DiscountType.Percentage ? 100 : originalAmount}
-              step={discountType === DiscountType.Percentage ? '1' : '0.01'}
-              value={discountValue}
+              type="text"
+              inputMode="decimal"
+              value={discountValue === '0' ? '' : discountValue}
               onChange={(e) => {
-                setDiscountValue(e.target.value);
-                setErrors(prev => ({ ...prev, discountValue: undefined }));
+                const value = e.target.value;
+                // Разрешаем только цифры и точку
+                if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                  // Убираем ведущие нули (кроме 0. для десятичных)
+                  let cleanValue = value;
+                  if (value.length > 1 && value.startsWith('0') && value[1] !== '.') {
+                    cleanValue = value.replace(/^0+/, '');
+                  }
+                  setDiscountValue(cleanValue || '0');
+                  setErrors(prev => ({ ...prev, discountValue: undefined }));
+                }
+              }}
+              onBlur={(e) => {
+                // При потере фокуса, если пустое - ставим 0
+                if (e.target.value === '') {
+                  setDiscountValue('0');
+                }
               }}
               disabled={loading}
-              placeholder={discountType === DiscountType.Percentage ? 'От 0 до 100' : 'От 0 до суммы платежа'}
+              placeholder={discountType === DiscountType.Percentage ? '0' : '0'}
               className={`w-full px-3 py-2 bg-white dark:bg-gray-700 border ${
                 errors.discountValue ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-              } rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-gray-900 dark:text-white transition-all duration-200`}
+              } rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-gray-900 dark:text-white transition-all duration-200 placeholder:text-gray-400 dark:placeholder:text-gray-500`}
             />
             {errors.discountValue && (
               <p className="mt-1 text-sm text-red-500">{errors.discountValue}</p>

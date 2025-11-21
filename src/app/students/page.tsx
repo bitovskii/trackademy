@@ -74,6 +74,8 @@ export default function StudentsPage() {
   // Stringify arrays to avoid triggering effects when reference changes but content is the same
   const roleIdsStr = filters.roleIds.join(',');
   const groupIdsStr = filters.groupIds.join(',');
+  // Serialize isTrial to string to track changes (always defined to keep deps array size constant)
+  const isTrialStr = filters.isTrial === undefined ? 'all' : filters.isTrial === true ? 'trial' : 'regular';
   
   // Use ref to store current filters to avoid recreating callbacks
   const filtersRef = useRef(filters);
@@ -153,7 +155,7 @@ export default function StudentsPage() {
         search: searchTerm || undefined,
         roleIds: currentFilters.roleIds.length > 0 ? currentFilters.roleIds : undefined,
         groupIds: currentFilters.groupIds.length > 0 ? currentFilters.groupIds : undefined,
-        isTrial: currentFilters.isTrial
+        isTrial: currentFilters.isTrial !== undefined ? currentFilters.isTrial : undefined
       });
       
       setStudents(data.items);
@@ -375,7 +377,7 @@ export default function StudentsPage() {
       loadStudents(1, true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearchTerm, roleIdsStr, groupIdsStr]);
+  }, [debouncedSearchTerm, roleIdsStr, groupIdsStr, isTrialStr]);
 
   // Debug effect to track user context changes
   useEffect(() => {

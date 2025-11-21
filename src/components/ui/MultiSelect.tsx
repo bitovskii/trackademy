@@ -84,13 +84,14 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
       {/* Main Input */}
       <div
         onClick={() => !disabled && setIsOpen(!isOpen)}
-        className={`relative w-full min-h-[42px] px-3 py-2 border rounded-md bg-white 
+        className={`relative w-full min-h-[42px] px-3 py-2 border rounded-md 
+                   bg-white dark:bg-gray-700 text-gray-900 dark:text-white
                    cursor-pointer transition-all duration-200 ${
           disabled 
-            ? 'border-gray-200 bg-gray-50 cursor-not-allowed' 
+            ? 'border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 cursor-not-allowed' 
             : isOpen 
-              ? 'border-blue-500 ring-1 ring-blue-500' 
-              : 'border-gray-300 hover:border-gray-400'
+              ? 'border-blue-500 dark:border-blue-400 ring-1 ring-blue-500 dark:ring-blue-400' 
+              : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
         }`}
       >
         <div className="flex items-center justify-between min-h-[26px]">
@@ -107,22 +108,20 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
                 return (
                   <span
                     key={optionId}
-                    style={{ color: '#000000' }} // Inline style for guaranteed black color
                     className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md 
-                             bg-blue-100 dark:bg-blue-900/20
-                             border border-blue-200 dark:border-blue-800"
+                             bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300
+                             border border-blue-200 dark:border-blue-700"
                   >
-                    <span style={{ color: '#000000' }}>
+                    <span>
                       {option.name}
                       {option.secondaryText && (
-                        <span className="ml-1 text-gray-600">({option.secondaryText})</span>
+                        <span className="ml-1 text-gray-600 dark:text-gray-400">({option.secondaryText})</span>
                       )}
                     </span>
                     {!disabled && (
                       <button
                         onClick={(e) => handleRemoveOption(optionId, e)}
-                        style={{ color: '#000000' }} // Inline style for guaranteed black color
-                        className="ml-1 hover:text-gray-700 dark:hover:text-blue-200"
+                        className="ml-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200"
                       >
                         <XMarkIcon className="h-3 w-3" />
                       </button>
@@ -154,22 +153,23 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
 
       {/* Dropdown */}
       {isOpen && !disabled && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 
-                       rounded-lg shadow-lg ring-1 ring-black ring-opacity-5">
+        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 
+                       border border-gray-200 dark:border-gray-600 
+                       rounded-lg shadow-lg ring-1 ring-black dark:ring-gray-700 ring-opacity-5">
           
           {/* Search Input */}
-          <div className="p-2 border-b border-gray-100">
+          <div className="p-2 border-b border-gray-100 dark:border-gray-700">
             <input
               ref={inputRef}
               type="text"
               placeholder="Поиск по имени или логину..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ color: '#000000' }} // Inline style for guaranteed black color
-              className="w-full px-3 py-2 text-sm border border-gray-300 
+              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600
                        rounded-md bg-white dark:bg-gray-700
+                       text-gray-900 dark:text-white
                        placeholder-gray-500 dark:placeholder-gray-400
-                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                       focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
               autoFocus
             />
           </div>
@@ -177,7 +177,7 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
           {/* Options List */}
           <div className="max-h-60 overflow-auto py-1" style={{ maxHeight }}>
             {filteredOptions.length === 0 ? (
-              <div className="px-3 py-2 text-sm" style={{ color: '#000000' }}>
+              <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
                 {searchTerm ? 'Ничего не найдено' : 'Нет доступных опций'}
               </div>
             ) : (
@@ -195,7 +195,11 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
                     }`}
                   >
                     <div className="flex-1">
-                      <div style={{ color: isSelected ? '#1e3a8a' : '#000000' }} className="text-sm font-medium">
+                      <div className={`text-sm font-medium ${
+                        isSelected 
+                          ? 'text-blue-700 dark:text-blue-300' 
+                          : 'text-gray-900 dark:text-white'
+                      }`}>
                         {option.name}
                       </div>
                       {option.secondaryText && (
@@ -215,8 +219,8 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
 
           {/* Footer with selection count */}
           {selectedValues.length > 0 && (
-            <div className="px-3 py-2 border-t border-gray-100 
-                           bg-gray-50 dark:bg-gray-700 text-xs text-gray-500 dark:text-gray-400">
+            <div className="px-3 py-2 border-t border-gray-100 dark:border-gray-700
+                           bg-gray-50 dark:bg-gray-750 text-xs text-gray-500 dark:text-gray-400">
               Выбрано: {selectedValues.length} из {options.length}
             </div>
           )}

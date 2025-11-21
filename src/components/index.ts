@@ -27,3 +27,4 @@ export { default as EditUserModal } from './EditUserModal';
 // Экспорт модальных окон
 export { ExportAttendanceModal } from './ExportAttendanceModal';
 export { StudentPaymentsModal } from './StudentPaymentsModal';
+export { FreezeStudentModal } from './FreezeStudentModal';

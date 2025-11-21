@@ -6,6 +6,10 @@ export interface GroupSubject {
 export interface GroupStudent {
   studentId: string;
   studentName: string;
+  isFrozen?: boolean;
+  freezeStartDate?: string;
+  freezeEndDate?: string;
+  freezeReason?: string;
 }
 
 export interface Group {

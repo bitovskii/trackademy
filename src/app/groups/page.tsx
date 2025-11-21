@@ -16,6 +16,7 @@ import { useApiToast } from '../../hooks/useApiToast';
 import { GroupStudentsModal } from '../../components/GroupStudentsModal';
 import { CreatePaymentModal } from '../../components/CreatePaymentModal';
 import { BaseModal } from '../../components/ui/BaseModal';
+import { FreezeStudentModal } from '../../components/FreezeStudentModal';
 
 export default function GroupsPage() {
   const { isAuthenticated, user } = useAuth();
@@ -35,6 +36,13 @@ export default function GroupsPage() {
   const [isCreatePaymentModalOpen, setIsCreatePaymentModalOpen] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   const [selectedStudentName, setSelectedStudentName] = useState<string>('');
+
+  // Состояния для модалок заморозки
+  const [isFreezeModalOpen, setIsFreezeModalOpen] = useState(false);
+  const [isUnfreezeModalOpen, setIsUnfreezeModalOpen] = useState(false);
+  const [freezingStudentId, setFreezingStudentId] = useState<string>('');
+  const [freezingStudentName, setFreezingStudentName] = useState<string>('');
+  const [freezeLoading, setFreezeLoading] = useState(false);
 
   // Состояния для модалки просмотра деталей группы
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -287,6 +295,77 @@ export default function GroupsPage() {
     setIsCreatePaymentModalOpen(false);
     setSelectedStudentId('');
     setSelectedStudentName('');
+  };
+
+  const handleFreezeStudent = (studentId: string, studentName: string) => {
+    setFreezingStudentId(studentId);
+    setFreezingStudentName(studentName);
+    setIsFreezeModalOpen(true);
+  };
+
+  const handleUnfreezeStudent = (studentId: string, studentName: string) => {
+    setFreezingStudentId(studentId);
+    setFreezingStudentName(studentName);
+    setIsUnfreezeModalOpen(true);
+  };
+
+  const handleConfirmFreeze = async (startDate: string, endDate: string, reason: string) => {
+    if (!selectedGroup || !freezingStudentId) return;
+
+    setFreezeLoading(true);
+    try {
+      await createOperation(
+        () => AuthenticatedApiService.freezeStudent(
+          freezingStudentId,
+          selectedGroup.id,
+          startDate,
+          endDate,
+          reason
+        ),
+        'заморозка студента'
+      );
+
+      setIsFreezeModalOpen(false);
+      setIsStudentsModalOpen(false);
+      setFreezingStudentId('');
+      setFreezingStudentName('');
+      setSelectedGroup(null);
+      
+      // Обновляем список групп чтобы увидеть изменения
+      await loadGroups(currentPage, true);
+    } catch (error) {
+      console.error('Error freezing student:', error);
+    } finally {
+      setFreezeLoading(false);
+    }
+  };
+
+  const handleConfirmUnfreeze = async () => {
+    if (!selectedGroup || !freezingStudentId) return;
+
+    setFreezeLoading(true);
+    try {
+      await createOperation(
+        () => AuthenticatedApiService.unfreezeStudent(
+          freezingStudentId,
+          selectedGroup.id
+        ),
+        'разморозка студента'
+      );
+
+      setIsUnfreezeModalOpen(false);
+      setIsStudentsModalOpen(false);
+      setFreezingStudentId('');
+      setFreezingStudentName('');
+      setSelectedGroup(null);
+      
+      // Обновляем список групп чтобы увидеть изменения
+      await loadGroups(currentPage, true);
+    } catch (error) {
+      console.error('Error unfreezing student:', error);
+    } finally {
+      setFreezeLoading(false);
+    }
   };
 
   const handleCreateGroup = async (formData: GroupFormData) => {
@@ -857,8 +936,11 @@ export default function GroupsPage() {
         isOpen={isStudentsModalOpen}
         onClose={handleCloseStudentsModal}
         groupName={selectedGroup?.name || ''}
+        groupId={selectedGroup?.id || ''}
         students={selectedGroup?.students || []}
         onStudentSelect={handleStudentSelect}
+        onFreezeStudent={handleFreezeStudent}
+        onUnfreezeStudent={handleUnfreezeStudent}
       />
 
       {/* Модалка создания платежа */}
@@ -991,6 +1073,60 @@ export default function GroupsPage() {
           </div>
         )}
       </BaseModal>
+
+      {/* Модалка заморозки студента */}
+      <FreezeStudentModal
+        isOpen={isFreezeModalOpen}
+        onClose={() => {
+          setIsFreezeModalOpen(false);
+          setFreezingStudentId('');
+          setFreezingStudentName('');
+        }}
+        studentName={freezingStudentName}
+        onConfirm={handleConfirmFreeze}
+        loading={freezeLoading}
+      />
+
+      {/* Модалка разморозки студента */}
+      {isUnfreezeModalOpen && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Разморозить студента
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                {freezingStudentName}
+              </p>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-700 dark:text-gray-300">
+                Вы уверены, что хотите разморозить этого студента? Система автоматически пересчитает пропущенные уроки и продлит платеж.
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => {
+                  setIsUnfreezeModalOpen(false);
+                  setFreezingStudentId('');
+                  setFreezingStudentName('');
+                }}
+                disabled={freezeLoading}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleConfirmUnfreeze}
+                disabled={freezeLoading}
+                className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {freezeLoading ? 'Разморозка...' : 'Разморозить'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

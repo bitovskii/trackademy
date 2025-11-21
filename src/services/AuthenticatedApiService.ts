@@ -295,6 +295,23 @@ export class AuthenticatedApiService {
     return this.post('/Group/get-groups', body);
   }
 
+  static async freezeStudent(studentId: string, groupId: string, frozenFrom: string, frozenTo: string, freezeReason: string): Promise<ApiResponse<boolean>> {
+    return this.post('/Group/freeze-student', {
+      StudentId: studentId,
+      GroupId: groupId,
+      FrozenFrom: frozenFrom,
+      FrozenTo: frozenTo,
+      FreezeReason: freezeReason
+    });
+  }
+
+  static async unfreezeStudent(studentId: string, groupId: string): Promise<ApiResponse<boolean>> {
+    return this.post('/Group/unfreeze-student', {
+      StudentId: studentId,
+      GroupId: groupId
+    });
+  }
+
   // Profile management methods
   static async getUserById(id: string): Promise<User> {
     return this.get(`/User/GetUserById/${id}`);

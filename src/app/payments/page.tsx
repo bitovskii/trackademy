@@ -23,6 +23,7 @@ import { ColumnVisibilityControl, ColumnConfig } from '../../components/ui/Colum
 import { AuthenticatedApiService } from '@/services/AuthenticatedApiService';
 import { Group } from '@/types/Group';
 import { CreatePaymentModal } from '@/components/CreatePaymentModal';
+import { EditPaymentDiscountModal } from '@/components/EditPaymentDiscountModal';
 
 export default function PaymentsPage() {
   const { isAuthenticated, user } = useAuth();
@@ -45,6 +46,18 @@ export default function PaymentsPage() {
   const [showGroupDropdown, setShowGroupDropdown] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<{ id: string; name: string } | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  
+  // Edit discount modal state
+  const [showEditDiscountModal, setShowEditDiscountModal] = useState(false);
+  const [editingPayment, setEditingPayment] = useState<{
+    id: string;
+    studentName: string;
+    originalAmount: number;
+    discountType: number;
+    discountValue: number;
+    discountReason?: string;
+  } | null>(null);
+  const [discountLoading, setDiscountLoading] = useState(false);
   
   // Пагинация
   const [currentPage, setCurrentPage] = useState(1);
@@ -183,6 +196,50 @@ export default function PaymentsPage() {
   const handleCloseModal = () => {
     setShowPaymentsModal(false);
     setSelectedStudentPayments(null);
+  };
+
+  // Функции для работы с редактированием скидки
+  const handleEditDiscount = (payment: StudentPaymentGroup) => {
+    if (!payment.lastPaymentId) return;
+    
+    setEditingPayment({
+      id: payment.lastPaymentId,
+      studentName: payment.studentName,
+      originalAmount: payment.lastPaymentOriginalAmount || 0,
+      discountType: payment.lastPaymentDiscountType || 1,
+      discountValue: payment.lastPaymentDiscountValue || 0,
+      discountReason: payment.lastPaymentDiscountReason
+    });
+    setShowEditDiscountModal(true);
+  };
+
+  const handleConfirmEditDiscount = async (discountType: number, discountValue: number, discountReason: string) => {
+    if (!editingPayment) return;
+
+    setDiscountLoading(true);
+    try {
+      await AuthenticatedApiService.updatePaymentDiscount(
+        editingPayment.id,
+        discountType,
+        discountValue,
+        discountReason
+      );
+
+      setShowEditDiscountModal(false);
+      setEditingPayment(null);
+      
+      // Обновляем список платежей
+      await loadPayments(currentPage);
+    } catch (error) {
+      console.error('Error updating payment discount:', error);
+    } finally {
+      setDiscountLoading(false);
+    }
+  };
+
+  const handleCloseEditDiscountModal = () => {
+    setShowEditDiscountModal(false);
+    setEditingPayment(null);
   };
 
   // Функции для работы с фильтрами
@@ -623,6 +680,9 @@ export default function PaymentsPage() {
                               Оплачено
                             </th>
                           )}
+                          <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider w-24">
+                            Действия
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -709,6 +769,20 @@ export default function PaymentsPage() {
                                 {studentPayment.lastPaymentPaidAt ? new Date(studentPayment.lastPaymentPaidAt).toLocaleDateString('ru-RU') : 'Не оплачено'}
                               </td>
                             )}
+                            <td className="px-6 py-4 whitespace-nowrap text-center">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditDiscount(studentPayment);
+                                }}
+                                className="inline-flex items-center justify-center p-2 text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors"
+                                title="Редактировать скидку"
+                              >
+                                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                              </button>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -1004,6 +1078,22 @@ export default function PaymentsPage() {
             loadPaymentStats();
             loadPayments(currentPage);
           }}
+        />
+      )}
+
+      {/* Modal for editing payment discount */}
+      {editingPayment && (
+        <EditPaymentDiscountModal
+          isOpen={showEditDiscountModal}
+          onClose={handleCloseEditDiscountModal}
+          paymentId={editingPayment.id}
+          studentName={editingPayment.studentName}
+          originalAmount={editingPayment.originalAmount}
+          currentDiscountType={editingPayment.discountType}
+          currentDiscountValue={editingPayment.discountValue}
+          currentDiscountReason={editingPayment.discountReason}
+          onConfirm={handleConfirmEditDiscount}
+          loading={discountLoading}
         />
       )}
     </div>

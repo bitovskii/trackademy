@@ -312,6 +312,15 @@ export class AuthenticatedApiService {
     });
   }
 
+  // Payment management methods
+  static async updatePaymentDiscount(paymentId: string, discountType: number, discountValue: number, discountReason?: string): Promise<ApiResponse<boolean>> {
+    return this.patch(`/Payment/${paymentId}/discount`, {
+      discountType,
+      discountValue,
+      discountReason: discountReason || undefined
+    });
+  }
+
   // Profile management methods
   static async getUserById(id: string): Promise<User> {
     return this.get(`/User/GetUserById/${id}`);

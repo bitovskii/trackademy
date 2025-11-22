@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
-import { ClipboardDocumentListIcon, CalendarIcon, ClockIcon, CheckCircleIcon, XCircleIcon, AcademicCapIcon } from '@heroicons/react/24/outline';
+import { ClipboardDocumentListIcon, CalendarIcon, ClockIcon, CheckCircleIcon, XCircleIcon, AcademicCapIcon, ArrowUpTrayIcon, DocumentIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { MyAssignment, MyAssignmentsResponse } from '../../types/MyAssignments';
+import { Assignment } from '../../types/Assignment';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import { useApiToast } from '../../hooks/useApiToast';
 import { BaseModal } from '../../components/ui/BaseModal';
@@ -22,8 +23,13 @@ export default function MyHomeworkPage() {
   // Modal state
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState<MyAssignment | null>(null);
+  const [assignmentDetails, setAssignmentDetails] = useState<Assignment | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [submissionText, setSubmissionText] = useState('');
+  const [submissionFiles, setSubmissionFiles] = useState<File[]>([]);
+  const [submitting, setSubmitting] = useState(false);
 
-  const { loadOperation } = useApiToast();
+  const { loadOperation, createOperation, updateOperation } = useApiToast();
 
   const loadMyAssignments = async () => {
     setLoading(true);
@@ -53,9 +59,82 @@ export default function MyHomeworkPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, user]);
 
-  const handleCardClick = (assignment: MyAssignment) => {
+  const handleCardClick = async (assignment: MyAssignment) => {
     setSelectedAssignment(assignment);
     setIsDetailModalOpen(true);
+    setDetailLoading(true);
+    setSubmissionText('');
+    setSubmissionFiles([]);
+
+    try {
+      const details = await loadOperation(
+        () => AuthenticatedApiService.getAssignmentById(assignment.assignmentId),
+        'детали задания'
+      );
+
+      if (details) {
+        setAssignmentDetails(details);
+        
+        // If there's already a submission, we can't edit it in Pending/Overdue status
+        // For Submitted/Graded - view only mode is already handled
+      }
+    } catch (error) {
+      console.error('Error loading assignment details:', error);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files);
+      setSubmissionFiles(prev => [...prev, ...newFiles]);
+    }
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setSubmissionFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async () => {
+    if (!selectedAssignment || !assignmentDetails) return;
+
+    setSubmitting(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('textContent', submissionText);
+      
+      submissionFiles.forEach((file) => {
+        formData.append('files', file);
+      });
+
+      // Create or update submission
+      const result = await createOperation(
+        () => AuthenticatedApiService.createOrUpdateSubmission(assignmentDetails.id, formData),
+        'работу'
+      );
+
+      if (result.success && result.data) {
+        const submission = result.data;
+        
+        // Submit the submission
+        await updateOperation(
+          () => AuthenticatedApiService.submitSubmission(submission.id),
+          'работу на проверку'
+        );
+
+        setIsDetailModalOpen(false);
+        setSubmissionText('');
+        setSubmissionFiles([]);
+        setAssignmentDetails(null);
+        await loadMyAssignments();
+      }
+    } catch (error) {
+      console.error('Error submitting homework:', error);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const getTotalCount = () => {
@@ -63,6 +142,40 @@ export default function MyHomeworkPage() {
            myAssignments.pending.length + 
            myAssignments.submitted.length + 
            myAssignments.graded.length;
+  };
+
+  const getStatusBadgeForModal = (assignment: MyAssignment) => {
+    if (assignment.status === 'Graded' && assignment.score !== null) {
+      return (
+        <div className="flex items-center gap-2">
+          <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 rounded-full">
+            Проверено
+          </span>
+          <span className="px-2 py-1 text-xs font-bold bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-300 rounded-full">
+            {assignment.score} б.
+          </span>
+        </div>
+      );
+    }
+    if (assignment.status === 'Submitted') {
+      return (
+        <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 rounded-full">
+          На проверке
+        </span>
+      );
+    }
+    if (assignment.status === 'Overdue') {
+      return (
+        <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 rounded-full">
+          Просрочено
+        </span>
+      );
+    }
+    return (
+      <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 rounded-full">
+        К выполнению
+      </span>
+    );
   };
 
 
@@ -209,23 +322,199 @@ export default function MyHomeworkPage() {
       <BaseModal
         isOpen={isDetailModalOpen}
         onClose={() => {
-          setIsDetailModalOpen(false);
-          setSelectedAssignment(null);
+          if (!submitting) {
+            setIsDetailModalOpen(false);
+            setSelectedAssignment(null);
+            setAssignmentDetails(null);
+            setSubmissionText('');
+            setSubmissionFiles([]);
+          }
         }}
-        title="Детали задания"
+        title={selectedAssignment ? `Задание: ${selectedAssignment.description.substring(0, 50)}${selectedAssignment.description.length > 50 ? '...' : ''}` : 'Детали задания'}
       >
         <div className="p-6">
-          <div className="text-center py-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full mb-4">
-              <AcademicCapIcon className="h-8 w-8 text-gray-400" />
+          {detailLoading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600 dark:text-gray-400">Загрузка деталей...</p>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-              В разработке
-            </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Функционал сдачи работы находится в разработке
-            </p>
-          </div>
+          ) : assignmentDetails ? (
+            <div className="space-y-6">
+              {/* Assignment Details */}
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 space-y-3">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Детали задания</h3>
+                
+                <div>
+                  <label className="text-xs text-gray-500 dark:text-gray-400">Описание</label>
+                  <p className="text-sm text-gray-900 dark:text-white mt-1">{assignmentDetails.description}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs text-gray-500 dark:text-gray-400">Группа</label>
+                    <p className="text-sm text-gray-900 dark:text-white mt-1">{assignmentDetails.group.name}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 dark:text-gray-400">Статус</label>
+                    <div className="mt-1">
+                      {selectedAssignment && getStatusBadgeForModal(selectedAssignment)}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs text-gray-500 dark:text-gray-400">Выдано</label>
+                    <p className="text-sm text-gray-900 dark:text-white mt-1">
+                      {new Date(assignmentDetails.assignedDate).toLocaleDateString('ru-RU')}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 dark:text-gray-400">Срок сдачи</label>
+                    <p className="text-sm text-gray-900 dark:text-white mt-1">
+                      {new Date(assignmentDetails.dueDate).toLocaleDateString('ru-RU')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Submission Form - only for Pending and Overdue */}
+              {selectedAssignment && (selectedAssignment.status === 'Pending' || selectedAssignment.status === 'Overdue') ? (
+                <>
+                  <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Загрузить работу</h3>
+
+                    {/* Text Content */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Текст работы
+                      </label>
+                      <textarea
+                        value={submissionText}
+                        onChange={(e) => setSubmissionText(e.target.value)}
+                        rows={6}
+                        placeholder="Введите текст вашей работы..."
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400"
+                      />
+                    </div>
+
+                    {/* File Upload */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Прикрепить файлы
+                      </label>
+                      <div className="flex items-center justify-center w-full">
+                        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                          <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                            <ArrowUpTrayIcon className="w-10 h-10 mb-3 text-gray-400" />
+                            <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                              <span className="font-semibold">Нажмите для выбора</span> или перетащите файлы
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">PDF, DOC, DOCX, JPG, PNG</p>
+                          </div>
+                          <input
+                            type="file"
+                            multiple
+                            onChange={handleFileChange}
+                            className="hidden"
+                            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                          />
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* File List */}
+                    {submissionFiles.length > 0 && (
+                      <div className="space-y-2 mb-4">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Выбранные файлы ({submissionFiles.length})
+                        </label>
+                        <div className="space-y-2 max-h-40 overflow-y-auto">
+                          {submissionFiles.map((file, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 rounded-lg p-3"
+                            >
+                              <div className="flex items-center space-x-3">
+                                <DocumentIcon className="h-5 w-5 text-blue-500" />
+                                <div>
+                                  <div className="text-sm text-gray-900 dark:text-white">{file.name}</div>
+                                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                                    {(file.size / 1024 / 1024).toFixed(2)} MB
+                                  </div>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => handleRemoveFile(index)}
+                                className="text-red-500 hover:text-red-600 transition-colors"
+                              >
+                                <TrashIcon className="h-5 w-5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-600">
+                    <button
+                      onClick={() => {
+                        setIsDetailModalOpen(false);
+                        setSelectedAssignment(null);
+                        setAssignmentDetails(null);
+                        setSubmissionText('');
+                        setSubmissionFiles([]);
+                      }}
+                      disabled={submitting}
+                      className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      Отмена
+                    </button>
+                    <button
+                      onClick={handleSubmit}
+                      disabled={submitting || (!submissionText && submissionFiles.length === 0)}
+                      className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center"
+                    >
+                      {submitting ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Отправка...
+                        </>
+                      ) : (
+                        <>
+                          <ArrowUpTrayIcon className="h-4 w-4 mr-2" />
+                          Сдать работу
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                /* View Only for Submitted/Graded */
+                selectedAssignment && (selectedAssignment.status === 'Submitted' || selectedAssignment.status === 'Graded') && (
+                  <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                      <div className="flex items-start">
+                        <CheckCircleIcon className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 mr-3" />
+                        <div>
+                          <h4 className="text-sm font-medium text-blue-900 dark:text-blue-300">
+                            {selectedAssignment.status === 'Graded' ? 'Работа проверена' : 'Работа отправлена на проверку'}
+                          </h4>
+                          <p className="text-sm text-blue-700 dark:text-blue-400 mt-1">
+                            {selectedAssignment.status === 'Graded' 
+                              ? `Оценка: ${selectedAssignment.score} баллов`
+                              : 'Ожидайте результатов проверки'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              )}
+            </div>
+          ) : null}
         </div>
       </BaseModal>
     </div>

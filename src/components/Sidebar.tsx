@@ -19,6 +19,8 @@ const Sidebar: React.FC = () => {
     return null;
   }
 
+  const isStudent = user?.role === 'Student';
+
   const allNavigation = [
     { name: 'Аналитика', href: '/', icon: HomeIcon, activeIcon: HomeIconSolid, requireAuth: false, requireOwner: false, requireAdmin: false, requireStudent: false },
     { name: 'Организации', href: '/organizations', icon: BuildingOfficeIcon, activeIcon: BuildingOfficeIconSolid, requireAuth: true, requireOwner: true, requireAdmin: false, requireStudent: false },
@@ -29,8 +31,7 @@ const Sidebar: React.FC = () => {
     { name: 'Шаблоны расписаний', href: '/schedules', icon: CalendarDaysIcon, activeIcon: CalendarDaysIconSolid, requireAuth: true, requireOwner: false, requireAdmin: true, requireStudent: false },
     { name: 'Календарь занятий', href: '/lessons', icon: CalendarIcon, activeIcon: CalendarIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false },
     { name: 'Посещаемость', href: '/attendance', icon: ClipboardDocumentCheckIcon, activeIcon: ClipboardDocumentCheckIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false },
-    { name: 'Мои задания', href: '/my-homework', icon: ClipboardDocumentListIcon, activeIcon: ClipboardDocumentListIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: true },
-    { name: 'Домашнее задание', href: '/homework', icon: ClipboardDocumentListIcon, activeIcon: ClipboardDocumentListIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false },
+    { name: 'Домашнее задание', href: isStudent ? '/my-homework' : '/homework', icon: ClipboardDocumentListIcon, activeIcon: ClipboardDocumentListIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false },
     { name: 'Платежи', href: '/payments', icon: CurrencyDollarIcon, activeIcon: CurrencyDollarIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false },
   ];
 
@@ -41,19 +42,12 @@ const Sidebar: React.FC = () => {
     navigation = allNavigation.filter(item => !item.requireAuth);
   } else {
     // If authenticated, filter by role requirements
-    const isStudent = user?.roleId === 1;
-    
     navigation = allNavigation.filter(item => {
       if (!item.requireAuth) return true; // Public items always visible
       
       // If item is only for students, show only to students
       if (item.requireStudent) {
         return isStudent;
-      }
-      
-      // If item is not for students, hide from students
-      if (isStudent && !item.requireStudent) {
-        return false;
       }
       
       if (item.requireOwner && user) {
@@ -69,6 +63,10 @@ const Sidebar: React.FC = () => {
   const isActive = (href: string) => {
     if (href === '/') {
       return pathname === '/';
+    }
+    // Special handling for homework pages
+    if (href === '/my-homework' || href === '/homework') {
+      return pathname === '/my-homework' || pathname === '/homework';
     }
     return pathname.startsWith(href);
   };

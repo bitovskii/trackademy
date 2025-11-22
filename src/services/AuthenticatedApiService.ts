@@ -8,6 +8,7 @@ import { Subject, SubjectFormData } from '../types/Subject';
 import { GroupsResponse } from '../types/Group';
 import { Assignment, AssignmentFormData, AssignmentsResponse, AssignmentFilters } from '../types/Assignment';
 import { Submission, SubmissionFilters, SubmissionsResponse, GradeSubmissionRequest, ReturnSubmissionRequest } from '../types/Submission';
+import { MyAssignmentsRequest, MyAssignmentsResponse } from '../types/MyAssignments';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -406,6 +407,10 @@ export class AuthenticatedApiService {
 
   static async getAssignments(filters: AssignmentFilters): Promise<AssignmentsResponse> {
     return this.post('/Assignment/get-assignments', filters);
+  }
+
+  static async getMyAssignments(data: MyAssignmentsRequest): Promise<MyAssignmentsResponse> {
+    return this.post('/Assignment/my-assignments', data);
   }
 
   static async createAssignment(data: AssignmentFormData): Promise<Assignment> {

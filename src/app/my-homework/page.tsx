@@ -99,14 +99,29 @@ export default function MyHomeworkPage() {
   const handleSubmit = async () => {
     if (!selectedAssignment || !assignmentDetails) return;
 
+    // Validate that at least one field is filled
+    if (!submissionText.trim() && submissionFiles.length === 0) {
+      console.error('No content to submit');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
       const formData = new FormData();
-      formData.append('textContent', submissionText);
       
+      // Always append textContent, even if empty (API might require it)
+      formData.append('textContent', submissionText.trim());
+      
+      // Append each file
       submissionFiles.forEach((file) => {
         formData.append('files', file);
+      });
+
+      console.log('Submitting homework:', {
+        assignmentId: assignmentDetails.id,
+        textContent: submissionText.trim(),
+        filesCount: submissionFiles.length
       });
 
       // Create or update submission
@@ -117,6 +132,8 @@ export default function MyHomeworkPage() {
 
       if (result.success && result.data) {
         const submission = result.data;
+        
+        console.log('Submission created:', submission);
         
         // Submit the submission
         await updateOperation(
@@ -322,40 +339,44 @@ export default function MyHomeworkPage() {
       <BaseModal
         isOpen={isDetailModalOpen}
         onClose={() => {
-          if (!submitting) {
-            setIsDetailModalOpen(false);
-            setSelectedAssignment(null);
-            setAssignmentDetails(null);
-            setSubmissionText('');
-            setSubmissionFiles([]);
-          }
+          setIsDetailModalOpen(false);
+          setSelectedAssignment(null);
+          setAssignmentDetails(null);
+          setSubmissionText('');
+          setSubmissionFiles([]);
         }}
-        title={selectedAssignment ? `Задание: ${selectedAssignment.description.substring(0, 50)}${selectedAssignment.description.length > 50 ? '...' : ''}` : 'Детали задания'}
+        title={selectedAssignment ? `${selectedAssignment.description.substring(0, 40)}${selectedAssignment.description.length > 40 ? '...' : ''}` : 'Детали задания'}
+        customBackground="bg-gray-800 dark:bg-gray-800"
+        gradientFrom="from-blue-500"
+        gradientTo="to-purple-600"
+        maxWidth="2xl"
       >
-        <div className="p-6">
+        <div className="space-y-4">
           {detailLoading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600 dark:text-gray-400">Загрузка деталей...</p>
+            <div className="text-center py-12">
+              <div className="p-4 bg-blue-900/20 rounded-full w-16 h-16 mx-auto mb-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400 mx-auto mt-2"></div>
+              </div>
+              <p className="text-gray-300">Загрузка деталей...</p>
             </div>
           ) : assignmentDetails ? (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Assignment Details */}
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 space-y-3">
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Детали задания</h3>
+              <div className="bg-gray-700 rounded-lg p-4 space-y-3">
+                <h3 className="text-sm font-semibold text-white mb-3">Детали задания</h3>
                 
                 <div>
-                  <label className="text-xs text-gray-500 dark:text-gray-400">Описание</label>
-                  <p className="text-sm text-gray-900 dark:text-white mt-1">{assignmentDetails.description}</p>
+                  <label className="text-xs text-gray-400">Описание</label>
+                  <p className="text-sm text-white mt-1">{assignmentDetails.description}</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs text-gray-500 dark:text-gray-400">Группа</label>
-                    <p className="text-sm text-gray-900 dark:text-white mt-1">{assignmentDetails.group.name}</p>
+                    <label className="text-xs text-gray-400">Группа</label>
+                    <p className="text-sm text-white mt-1">{assignmentDetails.group.name}</p>
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500 dark:text-gray-400">Статус</label>
+                    <label className="text-xs text-gray-400">Статус</label>
                     <div className="mt-1">
                       {selectedAssignment && getStatusBadgeForModal(selectedAssignment)}
                     </div>
@@ -364,14 +385,14 @@ export default function MyHomeworkPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs text-gray-500 dark:text-gray-400">Выдано</label>
-                    <p className="text-sm text-gray-900 dark:text-white mt-1">
+                    <label className="text-xs text-gray-400">Выдано</label>
+                    <p className="text-sm text-white mt-1">
                       {new Date(assignmentDetails.assignedDate).toLocaleDateString('ru-RU')}
                     </p>
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500 dark:text-gray-400">Срок сдачи</label>
-                    <p className="text-sm text-gray-900 dark:text-white mt-1">
+                    <label className="text-xs text-gray-400">Срок сдачи</label>
+                    <p className="text-sm text-white mt-1">
                       {new Date(assignmentDetails.dueDate).toLocaleDateString('ru-RU')}
                     </p>
                   </div>
@@ -379,38 +400,44 @@ export default function MyHomeworkPage() {
               </div>
 
               {/* Submission Form - only for Pending and Overdue */}
-              {selectedAssignment && (selectedAssignment.status === 'Pending' || selectedAssignment.status === 'Overdue') ? (
+              {selectedAssignment && selectedAssignment.status !== 'Submitted' && selectedAssignment.status !== 'Graded' ? (
                 <>
-                  <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Загрузить работу</h3>
+                  <div className="border-t border-gray-600 pt-6 mt-4">
+                    <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/30 rounded-lg p-4 mb-4">
+                      <h3 className="text-base font-semibold text-white mb-1 flex items-center">
+                        <ArrowUpTrayIcon className="h-5 w-5 mr-2 text-blue-400" />
+                        Выполнить задание
+                      </h3>
+                      <p className="text-xs text-gray-400">Напишите комментарий или загрузите файлы с выполненным заданием</p>
+                    </div>
 
                     {/* Text Content */}
                     <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Текст работы
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Комментарий / Текст работы
                       </label>
                       <textarea
                         value={submissionText}
                         onChange={(e) => setSubmissionText(e.target.value)}
                         rows={6}
                         placeholder="Введите текст вашей работы..."
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400"
+                        className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-700 text-white placeholder-gray-400"
                       />
                     </div>
 
                     {/* File Upload */}
                     <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
                         Прикрепить файлы
                       </label>
                       <div className="flex items-center justify-center w-full">
-                        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-700 hover:bg-gray-600 transition-colors">
                           <div className="flex flex-col items-center justify-center pt-5 pb-6">
                             <ArrowUpTrayIcon className="w-10 h-10 mb-3 text-gray-400" />
-                            <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                            <p className="mb-2 text-sm text-gray-400">
                               <span className="font-semibold">Нажмите для выбора</span> или перетащите файлы
                             </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">PDF, DOC, DOCX, JPG, PNG</p>
+                            <p className="text-xs text-gray-500">PDF, DOC, DOCX, JPG, PNG</p>
                           </div>
                           <input
                             type="file"
@@ -426,27 +453,27 @@ export default function MyHomeworkPage() {
                     {/* File List */}
                     {submissionFiles.length > 0 && (
                       <div className="space-y-2 mb-4">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        <label className="block text-sm font-medium text-gray-300">
                           Выбранные файлы ({submissionFiles.length})
                         </label>
                         <div className="space-y-2 max-h-40 overflow-y-auto">
                           {submissionFiles.map((file, index) => (
                             <div
                               key={index}
-                              className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 rounded-lg p-3"
+                              className="flex items-center justify-between bg-gray-600 rounded-lg p-3"
                             >
                               <div className="flex items-center space-x-3">
-                                <DocumentIcon className="h-5 w-5 text-blue-500" />
+                                <DocumentIcon className="h-5 w-5 text-blue-400" />
                                 <div>
-                                  <div className="text-sm text-gray-900 dark:text-white">{file.name}</div>
-                                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                                  <div className="text-sm text-white">{file.name}</div>
+                                  <div className="text-xs text-gray-400">
                                     {(file.size / 1024 / 1024).toFixed(2)} MB
                                   </div>
                                 </div>
                               </div>
                               <button
                                 onClick={() => handleRemoveFile(index)}
-                                className="text-red-500 hover:text-red-600 transition-colors"
+                                className="text-red-400 hover:text-red-300 transition-colors"
                               >
                                 <TrashIcon className="h-5 w-5" />
                               </button>
@@ -458,7 +485,7 @@ export default function MyHomeworkPage() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-600">
+                  <div className="flex justify-end gap-3 pt-4 border-t border-gray-600">
                     <button
                       onClick={() => {
                         setIsDetailModalOpen(false);
@@ -468,14 +495,14 @@ export default function MyHomeworkPage() {
                         setSubmissionFiles([]);
                       }}
                       disabled={submitting}
-                      className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
+                      className="px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
                     >
                       Отмена
                     </button>
                     <button
                       onClick={handleSubmit}
                       disabled={submitting || (!submissionText && submissionFiles.length === 0)}
-                      className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center"
+                      className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                     >
                       {submitting ? (
                         <>
@@ -494,15 +521,15 @@ export default function MyHomeworkPage() {
               ) : (
                 /* View Only for Submitted/Graded */
                 selectedAssignment && (selectedAssignment.status === 'Submitted' || selectedAssignment.status === 'Graded') && (
-                  <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
-                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                  <div className="border-t border-gray-600 pt-4">
+                    <div className="bg-blue-900/20 border border-blue-800 rounded-lg p-4">
                       <div className="flex items-start">
-                        <CheckCircleIcon className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 mr-3" />
+                        <CheckCircleIcon className="h-5 w-5 text-blue-400 mt-0.5 mr-3" />
                         <div>
-                          <h4 className="text-sm font-medium text-blue-900 dark:text-blue-300">
+                          <h4 className="text-sm font-medium text-blue-300">
                             {selectedAssignment.status === 'Graded' ? 'Работа проверена' : 'Работа отправлена на проверку'}
                           </h4>
-                          <p className="text-sm text-blue-700 dark:text-blue-400 mt-1">
+                          <p className="text-sm text-blue-400 mt-1">
                             {selectedAssignment.status === 'Graded' 
                               ? `Оценка: ${selectedAssignment.score} баллов`
                               : 'Ожидайте результатов проверки'}

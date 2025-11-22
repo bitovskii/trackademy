@@ -435,7 +435,18 @@ export class AuthenticatedApiService {
   }
 
   static async createOrUpdateSubmission(assignmentId: string, formData: FormData): Promise<Submission> {
-    return this.post(`/Submission/assignment/${assignmentId}`, formData);
+    const token = this.getAuthToken();
+    const headers: Record<string, string> = {};
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    return this.request(`/Submission/assignment/${assignmentId}`, {
+      method: 'POST',
+      body: formData,
+      headers: headers,
+    });
   }
 
   static async submitSubmission(submissionId: string): Promise<Submission> {

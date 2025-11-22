@@ -42,9 +42,9 @@ export const BaseModal: React.FC<BaseModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className={`${customBackground || 'bg-white'} rounded-2xl shadow-2xl w-full ${maxWidthClasses[maxWidth]} max-h-[70vh] overflow-hidden`}>
+      <div className={`rounded-2xl shadow-2xl w-full ${maxWidthClasses[maxWidth]} max-h-[70vh] overflow-hidden border-0 ${customBackground || 'bg-white dark:bg-gray-800'}`}>
         {/* Header with gradient */}
-        <div className={`relative bg-gradient-to-r ${gradientFrom} ${gradientTo} p-2 text-white`}>
+        <div className={`relative bg-gradient-to-r ${gradientFrom} ${gradientTo} p-4 text-white`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               {icon && (
@@ -70,7 +70,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-2 max-h-[calc(70vh-60px)] overflow-y-auto">
+        <div className={`p-6 max-h-[calc(70vh-80px)] overflow-y-auto ${customBackground || 'bg-white dark:bg-gray-800'}`}>
           {children}
         </div>
       </div>

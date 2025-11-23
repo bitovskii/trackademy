@@ -11,6 +11,7 @@ import { useApiToast } from '../../hooks/useApiToast';
 import { DeleteConfirmationModal } from '../../components/ui/DeleteConfirmationModal';
 import { BaseModal } from '../../components/ui/BaseModal';
 import { DateRangePicker } from '../../components/ui/DateRangePicker';
+import { SubmissionDetailModal } from '../../components/ui/SubmissionDetailModal';
 
 export default function HomeworkPage() {
   const { isAuthenticated, user } = useAuth();
@@ -38,6 +39,11 @@ export default function HomeworkPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [detailActiveTab, setDetailActiveTab] = useState<'details' | 'students'>('details');
   const [studentFilter, setStudentFilter] = useState<'all' | 'submitted' | 'notSubmitted'>('all');
+  
+  // Submission detail modal state
+  const [isSubmissionDetailOpen, setIsSubmissionDetailOpen] = useState(false);
+  const [selectedSubmissionId, setSelectedSubmissionId] = useState<string | null>(null);
+  const [selectedStudentName, setSelectedStudentName] = useState('');
 
   // Submissions tab state
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -1199,8 +1205,11 @@ export default function HomeworkPage() {
                             key={student.studentId}
                             className="hover:bg-gray-700/50 cursor-pointer transition-colors"
                             onClick={() => {
-                              // TODO: Navigate to student submission detail page
-                              console.log('Navigate to student submission:', student.studentId);
+                              if (student.submission) {
+                                setSelectedSubmissionId(student.submission.id);
+                                setSelectedStudentName(student.studentName);
+                                setIsSubmissionDetailOpen(true);
+                              }
                             }}
                           >
                             <td className="px-6 py-4 whitespace-nowrap">
@@ -1268,6 +1277,22 @@ export default function HomeworkPage() {
           </div>
         )}
       </BaseModal>
+
+      {/* Submission Detail Modal */}
+      <SubmissionDetailModal
+        isOpen={isSubmissionDetailOpen}
+        onClose={() => {
+          setIsSubmissionDetailOpen(false);
+          setSelectedSubmissionId(null);
+          setSelectedStudentName('');
+        }}
+        submissionId={selectedSubmissionId}
+        studentName={selectedStudentName}
+        onUpdate={() => {
+          // Reload assignments list after grading/returning
+          loadAssignments(currentPage, true);
+        }}
+      />
     </div>
   );
 }

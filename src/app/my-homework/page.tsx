@@ -6,6 +6,7 @@ import { AuthenticatedApiService } from '../../services/AuthenticatedApiService'
 import { ClipboardDocumentListIcon, CalendarIcon, ClockIcon, CheckCircleIcon, XCircleIcon, AcademicCapIcon, ArrowUpTrayIcon, DocumentIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { MyAssignment, MyAssignmentsResponse } from '../../types/MyAssignments';
 import { Assignment } from '../../types/Assignment';
+import { Submission } from '../../types/Submission';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import { useApiToast } from '../../hooks/useApiToast';
 import { BaseModal } from '../../components/ui/BaseModal';
@@ -24,6 +25,7 @@ export default function MyHomeworkPage() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState<MyAssignment | null>(null);
   const [assignmentDetails, setAssignmentDetails] = useState<Assignment | null>(null);
+  const [submissionDetails, setSubmissionDetails] = useState<Submission | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [submissionText, setSubmissionText] = useState('');
   const [submissionFiles, setSubmissionFiles] = useState<File[]>([]);
@@ -65,6 +67,7 @@ export default function MyHomeworkPage() {
     setDetailLoading(true);
     setSubmissionText('');
     setSubmissionFiles([]);
+    setSubmissionDetails(null);
 
     try {
       const details = await loadOperation(
@@ -74,9 +77,19 @@ export default function MyHomeworkPage() {
 
       if (details) {
         setAssignmentDetails(details);
-        
-        // If there's already a submission, we can't edit it in Pending/Overdue status
-        // For Submitted/Graded - view only mode is already handled
+      }
+
+      // Загрузка деталей submission, если он существует
+      if (assignment.submissionId) {
+        const submissionData = await loadOperation(
+          () => AuthenticatedApiService.get(`/Submission/${assignment.submissionId}`),
+          'детали работы'
+        ) as Submission;
+
+        if (submissionData) {
+          setSubmissionDetails(submissionData);
+          setSubmissionText(submissionData.textContent || '');
+        }
       }
     } catch (error) {
       console.error('Error loading assignment details:', error);
@@ -399,8 +412,92 @@ export default function MyHomeworkPage() {
                 </div>
               </div>
 
-              {/* Submission Form - only for Pending and Overdue */}
-              {selectedAssignment && selectedAssignment.status !== 'Submitted' && selectedAssignment.status !== 'Graded' ? (
+              {/* Show submission details if exists, otherwise show form */}
+              {submissionDetails ? (
+                /* View Submitted Work */
+                <div className="border-t border-gray-600 pt-4 space-y-4">
+                  {/* Status Info */}
+                  <div className="bg-blue-900/20 border border-blue-800 rounded-lg p-4">
+                    <div className="flex items-start">
+                      <CheckCircleIcon className="h-5 w-5 text-blue-400 mt-0.5 mr-3" />
+                      <div className="flex-1">
+                        <h4 className="text-sm font-medium text-blue-300">
+                          {selectedAssignment?.status === 'Graded' ? 'Работа проверена' : 'Работа отправлена на проверку'}
+                        </h4>
+                        <p className="text-sm text-blue-400 mt-1">
+                          {selectedAssignment?.status === 'Graded' && selectedAssignment?.score !== null
+                            ? `Оценка: ${selectedAssignment.score} баллов`
+                            : 'Ожидайте результатов проверки'}
+                        </p>
+                        {submissionDetails.submittedAt && (
+                          <p className="text-xs text-gray-400 mt-1">
+                            Сдано: {new Date(submissionDetails.submittedAt).toLocaleString('ru-RU')}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Text Content */}
+                  {submissionDetails.textContent && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Текст работы
+                      </label>
+                      <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
+                        <p className="text-sm text-white whitespace-pre-wrap">{submissionDetails.textContent}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Files */}
+                  {submissionDetails.files && submissionDetails.files.length > 0 && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Прикрепленные файлы ({submissionDetails.files.length})
+                      </label>
+                      <div className="space-y-2">
+                        {submissionDetails.files.map((file) => (
+                          <div
+                            key={file.id}
+                            className="flex items-center justify-between bg-gray-700 rounded-lg p-3 border border-gray-600"
+                          >
+                            <div className="flex items-center space-x-3">
+                              <DocumentIcon className="h-5 w-5 text-blue-400" />
+                              <div>
+                                <div className="text-sm text-white">{file.originalFileName}</div>
+                                <div className="text-xs text-gray-400">
+                                  {(file.fileSize / 1024 / 1024).toFixed(2)} MB
+                                </div>
+                              </div>
+                            </div>
+                            <a
+                              href={`${process.env.NEXT_PUBLIC_API_URL || 'https://trackacademy.onrender.com'}/api/Submission/file/${file.id}`}
+                              download={file.originalFileName}
+                              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+                            >
+                              Скачать
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Teacher Comment */}
+                  {submissionDetails.teacherComment && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Комментарий преподавателя
+                      </label>
+                      <div className="bg-yellow-900/20 border border-yellow-800 rounded-lg p-4">
+                        <p className="text-sm text-yellow-300 whitespace-pre-wrap">{submissionDetails.teacherComment}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : selectedAssignment && selectedAssignment.status !== 'Submitted' && selectedAssignment.status !== 'Graded' ? (
+                /* Submission Form - only for Pending and Overdue */
                 <>
                   <div className="border-t border-gray-600 pt-6 mt-4">
                     <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/30 rounded-lg p-4 mb-4">
@@ -518,28 +615,7 @@ export default function MyHomeworkPage() {
                     </button>
                   </div>
                 </>
-              ) : (
-                /* View Only for Submitted/Graded */
-                selectedAssignment && (selectedAssignment.status === 'Submitted' || selectedAssignment.status === 'Graded') && (
-                  <div className="border-t border-gray-600 pt-4">
-                    <div className="bg-blue-900/20 border border-blue-800 rounded-lg p-4">
-                      <div className="flex items-start">
-                        <CheckCircleIcon className="h-5 w-5 text-blue-400 mt-0.5 mr-3" />
-                        <div>
-                          <h4 className="text-sm font-medium text-blue-300">
-                            {selectedAssignment.status === 'Graded' ? 'Работа проверена' : 'Работа отправлена на проверку'}
-                          </h4>
-                          <p className="text-sm text-blue-400 mt-1">
-                            {selectedAssignment.status === 'Graded' 
-                              ? `Оценка: ${selectedAssignment.score} баллов`
-                              : 'Ожидайте результатов проверки'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )
-              )}
+              ) : null}
             </div>
           ) : null}
         </div>

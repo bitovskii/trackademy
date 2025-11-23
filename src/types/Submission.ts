@@ -8,9 +8,13 @@ export enum SubmissionStatus {
 
 export interface SubmissionFile {
   id: string;
+  originalFileName: string;
+  contentType: string;
   fileName: string;
   fileSize: number;
   uploadedAt: string;
+  isImage: boolean;
+  downloadUrl: string;
 }
 
 export interface Submission {

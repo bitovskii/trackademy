@@ -433,13 +433,13 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
         </div>
 
         {/* Time grid with relative positioning for lessons */}
-        <div className="relative">
+        <div className="relative" style={{ minHeight: `${hours.length * 64}px` }}>
           {/* Background grid */}
           <div className="grid grid-cols-8">
             {hours.map((hour) => (
               <React.Fragment key={hour}>
                 {/* Time column */}
-                <div className="border-r border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 p-2 text-center">
+                <div className="border-r border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 p-2 text-center h-16">
                   <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
                     {hour.toString().padStart(2, '0')}:00
                   </span>
@@ -449,7 +449,7 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
                 {weekDays.map((day, dayIndex) => (
                   <div 
                     key={`${dayIndex}-${hour}`} 
-                    className="border-r border-b border-gray-200 dark:border-gray-600 last:border-r-0 min-h-[64px]"
+                    className="border-r border-b border-gray-200 dark:border-gray-600 last:border-r-0 h-16"
                   />
                 ))}
               </React.Fragment>

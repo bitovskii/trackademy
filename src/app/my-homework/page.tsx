@@ -124,6 +124,66 @@ export default function MyHomeworkPage() {
     setSubmissionFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleDownloadFile = async (fileId: string, fileName: string, downloadUrl?: string) => {
+    try {
+      // Используем API для скачивания с авторизацией
+      console.log('Fetching file via API...');
+      const response = await AuthenticatedApiService.downloadFile(`/Submission/file/${fileId}`);
+      
+      console.log('API Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        contentType: response.headers.get('content-type'),
+        contentLength: response.headers.get('content-length')
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      // Создаем blob из response
+      const blob = await response.blob();
+      
+      console.log('Blob created:', {
+        size: blob.size,
+        type: blob.type
+      });
+      
+      if (blob.size === 0) {
+        throw new Error('Файл пустой');
+      }
+      
+      // Создаем ссылку для скачивания
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Небольшая задержка перед очисткой
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        console.log('=== Download completed successfully ===');
+      }, 100);
+      
+    } catch (error) {
+      console.error('=== Download error ===', error);
+      alert(`Ошибка при скачивании файла: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+    }
+  };
+
+  // Проверка, можно ли редактировать работу
+  const canEditSubmission = (): boolean => {
+    // Если submission вообще нет - можно создавать
+    if (!submissionDetails) return true;
+    
+    // Проверяем статус: разрешено редактировать только в статусах 0 (Draft), 3 (Returned), 4 (Overdue)
+    const editableStatuses = [0, 3, 4]; // Draft, Returned, Overdue
+    return editableStatuses.includes(submissionDetails.status);
+  };
+
   const handleDeleteSubmissionFile = async (fileId: string) => {
     if (!confirm('Вы уверены, что хотите удалить этот файл?')) {
       return;
@@ -151,7 +211,7 @@ export default function MyHomeworkPage() {
     if (!selectedAssignment || !assignmentDetails) return;
 
     // Validate that at least one field is filled
-    if (!submissionText.trim() && submissionFiles.length === 0) {
+    if (!submissionText.trim() && submissionFiles.length === 0 && (!submissionDetails?.files || submissionDetails.files.length === 0)) {
       console.error('No content to submit');
       return;
     }
@@ -200,6 +260,47 @@ export default function MyHomeworkPage() {
       }
     } catch (error) {
       console.error('Error submitting homework:', error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSaveDraft = async () => {
+    if (!selectedAssignment || !assignmentDetails) return;
+
+    // Allow saving draft even with empty content
+    setSubmitting(true);
+
+    try {
+      const formData = new FormData();
+      
+      formData.append('textContent', submissionText.trim());
+      
+      submissionFiles.forEach((file) => {
+        formData.append('files', file);
+      });
+
+      console.log('Saving draft:', {
+        assignmentId: assignmentDetails.id,
+        textContent: submissionText.trim(),
+        filesCount: submissionFiles.length
+      });
+
+      // Create or update submission as draft (don't submit)
+      const result = await createOperation(
+        () => AuthenticatedApiService.createOrUpdateSubmission(assignmentDetails.id, formData),
+        'черновик'
+      );
+
+      if (result.success) {
+        setIsDetailModalOpen(false);
+        setSubmissionText('');
+        setSubmissionFiles([]);
+        setAssignmentDetails(null);
+        await loadMyAssignments();
+      }
+    } catch (error) {
+      console.error('Error saving draft:', error);
     } finally {
       setSubmitting(false);
     }
@@ -450,25 +551,32 @@ export default function MyHomeworkPage() {
                 </div>
               </div>
 
-              {/* Show submission details if exists and status is not Returned, otherwise show form */}
-              {submissionDetails && selectedAssignment?.status !== 'Returned' && selectedAssignment?.status !== 'Graded' && selectedAssignment?.status !== 'Pending' && selectedAssignment?.status !== 'Overdue' ? (
-                /* View Submitted Work (only for Submitted status) */
+              {/* Conditional rendering based on editing permissions */}
+              {!canEditSubmission() && submissionDetails?.status === 1 ? (
+                /* View Submitted Work (status: Submitted) - READ ONLY */
                 <div className="border-t border-gray-600 pt-4 space-y-4">
                   {/* Status Info */}
-                  <div className="bg-blue-900/20 border border-blue-800 rounded-lg p-4">
-                    <div className="flex items-start">
-                      <CheckCircleIcon className="h-5 w-5 text-blue-400 mt-0.5 mr-3" />
+                  <div className="bg-gradient-to-r from-blue-900/30 to-blue-800/20 border-l-4 border-blue-500 rounded-lg p-4 shadow-sm">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0">
+                        <div className="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center">
+                          <CheckCircleIcon className="h-6 w-6 text-blue-400" />
+                        </div>
+                      </div>
                       <div className="flex-1">
-                        <h4 className="text-sm font-medium text-blue-300">
+                        <h4 className="text-base font-semibold text-blue-300 mb-1">
                           Работа отправлена на проверку
                         </h4>
-                        <p className="text-sm text-blue-400 mt-1">
-                          Ожидайте результатов проверки
+                        <p className="text-sm text-gray-300 mb-2">
+                          Ваша работа находится на рассмотрении у преподавателя. Результаты проверки появятся здесь после завершения.
                         </p>
                         {submissionDetails.submittedAt && (
-                          <p className="text-xs text-gray-400 mt-1">
-                            Сдано: {new Date(submissionDetails.submittedAt).toLocaleString('ru-RU')}
-                          </p>
+                          <div className="flex items-center gap-2 text-xs text-gray-400">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>Сдано: {new Date(submissionDetails.submittedAt).toLocaleString('ru-RU')}</span>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -507,13 +615,12 @@ export default function MyHomeworkPage() {
                                 </div>
                               </div>
                             </div>
-                            <a
-                              href={`${process.env.NEXT_PUBLIC_API_URL || 'https://trackademy.kz'}/api/Submission/file/${file.id}`}
-                              download={file.originalFileName}
+                            <button
+                              onClick={() => handleDownloadFile(file.id, file.originalFileName, file.downloadUrl)}
                               className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
                             >
                               Скачать
-                            </a>
+                            </button>
                           </div>
                         ))}
                       </div>
@@ -532,8 +639,8 @@ export default function MyHomeworkPage() {
                     </div>
                   )}
                 </div>
-              ) : submissionDetails && selectedAssignment?.status === 'Graded' ? (
-                /* View Graded Work (read-only) */
+              ) : !canEditSubmission() && submissionDetails?.status === 2 ? (
+                /* View Graded Work (status: Graded) - READ ONLY */
                 <div className="border-t border-gray-600 pt-4 space-y-4">
                   {/* Status Info */}
                   <div className="bg-green-900/20 border border-green-800 rounded-lg p-4">
@@ -544,7 +651,7 @@ export default function MyHomeworkPage() {
                           Работа проверена
                         </h4>
                         <p className="text-sm text-green-400 mt-1">
-                          {selectedAssignment?.score !== null ? `Оценка: ${selectedAssignment.score} баллов` : 'Оценка не выставлена'}
+                          {selectedAssignment && selectedAssignment.score !== null ? `Оценка: ${selectedAssignment.score} баллов` : 'Оценка не выставлена'}
                         </p>
                         {submissionDetails.gradedAt && (
                           <p className="text-xs text-gray-400 mt-1">
@@ -588,13 +695,12 @@ export default function MyHomeworkPage() {
                                 </div>
                               </div>
                             </div>
-                            <a
-                              href={`${process.env.NEXT_PUBLIC_API_URL || 'https://trackademy.kz'}/api/Submission/file/${file.id}`}
-                              download={file.originalFileName}
+                            <button
+                              onClick={() => handleDownloadFile(file.id, file.originalFileName, file.downloadUrl)}
                               className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
                             >
                               Скачать
-                            </a>
+                            </button>
                           </div>
                         ))}
                       </div>
@@ -613,8 +719,8 @@ export default function MyHomeworkPage() {
                     </div>
                   )}
                 </div>
-              ) : selectedAssignment && (selectedAssignment.status === 'Pending' || selectedAssignment.status === 'Overdue' || selectedAssignment.status === 'Returned') ? (
-                /* Submission Form - only for Pending and Overdue */
+              ) : canEditSubmission() ? (
+                /* Submission Form - editable for Draft (0), Returned (3), Overdue (4), or null */
                 <>
                   <div className="border-t border-gray-600 pt-6 mt-4">
                     <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/30 rounded-lg p-4 mb-4">
@@ -697,8 +803,8 @@ export default function MyHomeworkPage() {
                       </div>
                     )}
 
-                    {/* Existing Files from Submission (for Returned status) */}
-                    {selectedAssignment?.status === 'Returned' && submissionDetails?.files && submissionDetails.files.length > 0 && (
+                    {/* Existing Files from Submission (for Draft, Returned, or Overdue status) */}
+                    {submissionDetails?.files && submissionDetails.files.length > 0 && (
                       <div className="space-y-2 mb-4">
                         <label className="block text-sm font-medium text-gray-300">
                           Загруженные файлы ({submissionDetails.files.length})
@@ -719,13 +825,12 @@ export default function MyHomeworkPage() {
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">
-                                <a
-                                  href={`${process.env.NEXT_PUBLIC_API_URL || 'https://trackademy.kz'}/api/Submission/file/${file.id}`}
-                                  download={file.originalFileName}
+                                <button
+                                  onClick={() => handleDownloadFile(file.id, file.originalFileName, file.downloadUrl)}
                                   className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
                                 >
                                   Скачать
-                                </a>
+                                </button>
                                 <button
                                   onClick={() => handleDeleteSubmissionFile(file.id)}
                                   className="text-red-400 hover:text-red-300 transition-colors"
@@ -739,8 +844,8 @@ export default function MyHomeworkPage() {
                       </div>
                     )}
 
-                    {/* Teacher Comment for Returned status */}
-                    {selectedAssignment?.status === 'Returned' && submissionDetails?.teacherComment && (
+                    {/* Teacher Comment (if exists) */}
+                    {submissionDetails?.teacherComment && (
                       <div className="mb-4">
                         <label className="block text-sm font-medium text-gray-300 mb-2">
                           Комментарий преподавателя
@@ -753,7 +858,7 @@ export default function MyHomeworkPage() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex justify-end gap-3 pt-4 border-t border-gray-600">
+                  <div className="flex justify-between gap-3 pt-4 border-t border-gray-600">
                     <button
                       onClick={() => {
                         setIsDetailModalOpen(false);
@@ -767,23 +872,39 @@ export default function MyHomeworkPage() {
                     >
                       Отмена
                     </button>
-                    <button
-                      onClick={handleSubmit}
-                      disabled={submitting || (!submissionText && submissionFiles.length === 0)}
-                      className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                    >
-                      {submitting ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Отправка...
-                        </>
-                      ) : (
-                        <>
-                          <ArrowUpTrayIcon className="h-4 w-4 mr-2" />
-                          Сдать работу
-                        </>
-                      )}
-                    </button>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={handleSaveDraft}
+                        disabled={submitting}
+                        className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-gray-600 hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {submitting ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Сохранение...
+                          </>
+                        ) : (
+                          'Сохранить черновик'
+                        )}
+                      </button>
+                      <button
+                        onClick={handleSubmit}
+                        disabled={submitting || (!submissionText && submissionFiles.length === 0 && (!submissionDetails?.files || submissionDetails.files.length === 0))}
+                        className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                      >
+                        {submitting ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Отправка...
+                          </>
+                        ) : (
+                          <>
+                            <ArrowUpTrayIcon className="h-4 w-4 mr-2" />
+                            Сдать работу
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </>
               ) : null}

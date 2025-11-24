@@ -133,29 +133,50 @@ export const SubmissionDetailModal: React.FC<SubmissionDetailModalProps> = ({
   };
 
   const handleDownloadFile = async (fileId: string, fileName: string) => {
+    console.log('=== Download file started (Teacher) ===');
+    console.log('File info:', { fileId, fileName });
+    
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'https://trackademy.kz'}/Submission/file/${fileId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        }
-      );
+      console.log('Fetching file via API...');
+      const response = await AuthenticatedApiService.downloadFile(`/Submission/file/${fileId}`);
 
-      if (!response.ok) throw new Error('Ошибка загрузки файла');
+      console.log('API Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        contentType: response.headers.get('content-type'),
+        contentLength: response.headers.get('content-length')
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
       const blob = await response.blob();
+      
+      console.log('Blob created:', {
+        size: blob.size,
+        type: blob.type
+      });
+      
+      if (blob.size === 0) {
+        throw new Error('Файл пустой');
+      }
+      
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = fileName;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        console.log('=== Download completed successfully ===');
+      }, 100);
     } catch (error) {
-      console.error('Error downloading file:', error);
+      console.error('=== Download error ===', error);
+      alert(`Ошибка при скачивании файла: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
     }
   };
 
@@ -183,8 +204,12 @@ export const SubmissionDetailModal: React.FC<SubmissionDetailModalProps> = ({
       );
       
       if (result.success) {
+        // Обновляем данные в модалке
+        await loadSubmissionDetail();
+        // Уведомляем родительский компонент
         onUpdate?.();
-        onClose();
+        // Переключаемся на вкладку с информацией
+        setActiveTab('info');
       }
     } finally {
       setActionLoading(false);
@@ -209,8 +234,14 @@ export const SubmissionDetailModal: React.FC<SubmissionDetailModalProps> = ({
       );
       
       if (result.success) {
+        // Обновляем данные в модалке
+        await loadSubmissionDetail();
+        // Уведомляем родительский компонент
         onUpdate?.();
-        onClose();
+        // Переключаемся на вкладку с информацией
+        setActiveTab('info');
+        // Очищаем поле комментария
+        setReturnComment('');
       }
     } finally {
       setActionLoading(false);

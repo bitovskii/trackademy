@@ -4,7 +4,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import Sidebar from '../components/Sidebar';
 import TopBar from '../components/TopBar';
-import { AuthProvider } from '../contexts/AuthContext';
+import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { ThemeProvider } from '../contexts/ThemeContext';
 import { ToastProvider } from '../contexts/ToastContext';
 import { useEffect } from 'react';
@@ -12,13 +12,35 @@ import { usePathname } from 'next/navigation';
 
 const inter = Inter({ subsets: ['latin'] });
 
+function LayoutContent({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const { isAuthenticated } = useAuth();
+  const isLoginPage = pathname === '/login';
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-all duration-500">
+      <TopBar />
+      <div className="flex">
+        <Sidebar />
+        <main className={`flex-1 min-h-screen ${
+          !isAuthenticated || isLoginPage
+            ? 'p-0' 
+            : 'lg:ml-64 p-4 md:p-6 pb-20 lg:pb-6 pt-[84px]'
+        }`}>
+          <div className="max-w-full mx-auto">
+            {children}
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const pathname = usePathname();
-  const isLoginPage = pathname === '/login';
 
   useEffect(() => {
     // Подавляем показ технических ошибок в консоли браузера
@@ -58,21 +80,7 @@ export default function RootLayout({
         <ThemeProvider>
           <AuthProvider>
             <ToastProvider>
-              <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-all duration-500">
-                <TopBar />
-                <div className="flex">
-                  <Sidebar />
-                  <main className={`flex-1 min-h-screen ${
-                    isLoginPage 
-                      ? 'p-0' 
-                      : 'lg:ml-64 p-4 md:p-6 pb-20 lg:pb-6 pt-[84px]'
-                  }`}>
-                    <div className="max-w-full mx-auto">
-                      {children}
-                    </div>
-                  </main>
-                </div>
-              </div>
+              <LayoutContent>{children}</LayoutContent>
             </ToastProvider>
           </AuthProvider>
         </ThemeProvider>

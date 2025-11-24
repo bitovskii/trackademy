@@ -199,6 +199,35 @@ export class AuthenticatedApiService {
     return this.request<T>(endpoint, { method: 'DELETE' });
   }
 
+  // Download file with authentication
+  static async downloadFile(endpoint: string): Promise<Response> {
+    const API_BASE_URL = 'https://trackademy.kz/api';
+    const url = `${API_BASE_URL}${endpoint}`;
+    const token = this.getAuthToken();
+    
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers,
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        globalThis.location.href = '/login';
+        throw new Error('Authentication expired');
+      }
+      throw new Error(`Failed to download file: ${response.status}`);
+    }
+
+    return response;
+  }
+
   static async patch<T>(endpoint: string, data: unknown): Promise<T> {
     return this.request<T>(endpoint, {
       method: 'PATCH',

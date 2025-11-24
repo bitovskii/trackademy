@@ -14,8 +14,8 @@ const Sidebar: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
   const [showRegisterModal, setShowRegisterModal] = useState(false);
 
-  // Don't show sidebar on login page
-  if (pathname === '/login') {
+  // Don't show sidebar if user is not authenticated
+  if (!isAuthenticated) {
     return null;
   }
 

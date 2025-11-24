@@ -53,7 +53,7 @@ const getStatusInfo = (status: number) => {
     case 1:
       return { text: 'Отправлено', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' };
     case 2:
-      return { text: 'Проверено', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' };
+      return { text: 'Оценен', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' };
     case 3:
       return { text: 'Возвращено', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' };
     case 4:
@@ -296,8 +296,8 @@ export const SubmissionDetailModal: React.FC<SubmissionDetailModalProps> = ({
                 <DocumentTextIcon className="h-5 w-5 inline-block mr-2" />
                 Информация
               </button>
-              {/* Show grading tab only if status is Submitted (1) and not yet graded */}
-              {submission.status === 1 && submission.score === null && (
+              {/* Show grading tab only if not yet graded (status not 2 and no score) */}
+              {submission.status !== 2 && submission.score === null && (
                 <button
                   onClick={() => setActiveTab('grade')}
                   className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${

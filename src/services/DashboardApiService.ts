@@ -1,5 +1,5 @@
 import { AuthenticatedApiService } from './AuthenticatedApiService';
-import { DashboardSummary, DashboardFilters } from '../types/Dashboard';
+import { DashboardSummary, DashboardFilters, TeacherDashboardSummary, StudentDashboardSummary } from '../types/Dashboard';
 
 export class DashboardApiService {
   private static readonly BASE_URL = '/Dashboard';
@@ -26,6 +26,16 @@ export class DashboardApiService {
     const url = `${this.BASE_URL}/summary?${params.toString()}`;
     
     return AuthenticatedApiService.get<DashboardSummary>(url);
+  }
+
+  static async getTeacherSummary(): Promise<TeacherDashboardSummary> {
+    const url = `${this.BASE_URL}/teacher`;
+    return AuthenticatedApiService.get<TeacherDashboardSummary>(url);
+  }
+
+  static async getStudentSummary(): Promise<StudentDashboardSummary> {
+    const url = `${this.BASE_URL}/student`;
+    return AuthenticatedApiService.get<StudentDashboardSummary>(url);
   }
 
   // Получение групп для фильтров

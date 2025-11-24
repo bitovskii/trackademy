@@ -8,12 +8,13 @@ import {
   ChartBarIcon,
   ExclamationTriangleIcon,
   CurrencyDollarIcon,
-  ClockIcon
+  ClockIcon,
+  ClipboardDocumentListIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import { useApiToast } from '../hooks/useApiToast';
 import { DashboardApiService } from '../services/DashboardApiService';
-import { DashboardSummary, DashboardStats } from '../types/Dashboard';
+import { DashboardSummary, DashboardStats, TeacherDashboardSummary, StudentDashboardSummary } from '../types/Dashboard';
 import { StatsCard } from '../components/dashboard/StatsCard';
 import { PageHeaderWithStats } from '../components/ui/PageHeaderWithStats';
 import Link from 'next/link';
@@ -23,23 +24,46 @@ export default function Dashboard() {
   const { } = useApiToast();
   
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [teacherSummary, setTeacherSummary] = useState<TeacherDashboardSummary | null>(null);
+  const [studentSummary, setStudentSummary] = useState<StudentDashboardSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const isTeacher = user?.role === 'Teacher';
+  const isStudent = user?.role === 'Student';
+
   // Загрузка данных аналитики
   const loadDashboardData = useCallback(async () => {
-    if (!isAuthenticated || !user?.organizationId) {
+    if (!isAuthenticated || !user) {
       return;
     }
 
-    const currentFilters = {
-      organizationId: user.organizationId
-    };
-
     setLoading(true);
     try {
-      const result = await DashboardApiService.getSummary(currentFilters);
-      setSummary(result);
+      if (user.role === 'Teacher') {
+        // Загрузка данных для преподавателя
+        const result = await DashboardApiService.getTeacherSummary();
+        setTeacherSummary(result);
+        setSummary(null);
+        setStudentSummary(null);
+      } else if (user.role === 'Student') {
+        // Загрузка данных для студента
+        const result = await DashboardApiService.getStudentSummary();
+        setStudentSummary(result);
+        setSummary(null);
+        setTeacherSummary(null);
+      } else {
+        // Загрузка данных для админа/супер-админа
+        if (!user.organizationId) return;
+        
+        const currentFilters = {
+          organizationId: user.organizationId
+        };
+        const result = await DashboardApiService.getSummary(currentFilters);
+        setSummary(result);
+        setTeacherSummary(null);
+        setStudentSummary(null);
+      }
       setError(null);
     } catch (err) {
       console.error('Error loading dashboard data:', err);
@@ -47,13 +71,13 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, user?.organizationId]);
+  }, [isAuthenticated, user]);
 
   useEffect(() => {
-    if (isAuthenticated && user?.organizationId) {
+    if (isAuthenticated && user) {
       loadDashboardData();
     }
-  }, [isAuthenticated, user?.organizationId, loadDashboardData]);
+  }, [isAuthenticated, user, loadDashboardData]);
 
   // Подготовка статистики
   const stats: DashboardStats[] = summary ? [
@@ -160,40 +184,338 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 px-4 md:px-6 py-4 md:py-6 pt-20 md:pt-24">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <PageHeaderWithStats
-          title="Аналитика"
-          subtitle="Обзор ключевых показателей системы"
-          icon={ChartBarIcon}
-          gradientFrom="blue-500"
-          gradientTo="purple-600"
-          stats={[
-            { label: "Всего студентов", value: summary?.totalStudents || 0, color: "blue" },
-            { label: "Активные группы", value: summary?.activeGroups || 0, color: "green" },
-            { label: "Посещаемость", value: `${summary?.averageAttendanceRate || 0}%`, color: "purple" }
-          ]}
-        />
+        {isStudent && studentSummary ? (
+          /* Student Dashboard */
+          <>
+            {/* Header */}
+            <PageHeaderWithStats
+              title="Мой дашборд"
+              subtitle="Обзор моей учебы"
+              icon={AcademicCapIcon}
+              gradientFrom="emerald-500"
+              gradientTo="teal-600"
+              stats={[
+                { label: "Средний балл", value: studentSummary.averageGrade, color: "emerald" },
+                { label: "Посещаемость", value: `${studentSummary.attendanceRate}%`, color: "blue" },
+                { label: "Активных заданий", value: studentSummary.activeAssignments, color: "yellow" }
+              ]}
+            />
 
-        {/* Stats Grid */}
-        {summary && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {stats.map((stat, index) => (
-              <StatsCard key={index} stat={stat} />
-            ))}
-          </div>
-        )}
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <StatsCard stat={{
+                label: 'Средний балл',
+                value: studentSummary.averageGrade,
+                icon: ChartBarIcon,
+                color: studentSummary.averageGrade >= 80 ? 'green' : studentSummary.averageGrade >= 60 ? 'yellow' : 'red',
+                description: 'По всем предметам'
+              }} />
+              <StatsCard stat={{
+                label: 'Посещаемость',
+                value: `${studentSummary.attendanceRate}%`,
+                icon: CalendarDaysIcon,
+                color: studentSummary.attendanceRate >= 80 ? 'green' : studentSummary.attendanceRate >= 60 ? 'yellow' : 'red'
+              }} />
+              <StatsCard stat={{
+                label: 'Активных заданий',
+                value: studentSummary.activeAssignments,
+                icon: ClipboardDocumentListIcon,
+                color: studentSummary.activeAssignments > 0 ? 'blue' : 'green',
+                description: 'Требуют выполнения'
+              }} />
+            </div>
 
-        {/* Last Updated */}
-        {summary && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-            <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
-              Последнее обновление: {new Date(summary.lastUpdated).toLocaleString('ru-RU')}
-            </p>
-          </div>
-        )}
+            {/* Active Assignments */}
+            {studentSummary.activeAssignmentsList && studentSummary.activeAssignmentsList.length > 0 && (
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                  <ClipboardDocumentListIcon className="h-6 w-6 mr-2 text-blue-500" />
+                  Активные задания
+                </h3>
+                <div className="space-y-3">
+                  {studentSummary.activeAssignmentsList.map((assignment) => (
+                    <Link
+                      key={assignment.assignmentId}
+                      href="/my-homework"
+                      className={`block p-4 rounded-lg border hover:shadow-md transition-all ${
+                        assignment.isOverdue
+                          ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                          : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            {assignment.isOverdue && (
+                              <span className="px-2 py-0.5 text-xs bg-red-200 dark:bg-red-800 text-red-800 dark:text-red-200 rounded-full font-medium">
+                                Просрочено
+                              </span>
+                            )}
+                            <span className="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full">
+                              {assignment.status}
+                            </span>
+                          </div>
+                          <h4 className="text-base font-semibold text-gray-900 dark:text-white mb-1">
+                            {assignment.description}
+                          </h4>
+                          <div className="flex flex-wrap gap-3 text-sm text-gray-600 dark:text-gray-400">
+                            <span>{assignment.subjectName}</span>
+                            <span>•</span>
+                            <span>{assignment.groupName}</span>
+                            <span>•</span>
+                            <span>До: {new Date(assignment.dueDate).toLocaleDateString('ru-RU')}</span>
+                          </div>
+                        </div>
+                        <button className="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                          Открыть
+                        </button>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Today's Schedule */}
+            {studentSummary.todaySchedule && studentSummary.todaySchedule.length > 0 && (
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                  <CalendarDaysIcon className="h-6 w-6 mr-2 text-green-500" />
+                  Расписание на сегодня
+                </h3>
+                <div className="space-y-3">
+                  {studentSummary.todaySchedule.map((lesson) => (
+                    <div
+                      key={lesson.lessonId}
+                      className="p-4 rounded-lg border bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <ClockIcon className="h-5 w-5 text-green-500" />
+                            <span className="text-sm font-medium text-gray-900 dark:text-white">
+                              {lesson.startTime.slice(0, 5)} - {lesson.endTime.slice(0, 5)}
+                            </span>
+                          </div>
+                          <h4 className="text-base font-semibold text-gray-900 dark:text-white mb-1">
+                            {lesson.subjectName}
+                          </h4>
+                          <div className="flex flex-wrap gap-3 text-sm text-gray-600 dark:text-gray-400">
+                            <div className="flex items-center gap-1">
+                              <UserGroupIcon className="h-4 w-4" />
+                              <span>{lesson.groupName}</span>
+                            </div>
+                            <span>•</span>
+                            <div className="flex items-center gap-1">
+                              <span>📍</span>
+                              <span>{lesson.roomName}</span>
+                            </div>
+                            <span>•</span>
+                            <span>Преподаватель: {lesson.teacherName}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Recent Grades */}
+            {studentSummary.recentGrades && studentSummary.recentGrades.length > 0 && (
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                  <ChartBarIcon className="h-6 w-6 mr-2 text-purple-500" />
+                  Последние оценки
+                </h3>
+                <div className="space-y-2">
+                  {studentSummary.recentGrades.map((grade, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50"
+                    >
+                      <div>
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          {grade.subjectName}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          {new Date(grade.gradedAt).toLocaleDateString('ru-RU')}
+                        </div>
+                      </div>
+                      <div className={`text-2xl font-bold ${
+                        grade.grade >= 80 ? 'text-green-600 dark:text-green-400' :
+                        grade.grade >= 60 ? 'text-yellow-600 dark:text-yellow-400' :
+                        'text-red-600 dark:text-red-400'
+                      }`}>
+                        {grade.grade}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        ) : isTeacher && teacherSummary ? (
+          /* Teacher Dashboard */
+          <>
+            {/* Header */}
+            <PageHeaderWithStats
+              title="Мой дашборд"
+              subtitle="Обзор моих занятий и задач"
+              icon={AcademicCapIcon}
+              gradientFrom="purple-500"
+              gradientTo="pink-600"
+              stats={[
+                { label: "Мои группы", value: teacherSummary.totalGroups, color: "purple" },
+                { label: "Не проверено", value: teacherSummary.ungradedSubmissions, color: "yellow" },
+                { label: "Уроков сегодня", value: teacherSummary.lessonsToday, color: "blue" }
+              ]}
+            />
+
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <StatsCard stat={{
+                label: 'Мои группы',
+                value: teacherSummary.totalGroups,
+                icon: UserGroupIcon,
+                color: 'purple',
+                description: 'Всего активных групп'
+              }} />
+              <StatsCard stat={{
+                label: 'Не проверено',
+                value: teacherSummary.ungradedSubmissions,
+                icon: ClipboardDocumentListIcon,
+                color: teacherSummary.ungradedSubmissions > 0 ? 'yellow' : 'green',
+                description: 'Домашних заданий'
+              }} />
+              <StatsCard stat={{
+                label: 'Уроков сегодня',
+                value: teacherSummary.lessonsToday,
+                icon: CalendarDaysIcon,
+                color: 'blue',
+                description: 'В расписании'
+              }} />
+            </div>
+
+            {/* Today's Schedule */}
+            {teacherSummary.todaySchedule && teacherSummary.todaySchedule.length > 0 && (
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                  <CalendarDaysIcon className="h-6 w-6 mr-2 text-blue-500" />
+                  Расписание на сегодня
+                </h3>
+                <div className="space-y-3">
+                  {teacherSummary.todaySchedule.map((lesson) => (
+                    <div
+                      key={lesson.lessonId}
+                      className={`p-4 rounded-lg border ${
+                        lesson.isPast
+                          ? 'bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600'
+                          : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <ClockIcon className={`h-5 w-5 ${lesson.isPast ? 'text-gray-400' : 'text-blue-500'}`} />
+                            <span className={`text-sm font-medium ${
+                              lesson.isPast ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'
+                            }`}>
+                              {lesson.startTime.slice(0, 5)} - {lesson.endTime.slice(0, 5)}
+                            </span>
+                            {lesson.isPast && (
+                              <span className="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 rounded-full">
+                                Завершено
+                              </span>
+                            )}
+                          </div>
+                          <h4 className={`text-base font-semibold mb-1 ${
+                            lesson.isPast ? 'text-gray-600 dark:text-gray-300' : 'text-gray-900 dark:text-white'
+                          }`}>
+                            {lesson.subjectName}
+                          </h4>
+                          <div className="flex flex-wrap gap-3 text-sm text-gray-600 dark:text-gray-400">
+                            <div className="flex items-center gap-1">
+                              <UserGroupIcon className="h-4 w-4" />
+                              <span>{lesson.groupName}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span>📍</span>
+                              <span>{lesson.roomName}</span>
+                            </div>
+                          </div>
+                          {lesson.attendanceRate !== null && (
+                            <div className="mt-2 text-sm">
+                              <span className="text-gray-600 dark:text-gray-400">
+                                Посещаемость: 
+                              </span>
+                              <span className={`ml-2 font-semibold ${
+                                lesson.attendanceRate >= 80 ? 'text-green-600 dark:text-green-400' :
+                                lesson.attendanceRate >= 60 ? 'text-yellow-600 dark:text-yellow-400' :
+                                'text-red-600 dark:text-red-400'
+                              }`}>
+                                {lesson.attendanceRate}% ({lesson.presentCount}/{lesson.totalStudents})
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        {!lesson.isPast && (
+                          <Link
+                            href={`/lessons`}
+                            className="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                          >
+                            Перейти
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {teacherSummary.todaySchedule && teacherSummary.todaySchedule.length === 0 && (
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 text-center">
+                <CalendarDaysIcon className="h-12 w-12 mx-auto text-gray-400 mb-3" />
+                <p className="text-gray-600 dark:text-gray-400">На сегодня уроков нет</p>
+              </div>
+            )}
+          </>
+        ) : !isTeacher && summary ? (
+          /* Admin/SuperAdmin Dashboard */
+          <>
+            {/* Header */}
+            <PageHeaderWithStats
+              title="Аналитика"
+              subtitle="Обзор ключевых показателей системы"
+              icon={ChartBarIcon}
+              gradientFrom="blue-500"
+              gradientTo="purple-600"
+              stats={[
+                { label: "Всего студентов", value: summary.totalStudents, color: "blue" },
+                { label: "Активные группы", value: summary.activeGroups, color: "green" },
+                { label: "Посещаемость", value: `${summary.averageAttendanceRate}%`, color: "purple" }
+              ]}
+            />
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {stats.map((stat, index) => (
+                <StatsCard key={index} stat={stat} />
+              ))}
+            </div>
+
+            {/* Last Updated */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+                Последнее обновление: {new Date(summary.lastUpdated).toLocaleString('ru-RU')}
+              </p>
+            </div>
+          </>
+        ) : null}
 
         {/* Loading State */}
-        {loading && !summary && (
+        {loading && !summary && !teacherSummary && !studentSummary && (
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>

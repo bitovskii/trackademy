@@ -335,7 +335,7 @@ export default function HomeworkPage() {
       case SubmissionStatus.Submitted:
         return 'На проверке';
       case SubmissionStatus.Graded:
-        return 'Проверено';
+        return 'Оценен';
       case SubmissionStatus.Returned:
         return 'На доработке';
       case SubmissionStatus.Overdue:
@@ -1230,7 +1230,7 @@ export default function HomeworkPage() {
                                   student.submission.status === 4 ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
                                   'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
                                 }`}>
-                                  {student.submission.statusName}
+                                  {getStatusLabel(student.submission.status)}
                                 </span>
                               ) : (
                                 <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300">

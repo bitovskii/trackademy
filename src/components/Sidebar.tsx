@@ -19,6 +19,23 @@ const Sidebar: React.FC = () => {
     return null;
   }
 
+  // Translate role to Russian
+  const getRoleLabel = (role: string | undefined): string => {
+    if (!role) return '';
+    switch (role) {
+      case 'Owner':
+        return 'Владелец системы';
+      case 'Admin':
+        return 'Администратор';
+      case 'Teacher':
+        return 'Преподаватель';
+      case 'Student':
+        return 'Студент';
+      default:
+        return role;
+    }
+  };
+
   const isStudent = user?.role === 'Student';
   const isTeacher = user?.role === 'Teacher';
   const isStudentOrTeacher = isStudent || isTeacher;
@@ -146,7 +163,7 @@ const Sidebar: React.FC = () => {
                   {user.fullName}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                  {user.role}
+                  {getRoleLabel(user.role)}
                 </p>
               </div>
             </div>

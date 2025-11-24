@@ -20,19 +20,21 @@ const Sidebar: React.FC = () => {
   }
 
   const isStudent = user?.role === 'Student';
+  const isTeacher = user?.role === 'Teacher';
+  const isStudentOrTeacher = isStudent || isTeacher;
 
   const allNavigation = [
-    { name: 'Аналитика', href: '/', icon: HomeIcon, activeIcon: HomeIconSolid, requireAuth: false, requireOwner: false, requireAdmin: false, requireStudent: false },
-    { name: 'Организации', href: '/organizations', icon: BuildingOfficeIcon, activeIcon: BuildingOfficeIconSolid, requireAuth: true, requireOwner: true, requireAdmin: false, requireStudent: false },
-    { name: 'Пользователи', href: '/students', icon: AcademicCapIcon, activeIcon: AcademicCapIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false },
-    { name: 'Кабинеты', href: '/rooms', icon: HomeModernIcon, activeIcon: HomeModernIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false },
-    { name: 'Предметы', href: '/subjects', icon: BookOpenIcon, activeIcon: BookOpenIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false },
-    { name: 'Группы', href: '/groups', icon: UserGroupIcon, activeIcon: UserGroupIconSolid, requireAuth: true, requireOwner: false, requireAdmin: true, requireStudent: false },
-    { name: 'Шаблоны расписаний', href: '/schedules', icon: CalendarDaysIcon, activeIcon: CalendarDaysIconSolid, requireAuth: true, requireOwner: false, requireAdmin: true, requireStudent: false },
-    { name: 'Календарь занятий', href: '/lessons', icon: CalendarIcon, activeIcon: CalendarIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false },
-    { name: 'Посещаемость', href: '/attendance', icon: ClipboardDocumentCheckIcon, activeIcon: ClipboardDocumentCheckIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false },
-    { name: 'Домашнее задание', href: isStudent ? '/my-homework' : '/homework', icon: ClipboardDocumentListIcon, activeIcon: ClipboardDocumentListIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false },
-    { name: 'Платежи', href: '/payments', icon: CurrencyDollarIcon, activeIcon: CurrencyDollarIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false },
+    { name: 'Аналитика', href: '/', icon: HomeIcon, activeIcon: HomeIconSolid, requireAuth: false, requireOwner: false, requireAdmin: false, requireStudent: false, hideForStudentTeacher: false },
+    { name: 'Организации', href: '/organizations', icon: BuildingOfficeIcon, activeIcon: BuildingOfficeIconSolid, requireAuth: true, requireOwner: true, requireAdmin: false, requireStudent: false, hideForStudentTeacher: false },
+    { name: 'Пользователи', href: '/students', icon: AcademicCapIcon, activeIcon: AcademicCapIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false, hideForStudentTeacher: true },
+    { name: 'Кабинеты', href: '/rooms', icon: HomeModernIcon, activeIcon: HomeModernIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false, hideForStudentTeacher: true },
+    { name: 'Предметы', href: '/subjects', icon: BookOpenIcon, activeIcon: BookOpenIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false, hideForStudentTeacher: true },
+    { name: 'Группы', href: '/groups', icon: UserGroupIcon, activeIcon: UserGroupIconSolid, requireAuth: true, requireOwner: false, requireAdmin: true, requireStudent: false, hideForStudentTeacher: false },
+    { name: 'Шаблоны расписаний', href: '/schedules', icon: CalendarDaysIcon, activeIcon: CalendarDaysIconSolid, requireAuth: true, requireOwner: false, requireAdmin: true, requireStudent: false, hideForStudentTeacher: false },
+    { name: 'Календарь занятий', href: '/lessons', icon: CalendarIcon, activeIcon: CalendarIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false, hideForStudentTeacher: false },
+    { name: 'Посещаемость', href: '/attendance', icon: ClipboardDocumentCheckIcon, activeIcon: ClipboardDocumentCheckIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false, hideForStudentTeacher: false, hideForStudent: true },
+    { name: 'Домашнее задание', href: isStudent ? '/my-homework' : '/homework', icon: ClipboardDocumentListIcon, activeIcon: ClipboardDocumentListIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false, hideForStudentTeacher: false },
+    { name: 'Платежи', href: '/payments', icon: CurrencyDollarIcon, activeIcon: CurrencyDollarIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false, hideForStudentTeacher: true },
   ];
 
   // Filter navigation based on authentication status and role
@@ -44,6 +46,16 @@ const Sidebar: React.FC = () => {
     // If authenticated, filter by role requirements
     navigation = allNavigation.filter(item => {
       if (!item.requireAuth) return true; // Public items always visible
+      
+      // Hide items specifically for students
+      if (item.hideForStudent && isStudent) {
+        return false;
+      }
+      
+      // Hide items for students and teachers
+      if (item.hideForStudentTeacher && isStudentOrTeacher) {
+        return false;
+      }
       
       // If item is only for students, show only to students
       if (item.requireStudent) {

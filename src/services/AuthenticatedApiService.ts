@@ -99,6 +99,17 @@ export class AuthenticatedApiService {
           throw new Error('Authentication expired');
         }
         
+        if (response.status === 403) {
+          // Forbidden - user doesn't have access, but don't show error toast
+          console.warn('Access forbidden:', {
+            endpoint,
+            status: response.status,
+            url
+          });
+          // Return empty object instead of throwing error
+          return {} as T;
+        }
+        
         // Try to get error details from response
         let errorMessage = `HTTP error! status: ${response.status}`;
         let parsedError = null;

@@ -74,7 +74,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
 
       console.log('Sending registration request:', requestPayload);
 
-      const response = await fetch('https://trackademy.onrender.com/api/Auth/create', {
+      const response = await fetch('https://trackademy.kz/api/Auth/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -126,7 +126,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
         loginPayload.organizationId = organizationId;
       }
 
-      const response = await fetch('https://trackademy.onrender.com/api/Auth/login', {
+      const response = await fetch('https://trackademy.kz/api/Auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

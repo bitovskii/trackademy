@@ -63,7 +63,7 @@ export class AuthenticatedApiService {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const API_BASE_URL = 'https://trackademy.onrender.com/api';
+    const API_BASE_URL = 'https://trackademy.kz/api';
     const url = `${API_BASE_URL}${endpoint}`;
     
     const config: RequestInit = {
@@ -353,7 +353,7 @@ export class AuthenticatedApiService {
     formData.append('organizationId', organizationId);
 
     const token = this.getAuthToken();
-    const API_BASE_URL = 'https://trackademy.onrender.com/api';
+    const API_BASE_URL = 'https://trackademy.kz/api';
     const url = `${API_BASE_URL}/User/import-excel`;
 
     const response = await fetch(url, {

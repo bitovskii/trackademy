@@ -2,7 +2,7 @@ import { User, UserFormData } from '../types/User';
 import { Organization, OrganizationFormData } from '../types/Organization';
 import { Subject, SubjectFormData } from '../types/Subject';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://trackademy.onrender.com/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://trackademy.kz/api';
 
 export class ApiService {
   private static async request<T>(

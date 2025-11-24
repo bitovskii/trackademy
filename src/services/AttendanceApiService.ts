@@ -9,7 +9,7 @@ import {
   ExportAttendanceRequest 
 } from '@/types/Attendance';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://trackademy.onrender.com';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://trackademy.kz';
 
 class AttendanceApiService {
   private async makeRequest<T>(

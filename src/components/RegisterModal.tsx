@@ -37,7 +37,7 @@ const RegisterModal: React.FC<RegisterModalProps> = ({ isOpen, onClose }) => {
 
   const fetchOrganizations = async () => {
     try {
-      const response = await fetch('https://trackademy.onrender.com/api/Organization');
+      const response = await fetch('https://trackademy.kz/api/Organization');
       if (response.ok) {
         const data = await response.json();
         setOrganizations(data);

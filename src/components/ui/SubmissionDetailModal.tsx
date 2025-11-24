@@ -135,7 +135,7 @@ export const SubmissionDetailModal: React.FC<SubmissionDetailModalProps> = ({
   const handleDownloadFile = async (fileId: string, fileName: string) => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'https://api.trackacademy.com'}/Submission/file/${fileId}`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'https://trackademy.kz'}/Submission/file/${fileId}`,
         {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`

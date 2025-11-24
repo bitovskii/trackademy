@@ -118,7 +118,7 @@ export const ImportUsersModal: React.FC<ImportUsersModalProps> = ({
     setError(null);
     try {
       const token = localStorage.getItem('authToken');
-      const response = await fetch('https://trackademy.onrender.com/api/User/download-template', {
+      const response = await fetch('https://trackademy.kz/api/User/download-template', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -179,7 +179,7 @@ export const ImportUsersModal: React.FC<ImportUsersModalProps> = ({
       isTrial: userData.isTrial
     });
 
-    const response = await fetch('https://trackademy.onrender.com/api/User/create', {
+    const response = await fetch('https://trackademy.kz/api/User/create', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -514,7 +514,7 @@ export default function StudentsPage() {
 
     const result = await createOperation(
       async () => {
-        const response = await fetch('https://trackademy.onrender.com/api/User/create', {
+        const response = await fetch('https://trackademy.kz/api/User/create', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

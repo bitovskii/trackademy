@@ -433,13 +433,13 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
         </div>
 
         {/* Time grid with relative positioning for lessons */}
-        <div className="relative" style={{ minHeight: `${hours.length * 64}px` }}>
+        <div className="relative">
           {/* Background grid */}
           <div className="grid grid-cols-8">
             {hours.map((hour) => (
               <React.Fragment key={hour}>
                 {/* Time column */}
-                <div className="border-r border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 p-2 text-center h-16">
+                <div className="border-r border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 p-2 text-center min-h-[64px]">
                   <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
                     {hour.toString().padStart(2, '0')}:00
                   </span>
@@ -449,21 +449,30 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
                 {weekDays.map((day, dayIndex) => (
                   <div 
                     key={`${dayIndex}-${hour}`} 
-                    className="border-r border-b border-gray-200 dark:border-gray-600 last:border-r-0 h-16"
+                    className="border-r border-b border-gray-200 dark:border-gray-600 last:border-r-0 min-h-[64px]"
                   />
                 ))}
               </React.Fragment>
             ))}
           </div>
 
-          {/* Lessons overlay */}
+          {/* Lessons overlay - separate container for each day */}
           {weekDays.map((day, dayIndex) => {
             const dayOfWeek = day.getDay() || 7;
             const timeSlots = getTimeSlotsForDay(day, dayOfWeek);
-            const columnWidth = 100 / 8; // 8 columns total (1 time + 7 days)
-            const columnLeft = columnWidth * (dayIndex + 1); // +1 to skip time column
 
-            return timeSlots.map((slot, slotIndex) => {
+            return (
+              <div
+                key={`lessons-${dayIndex}`}
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  left: `calc(12.5% + ${dayIndex} * 12.5%)`, // 12.5% = 100% / 8 columns
+                  width: 'calc(12.5% - 2px)',
+                  height: '100%',
+                  zIndex: 10
+                }}
+              >
+                {timeSlots.map((slot, slotIndex) => {
               const hasOverlap = slot.schedules.length > 1;
               
               // Calculate position based on slot's min/max times
@@ -478,14 +487,11 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
                 // Show overlapping indicator
                 return (
                   <div
-                    key={`day-${dayIndex}-slot-${slotIndex}`}
-                    className="absolute bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/40 dark:to-orange-900/40 rounded border-l-2 border-amber-500 cursor-pointer hover:from-amber-200 hover:to-orange-200 dark:hover:from-amber-900/60 dark:hover:to-orange-900/60 transition-all shadow-sm hover:shadow-md p-2"
+                    key={`slot-${slotIndex}`}
+                    className="absolute left-1 right-1 pointer-events-auto bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/40 dark:to-orange-900/40 rounded border-l-2 border-amber-500 cursor-pointer hover:from-amber-200 hover:to-orange-200 dark:hover:from-amber-900/60 dark:hover:to-orange-900/60 transition-all shadow-sm hover:shadow-md p-2"
                     style={{
-                      left: `${columnLeft}%`,
-                      width: `${columnWidth}%`,
                       top: `${topOffset}px`,
-                      height: `${height}px`,
-                      zIndex: 20
+                      height: `${height}px`
                     }}
                     onClick={() => setOverlappingModal({
                       isOpen: true,
@@ -508,14 +514,11 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
                 const schedule = slot.schedules[0];
                 return (
                   <div
-                    key={`day-${dayIndex}-schedule-${schedule.id}`}
-                    className="absolute bg-gradient-to-r from-violet-100 to-violet-50 dark:from-violet-900/40 dark:to-violet-900/20 rounded border-l-2 border-violet-500 cursor-pointer hover:from-violet-200 hover:to-violet-100 dark:hover:from-violet-900/60 dark:hover:to-violet-900/30 transition-all shadow-sm hover:shadow-md p-2 relative group"
+                    key={`schedule-${schedule.id}`}
+                    className="absolute left-1 right-1 pointer-events-auto bg-gradient-to-r from-violet-100 to-violet-50 dark:from-violet-900/40 dark:to-violet-900/20 rounded border-l-4 border-violet-500 cursor-pointer hover:from-violet-200 hover:to-violet-100 dark:hover:from-violet-900/60 dark:hover:to-violet-900/30 transition-all shadow-sm hover:shadow-md p-2 relative group"
                     style={{
-                      left: `${columnLeft}%`,
-                      width: `${columnWidth}%`,
                       top: `${topOffset}px`,
-                      height: `${height}px`,
-                      zIndex: 20
+                      height: `${height}px`
                     }}
                     onClick={() => onEventClick?.(schedule)}
                     title={`${schedule.subject.subjectName}\n${schedule.group.name}\n${formatTimeRange(schedule.startTime, schedule.endTime)}\n${schedule.room.name}\n${schedule.teacher.name}`}
@@ -554,7 +557,9 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
                   </div>
                 );
               }
-            });
+            })}
+              </div>
+            );
           })}
         </div>
       </div>

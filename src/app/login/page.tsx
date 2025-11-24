@@ -116,7 +116,7 @@ export default function LoginPage() {
             Добро пожаловать
           </h2>
           <p className="text-lg text-gray-600 dark:text-gray-300">
-            Войдите в TrackAcademy для продолжения
+            Войдите в Trackademy для продолжения
           </p>
         </div>
         

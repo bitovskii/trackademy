@@ -508,7 +508,7 @@ export default function MyHomeworkPage() {
                               </div>
                             </div>
                             <a
-                              href={`${process.env.NEXT_PUBLIC_API_URL || 'https://trackacademy.onrender.com'}/api/Submission/file/${file.id}`}
+                              href={`${process.env.NEXT_PUBLIC_API_URL || 'https://trackademy.kz'}/api/Submission/file/${file.id}`}
                               download={file.originalFileName}
                               className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
                             >
@@ -589,7 +589,7 @@ export default function MyHomeworkPage() {
                               </div>
                             </div>
                             <a
-                              href={`${process.env.NEXT_PUBLIC_API_URL || 'https://trackacademy.onrender.com'}/api/Submission/file/${file.id}`}
+                              href={`${process.env.NEXT_PUBLIC_API_URL || 'https://trackademy.kz'}/api/Submission/file/${file.id}`}
                               download={file.originalFileName}
                               className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
                             >
@@ -720,7 +720,7 @@ export default function MyHomeworkPage() {
                               </div>
                               <div className="flex items-center gap-2">
                                 <a
-                                  href={`${process.env.NEXT_PUBLIC_API_URL || 'https://trackacademy.onrender.com'}/api/Submission/file/${file.id}`}
+                                  href={`${process.env.NEXT_PUBLIC_API_URL || 'https://trackademy.kz'}/api/Submission/file/${file.id}`}
                                   download={file.originalFileName}
                                   className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
                                 >

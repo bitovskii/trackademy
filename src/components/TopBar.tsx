@@ -28,7 +28,7 @@ const TopBar: React.FC = () => {
             <div className="flex-1 flex items-center space-x-4">
               <ThemeToggle />
               <div className="text-sm text-gray-600 dark:text-gray-300">
-                Добро пожаловать в <span className="font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">TrackAcademy</span>
+                Добро пожаловать в <span className="font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Trackademy</span>
               </div>
             </div>
 

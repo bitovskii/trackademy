@@ -611,27 +611,38 @@ export default function StudentsPage() {
   };
 
   const handleBulkAddConfirm = async () => {
-    if (!selectedGroupForBulk || selectedStudentIds.length === 0) return;
+    console.log('handleBulkAddConfirm started', { selectedGroupForBulk, selectedStudentIds });
+    
+    if (!selectedGroupForBulk || selectedStudentIds.length === 0) {
+      console.log('Early return: no group or students');
+      return;
+    }
 
     setIsBulkAdding(true);
     try {
+      console.log('Calling API...');
       const result = await AuthenticatedApiService.bulkAddStudentsToGroup(
         selectedGroupForBulk.id,
         selectedStudentIds
       );
+      console.log('API response:', result);
 
-      // Показываем результат
-      if (result.message) {
-        showSuccess(result.message);
+      // API возвращает либо строку, либо объект с message
+      const message = typeof result === 'string' ? result : (result as { message?: string })?.message;
+      
+      console.log('Showing success toast');
+      showSuccess(message || 'Студенты успешно добавлены в группу');
 
-        // Обновляем таблицу
-        await loadStudents(currentPage, true);
-        
-        // Очищаем выбор
-        setSelectedStudentIds([]);
-        setIsBulkAddModalOpen(false);
-        setSelectedGroupForBulk(null);
-      }
+      console.log('Reloading students...');
+      // Обновляем таблицу
+      await loadStudents(currentPage, true);
+      
+      console.log('Closing modal and clearing selection...');
+      // Закрываем модалку и очищаем выбор
+      setIsBulkAddModalOpen(false);
+      setSelectedGroupForBulk(null);
+      setSelectedStudentIds([]);
+      console.log('Done!');
     } catch (error) {
       console.error('Failed to bulk add students to group:', error);
       
@@ -644,6 +655,7 @@ export default function StudentsPage() {
       
       showError(errorMessage);
     } finally {
+      console.log('Setting isBulkAdding to false');
       setIsBulkAdding(false);
     }
   };

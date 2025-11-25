@@ -37,9 +37,9 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4 max-h-[80vh] overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4 max-h-[80vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           <div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
               Студенты группы
@@ -57,7 +57,7 @@ export const GroupStudentsModal: React.FC<GroupStudentsModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto">
           {students.length === 0 ? (
             <div className="text-center py-8">
               <UserIcon className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" />

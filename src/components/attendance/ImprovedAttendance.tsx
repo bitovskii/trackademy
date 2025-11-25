@@ -88,6 +88,7 @@ export default function ImprovedAttendance({ lesson, onUpdate, onClose }: Improv
     });
 
     if (changedStudents.length === 0) {
+      showToast('Нет изменений для сохранения', 'error');
       return;
     }
 

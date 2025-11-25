@@ -29,6 +29,7 @@ export default function LessonsPage() {
   const { loadOperation } = useApiToast();
 
   const isStudent = user?.role === 'Student';
+  const isTeacher = user?.role === 'Teacher';
 
   // State management
   const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -445,8 +446,8 @@ export default function LessonsPage() {
                 </div>
               )}
 
-              {/* Teacher Filter - Hidden for students */}
-              {!isStudent && (
+              {/* Teacher Filter - Hidden for students and teachers */}
+              {!isStudent && !isTeacher && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Преподаватель</label>
                   <select

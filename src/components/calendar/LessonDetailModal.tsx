@@ -157,8 +157,10 @@ export default function LessonDetailModal({ lesson, isOpen, onClose, onUpdate }:
   const subjectColor = generateSubjectColor(lesson.subject.subjectName);
   const statusColor = getLessonStatusColor(lesson.lessonStatus);
   
-  const attendedStudents = lesson.students.filter(s => s.attendanceStatus === 1);
-  const absentStudents = lesson.students.filter(s => s.attendanceStatus === 2);
+  // Присутствовали = Присутствовал (1) + Опоздал (3)
+  const attendedStudents = lesson.students.filter(s => s.attendanceStatus === 1 || s.attendanceStatus === 3);
+  // Отсутствовали = Отсутствовал (2) + Уважительная причина (4)
+  const absentStudents = lesson.students.filter(s => s.attendanceStatus === 2 || s.attendanceStatus === 4);
   const unmarkedStudents = lesson.students.filter(s => s.attendanceStatus === null);
 
   return (

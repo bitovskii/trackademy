@@ -73,7 +73,8 @@ function groupOverlappingLessons(lessonsList: Lesson[]): TimeSlot[] {
     });
   }
   
-  return groups;
+  // Сортируем группы по времени начала, чтобы ранние уроки были сверху
+  return groups.sort((a, b) => a.startTime.localeCompare(b.startTime));
 }
 
 export default function MonthView({ date, lessons, onLessonClick }: MonthViewProps) {
@@ -160,6 +161,9 @@ export default function MonthView({ date, lessons, onLessonClick }: MonthViewPro
                           const hasOverlap = slot.lessons.length > 1;
                           
                           if (hasOverlap) {
+                            // Получаем все предметы для отображения
+                            const subjects = slot.lessons.map(l => l.subject.subjectName).join(', ');
+                            
                             return (
                               <div
                                 key={`overlap-${idx}`}
@@ -168,17 +172,17 @@ export default function MonthView({ date, lessons, onLessonClick }: MonthViewPro
                                   lessons: slot.lessons,
                                   timeSlot: `${formatTime(slot.startTime)} - ${formatTime(slot.endTime)}`
                                 })}
-                                className="text-xs p-1 rounded cursor-pointer hover:shadow-sm transition-all truncate
+                                className="text-xs p-1 rounded cursor-pointer hover:shadow-sm transition-all
                                            bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-800/50 border border-amber-300 dark:border-amber-600"
                                 style={{ 
                                   borderLeft: '3px solid #f59e0b',
                                   paddingLeft: '6px'
                                 }}
-                                title={`${slot.lessons.length} накладывающихся ${slot.lessons.length === 1 ? 'занятие' : slot.lessons.length < 5 ? 'занятия' : 'занятий'} (${formatTime(slot.startTime)}-${formatTime(slot.endTime)})`}
+                                title={`${slot.lessons.length} накладывающихся ${slot.lessons.length === 1 ? 'занятие' : slot.lessons.length < 5 ? 'занятия' : 'занятий'} (${formatTime(slot.startTime)}-${formatTime(slot.endTime)})\n${subjects}`}
                               >
                                 <div className="flex items-center gap-1 font-semibold text-amber-900 dark:text-amber-100">
                                   <span className="line-clamp-1 flex-1 min-w-0">
-                                    {formatTime(slot.startTime)} • {slot.lessons.length} {slot.lessons.length === 1 ? 'занятие' : slot.lessons.length < 5 ? 'занятия' : 'занятий'}
+                                    {formatTime(slot.startTime)} • {subjects}
                                   </span>
                                 </div>
                               </div>

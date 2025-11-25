@@ -40,8 +40,16 @@ const Sidebar: React.FC = () => {
   const isTeacher = user?.role === 'Teacher';
   const isStudentOrTeacher = isStudent || isTeacher;
 
+  // Определяем название первого пункта меню в зависимости от роли
+  const getDashboardName = () => {
+    if (isStudent || isTeacher) {
+      return 'Статистика занятий';
+    }
+    return 'Аналитика';
+  };
+
   const allNavigation = [
-    { name: 'Аналитика', href: '/', icon: HomeIcon, activeIcon: HomeIconSolid, requireAuth: false, requireOwner: false, requireAdmin: false, requireStudent: false, hideForStudentTeacher: false },
+    { name: getDashboardName(), href: '/', icon: HomeIcon, activeIcon: HomeIconSolid, requireAuth: false, requireOwner: false, requireAdmin: false, requireStudent: false, hideForStudentTeacher: false },
     { name: 'Организации', href: '/organizations', icon: BuildingOfficeIcon, activeIcon: BuildingOfficeIconSolid, requireAuth: true, requireOwner: true, requireAdmin: false, requireStudent: false, hideForStudentTeacher: false },
     { name: 'Пользователи', href: '/students', icon: AcademicCapIcon, activeIcon: AcademicCapIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false, hideForStudentTeacher: true },
     { name: 'Кабинеты', href: '/rooms', icon: HomeModernIcon, activeIcon: HomeModernIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false, hideForStudentTeacher: true },

@@ -510,9 +510,7 @@ export class AuthenticatedApiService {
   }
 
   // Bulk add students to group
-  static async bulkAddStudentsToGroup(groupId: string, studentIds: string[]): Promise<{ 
-    message: string; 
-  }> {
+  static async bulkAddStudentsToGroup(groupId: string, studentIds: string[]): Promise<string> {
     return this.post('/Group/bulk-add-students', {
       groupId,
       studentIds

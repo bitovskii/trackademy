@@ -646,7 +646,6 @@ export default function SchedulesPage() {
           }
           stats={[
             { label: "Всего шаблонов", value: totalCount, color: "violet" },
-            { label: "На странице", value: schedules.length, color: "purple" },
             { label: "Страниц", value: totalPages, color: "indigo" }
           ]}
         />
@@ -871,7 +870,7 @@ export default function SchedulesPage() {
                 <>
                   {/* Table View */}
                   {currentView === 'table' && (
-                    <div>
+                    <div className="overflow-x-auto">
                       <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead className="bg-gradient-to-r from-gray-50 to-violet-50 dark:from-gray-700 dark:to-gray-600">
                       <tr>

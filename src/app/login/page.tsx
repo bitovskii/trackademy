@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { EyeIcon, EyeSlashIcon, AcademicCapIcon } from '@heroicons/react/24/outline';
+import { EyeIcon, EyeSlashIcon, AcademicCapIcon, MagnifyingGlassIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 
 interface Organization {
   id: string;
@@ -22,6 +22,9 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [organizationSearch, setOrganizationSearch] = useState('');
+  const [isOrganizationDropdownOpen, setIsOrganizationDropdownOpen] = useState(false);
+  const organizationDropdownRef = useRef<HTMLDivElement>(null);
 
   // Redirect to home if already authenticated
   useEffect(() => {
@@ -53,6 +56,18 @@ export default function LoginPage() {
     fetchOrganizations();
   }, []);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (organizationDropdownRef.current && !organizationDropdownRef.current.contains(event.target as Node)) {
+        setIsOrganizationDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const fetchOrganizations = async () => {
     try {
       const response = await fetch('https://trackademy.kz/api/Organization');
@@ -72,6 +87,18 @@ export default function LoginPage() {
       [name]: value
     }));
   };
+
+  const handleOrganizationSelect = (orgId: string) => {
+    setFormData(prev => ({ ...prev, organizationId: orgId }));
+    setIsOrganizationDropdownOpen(false);
+    setOrganizationSearch('');
+  };
+
+  const filteredOrganizations = organizations.filter(org =>
+    org.name.toLowerCase().includes(organizationSearch.toLowerCase())
+  );
+
+  const selectedOrganization = organizations.find(org => org.id === formData.organizationId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -180,24 +207,65 @@ export default function LoginPage() {
             </div>
 
             {/* Organization Selection */}
-            <div className="animate-fade-in animate-delay-500">
+            <div className="animate-fade-in animate-delay-500" ref={organizationDropdownRef}>
               <label htmlFor="organizationId" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Организация
               </label>
-              <select
-                id="organizationId"
-                name="organizationId"
-                value={formData.organizationId}
-                onChange={handleChange}
-                className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 text-gray-900 dark:text-white transition-all duration-200"
-              >
-                <option value="">Выберите организацию</option>
-                {organizations.map((org) => (
-                  <option key={org.id} value={org.id}>
-                    {org.name}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsOrganizationDropdownOpen(!isOrganizationDropdownOpen)}
+                  className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 text-gray-900 dark:text-white transition-all duration-200 text-left flex items-center justify-between"
+                >
+                  <span className={selectedOrganization ? '' : 'text-gray-500 dark:text-gray-400'}>
+                    {selectedOrganization ? selectedOrganization.name : 'Выберите организацию'}
+                  </span>
+                  <ChevronDownIcon className={`w-5 h-5 text-gray-400 transition-transform ${isOrganizationDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {isOrganizationDropdownOpen && (
+                  <div className="absolute z-50 w-full mt-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-xl max-h-80 overflow-hidden">
+                    {/* Search Input */}
+                    <div className="p-3 border-b border-gray-200 dark:border-gray-600">
+                      <div className="relative">
+                        <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input
+                          type="text"
+                          value={organizationSearch}
+                          onChange={(e) => setOrganizationSearch(e.target.value)}
+                          placeholder="Поиск организации..."
+                          className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                          autoFocus
+                        />
+                      </div>
+                    </div>
+
+                    {/* Organization List */}
+                    <div className="max-h-60 overflow-y-auto">
+                      {filteredOrganizations.length === 0 ? (
+                        <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                          Организации не найдены
+                        </div>
+                      ) : (
+                        filteredOrganizations.map((org) => (
+                          <button
+                            key={org.id}
+                            type="button"
+                            onClick={() => handleOrganizationSelect(org.id)}
+                            className={`w-full px-4 py-3 text-left hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors ${
+                              formData.organizationId === org.id
+                                ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
+                                : 'text-gray-900 dark:text-white'
+                            }`}
+                          >
+                            {org.name}
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Submit Button */}

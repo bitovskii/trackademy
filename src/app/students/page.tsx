@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
 import { AcademicCapIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 import { User, UserFormData, ImportResult } from '../../types/User';
@@ -20,9 +21,12 @@ import { useApiToast } from '../../hooks/useApiToast';
 import { PasswordInput } from '@/components/ui/PasswordInput';
 import { cleanUserFormData } from '../../utils/apiHelpers';
 import { ImportUsersModal } from '../../components/ImportUsersModal';
+import { BulkAddToGroupModal } from '../../components/BulkAddToGroupModal';
+import { GroupSelectionModal } from '../../components/GroupSelectionModal';
 
 export default function StudentsPage() {
   const { isAuthenticated, user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [students, setStudents] = useState<User[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -32,6 +36,13 @@ export default function StudentsPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  
+  // Bulk add to group state
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [isBulkAddModalOpen, setIsBulkAddModalOpen] = useState(false);
+  const [selectedGroupForBulk, setSelectedGroupForBulk] = useState<{id: string, name: string} | null>(null);
+  const [isBulkAdding, setIsBulkAdding] = useState(false);
+  const [isGroupSelectionModalOpen, setIsGroupSelectionModalOpen] = useState(false);
 
   // Универсальная система модалов для пользователей
   const userModal = useUniversalModal('user', {
@@ -557,6 +568,88 @@ export default function StudentsPage() {
     return result;
   };
 
+  // Bulk add to group handlers
+  const handleSelectStudent = (studentId: string) => {
+    setSelectedStudentIds(prev => {
+      if (prev.includes(studentId)) {
+        return prev.filter(id => id !== studentId);
+      } else {
+        return [...prev, studentId];
+      }
+    });
+  };
+
+  const handleSelectAll = () => {
+    const studentsOnPage = students.filter(user => user.role === 1);
+    const studentIdsOnPage = studentsOnPage.map(student => student.id);
+    setSelectedStudentIds(prev => {
+      const newIds = [...prev];
+      studentIdsOnPage.forEach(id => {
+        if (!newIds.includes(id)) {
+          newIds.push(id);
+        }
+      });
+      return newIds;
+    });
+  };
+
+  const handleDeselectAll = () => {
+    const studentsOnPage = students.filter(user => user.role === 1);
+    const studentIdsOnPage = studentsOnPage.map(student => student.id);
+    setSelectedStudentIds(prev => prev.filter(id => !studentIdsOnPage.includes(id)));
+  };
+
+  const handleGroupSelect = (group: {id: string, name: string}) => {
+    console.log('handleGroupSelect called with group:', group);
+    console.log('selectedStudents:', selectedStudents);
+    setSelectedGroupForBulk(group);
+    setIsBulkAddModalOpen(true);
+  };
+
+  const handleRemoveStudentFromBulk = (studentId: string) => {
+    setSelectedStudentIds(prev => prev.filter(id => id !== studentId));
+  };
+
+  const handleBulkAddConfirm = async () => {
+    if (!selectedGroupForBulk || selectedStudentIds.length === 0) return;
+
+    setIsBulkAdding(true);
+    try {
+      const result = await AuthenticatedApiService.bulkAddStudentsToGroup(
+        selectedGroupForBulk.id,
+        selectedStudentIds
+      );
+
+      // Показываем результат
+      if (result.message) {
+        showSuccess(result.message);
+
+        // Обновляем таблицу
+        await loadStudents(currentPage, true);
+        
+        // Очищаем выбор
+        setSelectedStudentIds([]);
+        setIsBulkAddModalOpen(false);
+        setSelectedGroupForBulk(null);
+      }
+    } catch (error) {
+      console.error('Failed to bulk add students to group:', error);
+      
+      // Извлекаем сообщение об ошибке
+      let errorMessage = 'Не удалось добавить студентов в группу';
+      
+      if (error && typeof error === 'object' && 'message' in error) {
+        errorMessage = (error as Error).message;
+      }
+      
+      showError(errorMessage);
+    } finally {
+      setIsBulkAdding(false);
+    }
+  };
+
+  const selectedStudents = students.filter(student => selectedStudentIds.includes(student.id));
+
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
@@ -636,6 +729,33 @@ export default function StudentsPage() {
             />
           </div>
 
+          {/* Bulk Add to Group Panel */}
+          {user && canManageUsers(user.role) && selectedStudentIds.length > 0 && (
+            <div className="p-4 bg-gradient-to-r from-emerald-50 to-lime-50 dark:from-emerald-900/20 dark:to-lime-900/20 border-b border-emerald-200 dark:border-emerald-800">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="flex items-center justify-center w-10 h-10 bg-emerald-500 rounded-lg text-white font-bold">
+                    {selectedStudentIds.length}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                      Выбрано студентов: {selectedStudentIds.length}
+                    </p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                      Нажмите кнопку для массового добавления в группу
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsGroupSelectionModalOpen(true)}
+                  className="px-6 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-emerald-500 to-lime-600 rounded-lg hover:shadow-lg hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-all duration-200"
+                >
+                  Добавить в группу
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Users Table */}
           <div className="overflow-hidden">
             {/* Индикатор загрузки таблицы - НЕ блокирует фильтры */}
@@ -668,6 +788,10 @@ export default function StudentsPage() {
               columnVisibility={isColumnVisible}
               currentPage={currentPage}
               itemsPerPage={pageSize}
+              selectedStudentIds={selectedStudentIds}
+              onSelectStudent={handleSelectStudent}
+              onSelectAll={handleSelectAll}
+              onDeselectAll={handleDeselectAll}
             />
           </div>
 
@@ -943,6 +1067,31 @@ export default function StudentsPage() {
           onClose={() => setIsImportModalOpen(false)}
           onImport={handleImportUsers}
           organizationId={user.organizationId}
+        />
+      )}
+
+      {/* Group Selection Modal */}
+      <GroupSelectionModal
+        isOpen={isGroupSelectionModalOpen}
+        onClose={() => setIsGroupSelectionModalOpen(false)}
+        groups={groups}
+        onSelectGroup={handleGroupSelect}
+        selectedCount={selectedStudentIds.length}
+      />
+
+      {/* Bulk Add to Group Modal */}
+      {selectedGroupForBulk && (
+        <BulkAddToGroupModal
+          isOpen={isBulkAddModalOpen}
+          onClose={() => {
+            setIsBulkAddModalOpen(false);
+            setSelectedGroupForBulk(null);
+          }}
+          onConfirm={handleBulkAddConfirm}
+          selectedStudents={selectedStudents}
+          groupName={selectedGroupForBulk.name}
+          isLoading={isBulkAdding}
+          onRemoveStudent={handleRemoveStudentFromBulk}
         />
       )}
     </div>

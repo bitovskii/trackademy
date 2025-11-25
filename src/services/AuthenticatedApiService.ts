@@ -508,4 +508,14 @@ export class AuthenticatedApiService {
   static async deleteSubmissionFile(fileId: string): Promise<void> {
     return this.delete(`/Submission/file/${fileId}`);
   }
+
+  // Bulk add students to group
+  static async bulkAddStudentsToGroup(groupId: string, studentIds: string[]): Promise<{ 
+    message: string; 
+  }> {
+    return this.post('/Group/bulk-add-students', {
+      groupId,
+      studentIds
+    });
+  }
 }

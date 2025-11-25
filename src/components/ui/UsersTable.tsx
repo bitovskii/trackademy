@@ -16,6 +16,10 @@ interface UsersTableProps {
   columnVisibility?: (columnKey: string) => boolean;
   currentPage?: number;
   itemsPerPage?: number;
+  selectedStudentIds?: string[];
+  onSelectStudent?: (userId: string) => void;
+  onSelectAll?: () => void;
+  onDeselectAll?: () => void;
 }
 
 export const UsersTable: React.FC<UsersTableProps> = ({
@@ -27,7 +31,11 @@ export const UsersTable: React.FC<UsersTableProps> = ({
   showColumnControls = true,
   columnVisibility,
   currentPage = 1,
-  itemsPerPage = 10
+  itemsPerPage = 10,
+  selectedStudentIds = [],
+  onSelectStudent,
+  onSelectAll,
+  onDeselectAll,
 }) => {
   // Конфигурация колонок - используется только если нет внешнего управления
   const { columns, toggleColumn, isColumnVisible: internalIsColumnVisible } = useColumnVisibility([
@@ -41,6 +49,20 @@ export const UsersTable: React.FC<UsersTableProps> = ({
 
   // Используем внешнюю функцию видимости колонок если предоставлена, иначе внутреннюю
   const isColumnVisible = columnVisibility || internalIsColumnVisible;
+  
+  // Студенты на текущей странице
+  const studentsOnPage = users.filter(user => user.role === 1);
+  const allStudentsSelected = studentsOnPage.length > 0 && studentsOnPage.every(student => selectedStudentIds.includes(student.id));
+  const someStudentsSelected = studentsOnPage.some(student => selectedStudentIds.includes(student.id)) && !allStudentsSelected;
+  
+  const handleSelectAllOnPage = () => {
+    if (allStudentsSelected && onDeselectAll) {
+      onDeselectAll();
+    } else if (onSelectAll) {
+      onSelectAll();
+    }
+  };
+  
   const getRoleText = (role: number) => {
     switch (role) {
       case 1: return 'Студент';
@@ -112,6 +134,23 @@ export const UsersTable: React.FC<UsersTableProps> = ({
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-700/50">
             <tr>
+              {/* Checkbox column для массового выбора */}
+              {onSelectStudent && currentUser && canManageUsers(currentUser.role) && (
+                <th className="px-6 py-3 text-left w-12">
+                  <input
+                    type="checkbox"
+                    checked={allStudentsSelected}
+                    ref={(input) => {
+                      if (input) {
+                        input.indeterminate = someStudentsSelected;
+                      }
+                    }}
+                    onChange={handleSelectAllOnPage}
+                    disabled={studentsOnPage.length === 0}
+                    className="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded focus:ring-emerald-500 dark:focus:ring-emerald-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                </th>
+              )}
               {isColumnVisible('number') && (
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16">
                   №
@@ -145,15 +184,41 @@ export const UsersTable: React.FC<UsersTableProps> = ({
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-            {users.map((user, index) => (
+            {users.map((user, index) => {
+              const isStudent = user.role === 1;
+              const isSelected = selectedStudentIds.includes(user.id);
+              
+              return (
               <tr 
                 key={user.id} 
+                onClick={() => {
+                  if (isStudent && onSelectStudent) {
+                    onSelectStudent(user.id);
+                  }
+                }}
                 className={`transition-colors ${
+                  isStudent && onSelectStudent ? 'cursor-pointer' : ''
+                } ${
                   user.isTrial 
                     ? 'bg-yellow-50 dark:bg-yellow-900/20 hover:bg-yellow-100 dark:hover:bg-yellow-900/30' 
                     : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
-                }`}
+                } ${isSelected ? 'bg-emerald-50 dark:bg-emerald-900/20' : ''}`}
               >
+                {/* Checkbox column - только для студентов */}
+                {onSelectStudent && currentUser && canManageUsers(currentUser.role) && (
+                  <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                    {isStudent ? (
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => onSelectStudent(user.id)}
+                        className="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded focus:ring-emerald-500 dark:focus:ring-emerald-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 cursor-pointer"
+                      />
+                    ) : (
+                      <div className="w-4 h-4"></div>
+                    )}
+                  </td>
+                )}
                 {isColumnVisible('number') && (
                   <td className="px-3 py-4 whitespace-nowrap text-center">
                     <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium rounded-lg shadow-sm mx-auto">
@@ -214,7 +279,7 @@ export const UsersTable: React.FC<UsersTableProps> = ({
                 )}
                 {isColumnVisible('actions') && currentUser && canManageUsers(currentUser.role) && (
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex justify-end space-x-2">
+                    <div className="flex justify-end space-x-2" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => onEdit(user)}
                         className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 
@@ -235,7 +300,8 @@ export const UsersTable: React.FC<UsersTableProps> = ({
                   </td>
                 )}
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>

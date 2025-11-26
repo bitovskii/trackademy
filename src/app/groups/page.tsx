@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
-import { UserGroupIcon, PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
+import { UserGroupIcon, PencilIcon, TrashIcon, EyeIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
 import { useDebounce } from '../../hooks/useDebounce';
 import { Group, GroupFormData, GroupsResponse } from '../../types/Group';
 import { DeleteConfirmationModal } from '../../components/ui/DeleteConfirmationModal';
@@ -49,6 +49,11 @@ export default function GroupsPage() {
   const [viewingGroup, setViewingGroup] = useState<Group | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
+  // Состояния для экспорта
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [exportGroupId, setExportGroupId] = useState<string>('');
+  const [includePayments, setIncludePayments] = useState(true);
+
   // Фильтры для групп
   const [filters, setFilters] = useState<{
     subjectId: string;
@@ -68,6 +73,58 @@ export default function GroupsPage() {
 
   const debouncedSearchRef = useRef(debouncedSearchTerm);
   debouncedSearchRef.current = debouncedSearchTerm;
+
+  const handleExportGroups = async () => {
+    if (!user?.organizationId) {
+      console.error('Organization ID не найден');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('Токен авторизации не найден');
+      }
+
+      const body: { organizationId: string; includePayments: boolean; groupId?: string } = {
+        organizationId: user.organizationId,
+        includePayments
+      };
+
+      if (exportGroupId) {
+        body.groupId = exportGroupId;
+      }
+
+      const response = await fetch('https://trackademy.kz/api/Export/groups', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        throw new Error('Ошибка экспорта групп');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `groups_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      setIsExportModalOpen(false);
+      setExportGroupId('');
+      setIncludePayments(true);
+    } catch (error) {
+      console.error('Ошибка при экспорте групп:', error);
+    }
+  };
 
   // Универсальная система модалов для групп
   const groupModal = useUniversalModal('group', {
@@ -582,7 +639,7 @@ export default function GroupsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6 pt-20 md:pt-24">
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="mx-auto space-y-6" style={{ maxWidth: '95vw' }}>
         {/* Modern Header Card */}
         <PageHeaderWithStats
           title="Группы"
@@ -593,11 +650,21 @@ export default function GroupsPage() {
           actionLabel="Добавить группу"
           onAction={handleCreate}
           extraActions={
-            <ColumnVisibilityControl
-              columns={columns}
-              onColumnToggle={toggleColumn}
-              variant="header"
-            />
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setIsExportModalOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-105 font-medium"
+                title="Экспорт групп"
+              >
+                <DocumentArrowDownIcon className="w-5 h-5" />
+                <span className="hidden sm:inline">Экспорт</span>
+              </button>
+              <ColumnVisibilityControl
+                columns={columns}
+                onColumnToggle={toggleColumn}
+                variant="header"
+              />
+            </div>
           }
           stats={[
             { label: "Всего групп", value: totalCount, color: "teal" },
@@ -1121,6 +1188,72 @@ export default function GroupsPage() {
                 className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {freezeLoading ? 'Разморозка...' : 'Разморозить'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Модалка экспорта групп */}
+      {isExportModalOpen && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Экспорт групп
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Выберите параметры экспорта
+              </p>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Группа (опционально)
+                </label>
+                <select
+                  value={exportGroupId}
+                  onChange={(e) => setExportGroupId(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Все группы</option>
+                  {groups.map(group => (
+                    <option key={group.id} value={group.id}>
+                      {group.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="includePayments"
+                  checked={includePayments}
+                  onChange={(e) => setIncludePayments(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                />
+                <label htmlFor="includePayments" className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Включить платежи
+                </label>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => {
+                  setIsExportModalOpen(false);
+                  setExportGroupId('');
+                  setIncludePayments(true);
+                }}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleExportGroups}
+                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white rounded-lg transition-all"
+              >
+                Экспортировать
               </button>
             </div>
           </div>

@@ -655,7 +655,7 @@ export default function HomeworkPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6 pt-20 md:pt-24">
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="mx-auto space-y-6" style={{ maxWidth: '95vw' }}>
         <PageHeaderWithStats
           title="Домашнее задание"
           subtitle="Управление заданиями и проверка выполненных работ"

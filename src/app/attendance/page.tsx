@@ -10,6 +10,8 @@ import { ExportAttendanceModal } from '@/components/ExportAttendanceModal';
 import { attendanceApi } from '@/services/AttendanceApiService';
 import { AttendanceRecord, AttendanceFilters, AttendanceStatus, getAttendanceStatusText, getAttendanceStatusColor, getAttendanceStatusIcon } from '@/types/Attendance';
 import { useApiToast } from '@/hooks/useApiToast';
+import { AuthenticatedApiService } from '@/services/AuthenticatedApiService';
+import { Group } from '@/types/Group';
 
 export default function AttendancePage() {
   const { user } = useAuth();
@@ -21,6 +23,7 @@ export default function AttendancePage() {
   const [loading, setLoading] = useState(false);
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [totalCount, setTotalCount] = useState(0);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [filters, setFilters] = useState<AttendanceFilters>({
     organizationId: user?.organizationId || '',
     pageNumber: 1,
@@ -37,6 +40,24 @@ export default function AttendancePage() {
       return;
     }
   }, [user, router]);
+
+  // Load groups
+  useEffect(() => {
+    if (user?.organizationId) {
+      loadGroups();
+    }
+  }, [user?.organizationId]);
+
+  const loadGroups = async () => {
+    if (!user?.organizationId) return;
+    
+    try {
+      const response = await AuthenticatedApiService.getGroups(user.organizationId);
+      setGroups(response.items);
+    } catch (error) {
+      console.error('Error loading groups:', error);
+    }
+  };
 
   // Load attendance data
   useEffect(() => {
@@ -81,6 +102,9 @@ export default function AttendancePage() {
       if (newFilters.studentSearch === '') {
         delete updated.studentSearch;
       }
+      if (newFilters.groupId === undefined || newFilters.groupId === '') {
+        delete updated.groupId;
+      }
       if (newFilters.status === undefined || newFilters.status === null) {
         delete updated.status;
       }
@@ -117,7 +141,7 @@ export default function AttendancePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6 page-container pt-20 md:pt-24">
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="mx-auto space-y-6" style={{ maxWidth: '95vw' }}>
         {/* Page Header */}
         <PageHeaderWithStats
         title="Посещаемость"
@@ -245,6 +269,25 @@ export default function AttendancePage() {
                   placeholder="Имя студента..."
                   className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm text-gray-900 dark:text-white"
                 />
+              </div>
+
+              {/* Group Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Группа
+                </label>
+                <select
+                  value={filters.groupId || ''}
+                  onChange={(e) => updateFilters({ groupId: e.target.value || undefined })}
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm text-gray-900 dark:text-white"
+                >
+                  <option value="">Все группы</option>
+                  {groups.map((group) => (
+                    <option key={group.id} value={group.id}>
+                      {group.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Status Filter */}

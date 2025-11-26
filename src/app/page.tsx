@@ -214,7 +214,7 @@ export default function Dashboard() {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 px-6 py-6 mt-20">
-        <div className="max-w-7xl mx-auto">
+        <div className="mx-auto" style={{ maxWidth: '95vw' }}>
           <div className="flex items-center justify-center h-64">
             <div className="text-center bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-red-200 dark:border-red-700 p-8 max-w-md">
               <div className="text-red-500 text-4xl mb-4">⚠️</div>
@@ -237,7 +237,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 px-4 md:px-6 py-4 md:py-6 pt-20 md:pt-24">
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="mx-auto space-y-6" style={{ maxWidth: '95vw' }}>
         {isStudent && studentSummary ? (
           /* Student Dashboard */
           <>

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
-import { AcademicCapIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
+import { AcademicCapIcon, ArrowUpTrayIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
 import { User, UserFormData, ImportResult } from '../../types/User';
 import UniversalModal from '../../components/ui/UniversalModal';
 import { useUniversalModal } from '../../hooks/useUniversalModal';
@@ -568,6 +568,46 @@ export default function StudentsPage() {
     return result;
   };
 
+  const handleExportUsers = async () => {
+    if (!user?.organizationId) {
+      console.error('Organization ID не найден');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('Токен авторизации не найден');
+      }
+
+      const response = await fetch('https://trackademy.kz/api/Export/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ organizationId: user.organizationId }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Ошибка экспорта пользователей');
+      }
+
+      // Получаем blob и скачиваем файл
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `users_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Ошибка при экспорте пользователей:', error);
+    }
+  };
+
   // Bulk add to group handlers
   const handleSelectStudent = (studentId: string) => {
     setSelectedStudentIds(prev => {
@@ -665,7 +705,7 @@ export default function StudentsPage() {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-        <div className="max-w-7xl mx-auto">
+        <div className="mx-auto" style={{ maxWidth: '95vw' }}>
           <div className="flex items-center justify-center h-64">
             <div className="text-center bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 max-w-md">
               <div className="text-red-500 text-4xl mb-4">
@@ -694,7 +734,7 @@ export default function StudentsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6 page-container">
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="mx-auto space-y-6" style={{ maxWidth: '95vw' }}>
         {/* Modern Header with Gradient */}
         <PageHeaderWithStats
           title="Пользователи"
@@ -707,14 +747,24 @@ export default function StudentsPage() {
           extraActions={
             <div className="flex items-center gap-3">
               {user && canManageUsers(user.role) && (
-                <button
-                  onClick={() => setIsImportModalOpen(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-500 to-emerald-600 text-white rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-105 font-medium"
-                  title="Импорт пользователей"
-                >
-                  <ArrowUpTrayIcon className="w-5 h-5" />
-                  <span className="hidden sm:inline">Импорт</span>
-                </button>
+                <>
+                  <button
+                    onClick={handleExportUsers}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-105 font-medium"
+                    title="Экспорт пользователей"
+                  >
+                    <DocumentArrowDownIcon className="w-5 h-5" />
+                    <span className="hidden sm:inline">Экспорт</span>
+                  </button>
+                  <button
+                    onClick={() => setIsImportModalOpen(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-500 to-emerald-600 text-white rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-105 font-medium"
+                    title="Импорт пользователей"
+                  >
+                    <ArrowUpTrayIcon className="w-5 h-5" />
+                    <span className="hidden sm:inline">Импорт</span>
+                  </button>
+                </>
               )}
               <ColumnVisibilityControl
                 columns={columns}

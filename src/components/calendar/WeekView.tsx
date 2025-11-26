@@ -221,6 +221,9 @@ export default function WeekView({ date, lessons, onLessonClick }: WeekViewProps
                     : getLessonPosition(slot.lessons[0]);
                   
                   if (hasOverlap) {
+                    // Получаем все предметы для отображения
+                    const subjects = slot.lessons.map(l => l.subject.subjectName).join(', ');
+                    
                     return (
                       <div
                         key={`overlap-${idx}`}
@@ -234,14 +237,15 @@ export default function WeekView({ date, lessons, onLessonClick }: WeekViewProps
                           lessons: slot.lessons,
                           timeSlot: `${formatTime(slot.startTime)} - ${formatTime(slot.endTime)}`
                         })}
+                        title={`${slot.lessons.length} накладывающихся ${slot.lessons.length === 1 ? 'занятие' : slot.lessons.length < 5 ? 'занятия' : 'занятий'} (${formatTime(slot.startTime)}-${formatTime(slot.endTime)})\n${subjects}`}
                       >
                         <div className="w-full h-full p-1.5 rounded text-xs bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/30 dark:to-amber-800/30 border border-amber-300 dark:border-amber-600 hover:shadow-sm transition-all overflow-hidden">
                           <div className="flex flex-col h-full justify-center gap-0.5">
                             <span className="font-semibold text-amber-900 dark:text-amber-100 truncate text-center">
-                              {slot.lessons.length} {slot.lessons.length === 1 ? 'занятие' : slot.lessons.length < 5 ? 'занятия' : 'занятий'}
-                            </span>
-                            <span className="text-amber-700 dark:text-amber-300 text-[10px] whitespace-nowrap text-center">
                               {formatTime(slot.startTime)}-{formatTime(slot.endTime)}
+                            </span>
+                            <span className="text-amber-700 dark:text-amber-300 text-[10px] truncate text-center">
+                              {subjects}
                             </span>
                           </div>
                         </div>

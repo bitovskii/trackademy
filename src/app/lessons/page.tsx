@@ -10,13 +10,14 @@ import { User } from '@/types/User';
 import { AuthenticatedApiService } from '@/services/AuthenticatedApiService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, AcademicCapIcon } from '@heroicons/react/24/outline';
 import DayView from '@/components/calendar/DayView';
 import WeekView from '@/components/calendar/WeekView';
 import MonthView from '@/components/calendar/MonthView';
 import ListView from '@/components/calendar/ListView';
 import RangeCalendarView from '@/components/calendar/RangeCalendarView';
 import LessonDetailModal from '@/components/calendar/LessonDetailModal';
+import TeacherWorkHoursModal from '@/components/TeacherWorkHoursModal';
 import { PageHeaderWithStats } from '@/components/ui/PageHeaderWithStats';
 import { DateRangePicker } from '@/components/ui/DateRangePicker';
 import { useApiToast } from '@/hooks/useApiToast';
@@ -30,6 +31,7 @@ export default function LessonsPage() {
 
   const isStudent = user?.role === 'Student';
   const isTeacher = user?.role === 'Teacher';
+  const isAdminOrOwner = user?.role === 'Administrator' || user?.role === 'Owner';
 
   // State management
   const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -39,6 +41,7 @@ export default function LessonsPage() {
   const [view, setView] = useState<CalendarView>('week');
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [showLessonModal, setShowLessonModal] = useState(false);
+  const [showTeacherWorkHoursModal, setShowTeacherWorkHoursModal] = useState(false);
   const [dateFrom, setDateFrom] = useState<string | undefined>(undefined);
   const [dateTo, setDateTo] = useState<string | undefined>(undefined);
   const [rangeViewMode, setRangeViewMode] = useState<'list' | 'calendar'>('list');
@@ -529,9 +532,21 @@ export default function LessonsPage() {
               </div>
             </div>
 
-            {/* Clear filters button */}
-            {(selectedGroup || selectedTeacher || selectedRoom || selectedSubject) && (
-              <div className="mt-4 flex justify-end">
+            {/* Clear filters button and Teacher Work Hours button */}
+            <div className="mt-4 flex justify-between items-center">
+              <div>
+                {isAdminOrOwner && user?.organizationId && (
+                  <button
+                    onClick={() => setShowTeacherWorkHoursModal(true)}
+                    className="px-4 py-2 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 shadow-md hover:shadow-lg"
+                  >
+                    <AcademicCapIcon className="h-5 w-5" />
+                    Учет занятий преподавателей
+                  </button>
+                )}
+              </div>
+              
+              {(selectedGroup || selectedTeacher || selectedRoom || selectedSubject) && (
                 <button
                   onClick={() => {
                     setSelectedGroup('');
@@ -543,8 +558,8 @@ export default function LessonsPage() {
                 >
                   Очистить фильтры
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           {/* Navigation */}
@@ -711,6 +726,15 @@ export default function LessonsPage() {
           isOpen={showLessonModal}
           onClose={() => setShowLessonModal(false)}
           onUpdate={loadLessons}
+        />
+      )}
+
+      {/* Teacher Work Hours Modal */}
+      {isAdminOrOwner && user?.organizationId && (
+        <TeacherWorkHoursModal
+          isOpen={showTeacherWorkHoursModal}
+          onClose={() => setShowTeacherWorkHoursModal(false)}
+          organizationId={user.organizationId}
         />
       )}
       </div>

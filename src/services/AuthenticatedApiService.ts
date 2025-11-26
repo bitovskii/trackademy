@@ -516,4 +516,17 @@ export class AuthenticatedApiService {
       studentIds
     });
   }
+
+  // Teacher work hours
+  static async getTeacherWorkHours(organizationId: string, fromDate: string, toDate: string): Promise<Array<{
+    teacherId: string;
+    fullName: string;
+    completedLessonsCount: number;
+  }>> {
+    return this.post('/User/teacher-work-hours', {
+      organizationId,
+      fromDate,
+      toDate
+    });
+  }
 }

@@ -95,7 +95,13 @@ export const PageHeaderWithStats: React.FC<PageHeaderWithStatsProps> = ({
       
       {/* Stats Section */}
       <div className="p-6 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className={`grid gap-4 ${
+          stats.length === 1 ? 'grid-cols-1' :
+          stats.length === 2 ? 'grid-cols-1 md:grid-cols-2' :
+          stats.length === 3 ? 'grid-cols-1 md:grid-cols-3' :
+          stats.length === 4 ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4' :
+          'grid-cols-1 md:grid-cols-3 lg:grid-cols-5'
+        }`}>
           {stats.map((stat, index) => (
             <div key={index} className="text-center">
               <div className={`text-2xl font-bold ${getColorClasses(stat.color)}`}>{stat.value}</div>

@@ -130,13 +130,13 @@ export const UsersTable: React.FC<UsersTableProps> = ({
       )}
 
       {/* Desktop Table */}
-      <div className="hidden lg:block">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+      <div className="hidden lg:block overflow-x-auto scrollbar-custom">
+        <table className="w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed">
           <thead className="bg-gray-50 dark:bg-gray-700/50">
             <tr>
               {/* Checkbox column для массового выбора */}
               {onSelectStudent && currentUser && canManageUsers(currentUser.role) && (
-                <th className="px-6 py-3 text-left w-12">
+                <th className="px-3 py-3 text-left" style={{ width: '50px' }}>
                   <input
                     type="checkbox"
                     checked={allStudentsSelected}
@@ -152,32 +152,32 @@ export const UsersTable: React.FC<UsersTableProps> = ({
                 </th>
               )}
               {isColumnVisible('number') && (
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ width: '50px' }}>
                   №
                 </th>
               )}
               {isColumnVisible('user') && (
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ width: '25%' }}>
                   Пользователь
                 </th>
               )}
               {isColumnVisible('contacts') && (
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ width: '15%' }}>
                   Контакты
                 </th>
               )}
               {isColumnVisible('role') && (
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ width: '12%' }}>
                   Роль
                 </th>
               )}
               {isColumnVisible('group') && (
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ width: '20%' }}>
                   Группа
                 </th>
               )}
               {isColumnVisible('actions') && currentUser && canManageUsers(currentUser.role) && (
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ width: '100px' }}>
                   Действия
                 </th>
               )}
@@ -206,7 +206,7 @@ export const UsersTable: React.FC<UsersTableProps> = ({
               >
                 {/* Checkbox column - только для студентов */}
                 {onSelectStudent && currentUser && canManageUsers(currentUser.role) && (
-                  <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                  <td className="px-3 py-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                     {isStudent ? (
                       <input
                         type="checkbox"
@@ -220,23 +220,23 @@ export const UsersTable: React.FC<UsersTableProps> = ({
                   </td>
                 )}
                 {isColumnVisible('number') && (
-                  <td className="px-3 py-4 whitespace-nowrap text-center">
+                  <td className="px-3 py-3 whitespace-nowrap text-center">
                     <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium rounded-lg shadow-sm mx-auto">
                       {(currentPage - 1) * itemsPerPage + index + 1}
                     </div>
                   </td>
                 )}
                 {isColumnVisible('user') && (
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-3 py-3">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-12 w-12">
                         <div className="h-12 w-12 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
                           <UserIcon className="h-6 w-6 text-gray-500 dark:text-gray-400" />
                         </div>
                       </div>
-                      <div className="ml-4">
+                      <div className="ml-4 min-w-0 flex-1">
                         <div className="flex items-center space-x-2">
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
                             {user.name}
                           </div>
                           {user.isTrial && (
@@ -245,7 +245,7 @@ export const UsersTable: React.FC<UsersTableProps> = ({
                             </span>
                           )}
                         </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                        <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
                           @{user.login}
                         </div>
                       </div>
@@ -253,19 +253,19 @@ export const UsersTable: React.FC<UsersTableProps> = ({
                   </td>
                 )}
                 {isColumnVisible('contacts') && (
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-500 dark:text-gray-400">{user.phone}</div>
+                  <td className="px-3 py-3 truncate">
+                    <div className="text-sm text-gray-500 dark:text-gray-400 truncate">{user.phone}</div>
                   </td>
                 )}
                 {isColumnVisible('role') && (
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-3 py-3 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getRoleBadgeClass(user.role)}`}>
                       {getRoleText(user.role)}
                     </span>
                   </td>
                 )}
                 {isColumnVisible('group') && (
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                  <td className="px-3 py-3 text-sm text-gray-900 dark:text-white truncate">
                     {user.groups.length > 0 
                       ? (() => {
                           const groupNames = user.groups.map((group: string | { id: string; name?: string; groupName?: string }) => 
@@ -278,7 +278,7 @@ export const UsersTable: React.FC<UsersTableProps> = ({
                   </td>
                 )}
                 {isColumnVisible('actions') && currentUser && canManageUsers(currentUser.role) && (
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <td className="px-3 py-3 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex justify-end space-x-2" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => onEdit(user)}

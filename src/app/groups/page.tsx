@@ -639,7 +639,7 @@ export default function GroupsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6 pt-20 md:pt-24">
-      <div className="mx-auto space-y-6" style={{ maxWidth: '95vw' }}>
+      <div className="w-full space-y-6">
         {/* Modern Header Card */}
         <PageHeaderWithStats
           title="Группы"
@@ -743,30 +743,30 @@ export default function GroupsPage() {
           {/* Desktop Table View */}
           {!tableLoading && groups.length > 0 && (
             <div className="hidden md:block">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <div className="overflow-x-auto scrollbar-custom">
+                <table className="w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed">
                   <thead className="bg-gray-50 dark:bg-gray-800/50">
                     <tr>
                       {isColumnVisible('number') && (
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">#</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ width: '50px' }}>#</th>
                       )}
                       {isColumnVisible('name') && (
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Название группы</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ width: '20%' }}>Название группы</th>
                       )}
                       {isColumnVisible('code') && (
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Код</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ width: '15%' }}>Код</th>
                       )}
                       {isColumnVisible('level') && (
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Уровень</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ width: '15%' }}>Уровень</th>
                       )}
                       {isColumnVisible('subject') && (
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Предмет</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ width: '20%' }}>Предмет</th>
                       )}
                       {isColumnVisible('students') && (
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Студенты</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ width: '15%' }}>Студенты</th>
                       )}
                       {isColumnVisible('actions') && (
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Действия</th>
+                        <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ width: '120px' }}>Действия</th>
                       )}
                     </tr>
                   </thead>
@@ -784,7 +784,7 @@ export default function GroupsPage() {
                         }}
                       >
                         {isColumnVisible('number') && (
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-3 py-3">
                             <div className="flex items-center">
                               <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-lg flex items-center justify-center">
                                 <span className="text-white font-semibold text-sm">{(currentPage - 1) * pageSize + index + 1}</span>
@@ -793,32 +793,32 @@ export default function GroupsPage() {
                           </td>
                         )}
                         {isColumnVisible('name') && (
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-3 py-3">
                             <div className="flex items-center space-x-3">
-                              <UserGroupIcon className="h-5 w-5 text-gray-400" />
-                              <div className="font-medium text-gray-900 dark:text-gray-100">{group.name}</div>
+                              <UserGroupIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />
+                              <div className="font-medium text-gray-900 dark:text-gray-100 truncate">{group.name}</div>
                             </div>
                           </td>
                         )}
                         {isColumnVisible('code') && (
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-gray-900 dark:text-gray-100">{group.code}</div>
+                          <td className="px-3 py-3">
+                            <div className="text-gray-900 dark:text-gray-100 truncate">{group.code}</div>
                           </td>
                         )}
                         {isColumnVisible('level') && (
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-gray-900 dark:text-gray-100">{group.level}</div>
+                          <td className="px-3 py-3">
+                            <div className="text-gray-900 dark:text-gray-100 truncate">{group.level}</div>
                           </td>
                         )}
                         {isColumnVisible('subject') && (
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-gray-900 dark:text-gray-100">
+                          <td className="px-3 py-3">
+                            <div className="text-gray-900 dark:text-gray-100 truncate">
                               {typeof group.subject === 'object' ? group.subject.subjectName : group.subject}
                             </div>
                           </td>
                         )}
                         {isColumnVisible('students') && (
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-3 py-3">
                             <button
                               onClick={() => handleShowStudents(group)}
                               className="text-teal-600 hover:text-teal-900 dark:text-teal-400 dark:hover:text-teal-300 flex items-center hover:bg-teal-50 dark:hover:bg-teal-900/20 px-2 py-1 rounded transition-colors"
@@ -830,18 +830,18 @@ export default function GroupsPage() {
                           </td>
                         )}
                         {isColumnVisible('actions') && (
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <div className="flex justify-end space-x-2">
+                          <td className="px-3 py-3 text-right">
+                            <div className="flex justify-end gap-1">
                               <button 
                                 onClick={() => handleEdit(group.id)}
-                                className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                                className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
                                 title="Редактировать группу"
                               >
                                 <PencilIcon className="h-4 w-4" />
                               </button>
                               <button 
                                 onClick={() => handleDelete(group.id)}
-                                className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                                className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
                                 title="Удалить группу"
                               >
                                 <TrashIcon className="h-4 w-4" />

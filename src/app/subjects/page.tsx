@@ -363,7 +363,7 @@ export default function SubjectsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6 page-container">
-      <div className="mx-auto space-y-6" style={{ maxWidth: '95vw' }}>
+      <div className="w-full space-y-6">
         {/* Modern Header Card */}
         <PageHeaderWithStats
           title="Предметы"
@@ -399,37 +399,37 @@ export default function SubjectsPage() {
 
           {/* Desktop Table */}
           <div className="hidden md:block">{!tableLoading && (
-            <div className="overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <div className="overflow-x-auto scrollbar-custom">
+              <table className="w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed">
                 <thead className="bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-700 dark:to-gray-600">
                   <tr>
                     {isColumnVisible('number') && (
-                      <th className="px-3 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider w-16">
+                      <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '50px' }}>
                         №
                       </th>
                     )}
                     {isColumnVisible('name') && (
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '20%' }}>
                         Название предмета
                       </th>
                     )}
                     {isColumnVisible('description') && (
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '30%' }}>
                         Описание
                       </th>
                     )}
                     {isColumnVisible('price') && (
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '15%' }}>
                         Цена
                       </th>
                     )}
                     {isColumnVisible('paymentType') && (
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '15%' }}>
                         Тип оплаты
                       </th>
                     )}
                     {isColumnVisible('actions') && (
-                      <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '100px' }}>
                         Действия
                       </th>
                     )}
@@ -439,25 +439,25 @@ export default function SubjectsPage() {
                   {subjects.map((subject, index) => (
                     <tr key={subject.id} className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-gray-700 dark:hover:to-gray-600 transition-all duration-200">
                       {isColumnVisible('number') && (
-                        <td className="px-3 py-4 whitespace-nowrap text-center">
+                        <td className="px-3 py-3 whitespace-nowrap text-center">
                           <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium rounded-lg shadow-sm mx-auto">
                             {(currentPage - 1) * pageSize + index + 1}
                           </div>
                         </td>
                       )}
                       {isColumnVisible('name') && (
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-3 py-3 truncate">
                           <div className="flex items-center">
                             <div className="p-2 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900 dark:to-purple-900 rounded-lg mr-3">
                               <BookOpenIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                             </div>
-                            <div className="text-sm font-semibold text-gray-900 dark:text-white">{subject.name}</div>
+                            <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">{subject.name}</div>
                           </div>
                         </td>
                       )}
                       {isColumnVisible('description') && (
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-600 dark:text-gray-300 max-w-xs truncate" title={subject.description}>
+                        <td className="px-3 py-3">
+                          <div className="text-sm text-gray-600 dark:text-gray-300 truncate" title={subject.description}>
                             {subject.description || (
                               <span className="italic text-gray-400 dark:text-gray-500">Описание отсутствует</span>
                             )}
@@ -465,14 +465,14 @@ export default function SubjectsPage() {
                         </td>
                       )}
                       {isColumnVisible('price') && (
-                        <td className="px-6 py-4">
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        <td className="px-3 py-3 truncate">
+                          <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
                             <span>{subject.price.toLocaleString()} тенге</span>
                           </div>
                         </td>
                       )}
                       {isColumnVisible('paymentType') && (
-                        <td className="px-6 py-4">
+                        <td className="px-3 py-3 truncate">
                           <div className="text-sm text-gray-900 dark:text-white">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                               Number(subject.paymentType) === 1 
@@ -485,7 +485,7 @@ export default function SubjectsPage() {
                         </td>
                       )}
                       {isColumnVisible('actions') && (
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <td className="px-3 py-3 whitespace-nowrap text-right text-sm font-medium">
                           <div className="flex justify-end space-x-2">
                             <button 
                               onClick={() => handleEdit(subject.id)}

@@ -9,6 +9,7 @@ import { GroupsResponse } from '../types/Group';
 import { Assignment, AssignmentFormData, AssignmentsResponse, AssignmentFilters } from '../types/Assignment';
 import { Submission, SubmissionFilters, SubmissionsResponse, GradeSubmissionRequest, ReturnSubmissionRequest } from '../types/Submission';
 import { MyAssignmentsRequest, MyAssignmentsResponse } from '../types/MyAssignments';
+import { Material, MaterialsResponse, MaterialEditData } from '../types/Material';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -528,5 +529,91 @@ export class AuthenticatedApiService {
       fromDate,
       toDate
     });
+  }
+
+  // Materials
+  static async getMaterials(
+    organizationId: string,
+    pageNumber: number = 1,
+    pageSize: number = 10,
+    groupId?: string,
+    searchTitle?: string
+  ): Promise<MaterialsResponse> {
+    const params = new URLSearchParams({
+      OrganizationId: organizationId,
+      PageNumber: pageNumber.toString(),
+      PageSize: pageSize.toString()
+    });
+
+    if (groupId) {
+      params.append('GroupId', groupId);
+    }
+    if (searchTitle) {
+      params.append('SearchTitle', searchTitle);
+    }
+
+    return this.get(`/Material?${params.toString()}`);
+  }
+
+  static async getMaterialById(materialId: string): Promise<Material> {
+    return this.get(`/Material/${materialId}`);
+  }
+
+  static async uploadMaterial(formData: FormData): Promise<Material> {
+    const token = this.getAuthToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const response = await fetch(`https://trackademy.kz/api/Material`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || 'Failed to upload material');
+    }
+
+    return response.json();
+  }
+
+  static async updateMaterial(materialId: string, data: MaterialEditData): Promise<Material> {
+    return this.put(`/Material/${materialId}`, data);
+  }
+
+  static async deleteMaterial(materialId: string): Promise<void> {
+    return this.delete(`/Material/${materialId}`);
+  }
+
+  static async downloadMaterial(materialId: string, fileName: string): Promise<void> {
+    const token = this.getAuthToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const response = await fetch(`https://trackademy.kz/api/Material/${materialId}/download`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to download material');
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
   }
 }

@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BuildingOfficeIcon, HomeModernIcon, HomeIcon, AcademicCapIcon, BookOpenIcon, UserGroupIcon, CalendarDaysIcon, CalendarIcon, ClipboardDocumentCheckIcon, CurrencyDollarIcon, ClipboardDocumentListIcon, ShoppingBagIcon } from '@heroicons/react/24/outline';
-import { BuildingOfficeIcon as BuildingOfficeIconSolid, HomeModernIcon as HomeModernIconSolid, HomeIcon as HomeIconSolid, AcademicCapIcon as AcademicCapIconSolid, BookOpenIcon as BookOpenIconSolid, UserGroupIcon as UserGroupIconSolid, CalendarDaysIcon as CalendarDaysIconSolid, CalendarIcon as CalendarIconSolid, ClipboardDocumentCheckIcon as ClipboardDocumentCheckIconSolid, CurrencyDollarIcon as CurrencyDollarIconSolid, ClipboardDocumentListIcon as ClipboardDocumentListIconSolid, ShoppingBagIcon as ShoppingBagIconSolid } from '@heroicons/react/24/solid';
+import { BuildingOfficeIcon, HomeModernIcon, HomeIcon, AcademicCapIcon, BookOpenIcon, UserGroupIcon, CalendarDaysIcon, CalendarIcon, ClipboardDocumentCheckIcon, CurrencyDollarIcon, ClipboardDocumentListIcon, ShoppingBagIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
+import { BuildingOfficeIcon as BuildingOfficeIconSolid, HomeModernIcon as HomeModernIconSolid, HomeIcon as HomeIconSolid, AcademicCapIcon as AcademicCapIconSolid, BookOpenIcon as BookOpenIconSolid, UserGroupIcon as UserGroupIconSolid, CalendarDaysIcon as CalendarDaysIconSolid, CalendarIcon as CalendarIconSolid, ClipboardDocumentCheckIcon as ClipboardDocumentCheckIconSolid, CurrencyDollarIcon as CurrencyDollarIconSolid, ClipboardDocumentListIcon as ClipboardDocumentListIconSolid, ShoppingBagIcon as ShoppingBagIconSolid, DocumentTextIcon as DocumentTextIconSolid } from '@heroicons/react/24/solid';
 import { useAuth } from '../contexts/AuthContext';
 import { useState } from 'react';
 import RegisterModal from './RegisterModal';
@@ -59,6 +59,7 @@ const Sidebar: React.FC = () => {
     { name: 'Календарь занятий', href: '/lessons', icon: CalendarIcon, activeIcon: CalendarIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false, hideForStudentTeacher: false },
     { name: 'Посещаемость', href: '/attendance', icon: ClipboardDocumentCheckIcon, activeIcon: ClipboardDocumentCheckIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false, hideForStudentTeacher: false, hideForStudent: true },
     { name: 'Домашнее задание', href: isStudent ? '/my-homework' : '/homework', icon: ClipboardDocumentListIcon, activeIcon: ClipboardDocumentListIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false, hideForStudentTeacher: false, hideForAdmin: true },
+    { name: 'Учебные материалы', href: '/materials', icon: DocumentTextIcon, activeIcon: DocumentTextIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false, hideForStudentTeacher: false },
     { name: 'Платежи', href: '/payments', icon: CurrencyDollarIcon, activeIcon: CurrencyDollarIconSolid, requireAuth: true, requireOwner: false, requireAdmin: false, requireStudent: false, hideForStudentTeacher: true },
   ];
 

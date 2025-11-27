@@ -237,7 +237,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 px-4 md:px-6 py-4 md:py-6 pt-20 md:pt-24">
-      <div className="mx-auto space-y-6" style={{ maxWidth: '95vw' }}>
+      <div className="w-full space-y-6">
         {isStudent && studentSummary ? (
           /* Student Dashboard */
           <>

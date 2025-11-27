@@ -627,7 +627,7 @@ export default function SchedulesPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6 page-content">
-      <div className="mx-auto space-y-6" style={{ maxWidth: '95vw' }}>
+      <div className="w-full space-y-6">
         {/* Modern Header Card */}
         <PageHeaderWithStats
           title="Шаблоны расписаний"
@@ -870,52 +870,52 @@ export default function SchedulesPage() {
                 <>
                   {/* Table View */}
                   {currentView === 'table' && (
-                    <div className="overflow-x-auto">
-                      <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <div className="overflow-x-auto scrollbar-custom">
+                      <table className="w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed">
                     <thead className="bg-gradient-to-r from-gray-50 to-violet-50 dark:from-gray-700 dark:to-gray-600">
                       <tr>
                         {isColumnVisible('number') && (
-                          <th className="px-3 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider w-16">
+                          <th className="px-2 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '50px' }}>
                             №
                           </th>
                         )}
                         {isColumnVisible('group') && (
-                          <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                          <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '15%' }}>
                             Группа
                           </th>
                         )}
                         {isColumnVisible('subject') && (
-                          <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                          <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '15%' }}>
                             Предмет
                           </th>
                         )}
                         {isColumnVisible('teacher') && (
-                          <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                          <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '15%' }}>
                             Преподаватель
                           </th>
                         )}
                         {isColumnVisible('room') && (
-                          <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                          <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '12%' }}>
                             Кабинет
                           </th>
                         )}
                         {isColumnVisible('days') && (
-                          <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                          <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '20%' }}>
                             Дни недели
                           </th>
                         )}
                         {isColumnVisible('time') && (
-                          <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                          <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '10%' }}>
                             Время
                           </th>
                         )}
                         {isColumnVisible('period') && (
-                          <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                          <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '10%' }}>
                             Окончание
                           </th>
                         )}
                         {isColumnVisible('actions') && (
-                          <th className="px-8 py-4 w-32 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                          <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '120px' }}>
                             Действия
                           </th>
                         )}
@@ -925,56 +925,56 @@ export default function SchedulesPage() {
                       {schedules.map((schedule, index) => (
                         <tr key={schedule.id} className={`hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 ${index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50/50 dark:bg-gray-700/30'}`}>
                           {isColumnVisible('number') && (
-                            <td className="px-3 py-4 whitespace-nowrap text-center">
+                            <td className="px-2 py-3 text-center">
                               <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-violet-500 to-purple-600 text-white text-sm font-medium rounded-lg shadow-sm mx-auto">
                                 {(filters.pageNumber - 1) * pageSize + index + 1}
                               </div>
                             </td>
                           )}
                           {isColumnVisible('group') && (
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                            <td className="px-3 py-3 text-sm font-medium text-gray-900 dark:text-white truncate">
                               {schedule.group.name}
                             </td>
                           )}
                           {isColumnVisible('subject') && (
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            <td className="px-3 py-3 text-sm text-gray-900 dark:text-white">
                               <div className="flex items-center">
                                 <div 
-                                  className="w-3 h-3 rounded-full mr-2"
+                                  className="w-3 h-3 rounded-full mr-2 flex-shrink-0"
                                   style={{ backgroundColor: generateSubjectColor(schedule.subject.subjectName) }}
                                 ></div>
-                                {schedule.subject.subjectName}
+                                <span className="truncate">{schedule.subject.subjectName}</span>
                               </div>
                             </td>
                           )}
                           {isColumnVisible('teacher') && (
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            <td className="px-3 py-3 text-sm text-gray-900 dark:text-white truncate">
                               {schedule.teacher.name}
                             </td>
                           )}
                           {isColumnVisible('room') && (
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            <td className="px-3 py-3 text-sm text-gray-900 dark:text-white truncate">
                               {schedule.room.name}
                             </td>
                           )}
                           {isColumnVisible('days') && (
-                            <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                            <td className="px-3 py-3 text-sm text-gray-900 dark:text-white">
                               <DaysOfWeekDisplay daysOfWeek={schedule.daysOfWeek} size="sm" />
                             </td>
                           )}
                           {isColumnVisible('time') && (
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                               {formatTimeRange(schedule.startTime, schedule.endTime)}
                             </td>
                           )}
                           {isColumnVisible('period') && (
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                               {schedule.effectiveTo ? new Date(schedule.effectiveTo).toLocaleDateString('ru-RU') : 'Бессрочно'}
                             </td>
                           )}
                           {isColumnVisible('actions') && (
-                            <td className="px-8 py-4 whitespace-nowrap text-right text-sm font-medium w-32">
-                              <div className="flex items-center justify-end space-x-1 pr-2">
+                            <td className="px-3 py-3 text-center">
+                              <div className="flex items-center justify-center gap-1">
                                 <button
                                   onClick={() => handleEditUniversal(schedule.id)}
                                   className="p-1.5 text-violet-600 hover:text-violet-800 dark:text-violet-400 dark:hover:text-violet-300 bg-violet-50 hover:bg-violet-100 dark:bg-violet-900/30 dark:hover:bg-violet-900/50 rounded-md transition-all duration-200"

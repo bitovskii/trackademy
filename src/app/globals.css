@@ -321,6 +321,36 @@
   padding-top: 84px; /* For full-screen page containers */
 }
 
+/* Responsive table utilities */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table-responsive table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.table-responsive th,
+.table-responsive td {
+  padding: 0.75rem !important;
+}
+
+@media (min-width: 1024px) {
+  .table-responsive th,
+  .table-responsive td {
+    padding: 0.75rem 1rem !important;
+  }
+}
+
+.table-cell-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 0;
+}
+
 @media (max-width: 1024px) {
   .page-content,
   .page-container {

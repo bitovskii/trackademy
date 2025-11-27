@@ -141,7 +141,7 @@ export default function AttendancePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6 page-container pt-20 md:pt-24">
-      <div className="mx-auto space-y-6" style={{ maxWidth: '95vw' }}>
+      <div className="w-full space-y-6">
         {/* Page Header */}
         <PageHeaderWithStats
         title="Посещаемость"

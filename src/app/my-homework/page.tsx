@@ -362,7 +362,7 @@ export default function MyHomeworkPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
-      <div className="mx-auto space-y-6 pt-10 md:pt-12" style={{ maxWidth: '95vw' }}>
+      <div className="w-full space-y-6 pt-10 md:pt-12">
         {/* Header */}
         <PageHeaderWithStats
           icon={ClipboardDocumentListIcon}

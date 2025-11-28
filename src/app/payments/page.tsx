@@ -12,7 +12,8 @@ import {
   FunnelIcon,
   XMarkIcon,
   PlusIcon,
-  MagnifyingGlassIcon
+  MagnifyingGlassIcon,
+  ArrowDownTrayIcon
 } from '@heroicons/react/24/outline';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import { PaymentStats, StudentPaymentGroup, PaymentFilters } from '../../types/Payment';
@@ -58,6 +59,7 @@ export default function PaymentsPage() {
     discountReason?: string;
   } | null>(null);
   const [discountLoading, setDiscountLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
   
   // Пагинация
   const [currentPage, setCurrentPage] = useState(1);
@@ -103,7 +105,6 @@ export default function PaymentsPage() {
     { value: 2, label: 'Разовый' }
   ];
 
-  // Загрузка статистики платежей
   // Загрузка групп
   const loadGroups = useCallback(async () => {
     if (!isAuthenticated || !user?.organizationId) {
@@ -123,6 +124,11 @@ export default function PaymentsPage() {
       setLoadingGroups(false);
     }
   }, [isAuthenticated, user?.organizationId]);
+
+  // Загрузка групп при монтировании
+  useEffect(() => {
+    loadGroups();
+  }, [loadGroups]);
 
   const loadPaymentStats = useCallback(async () => {
     if (!isAuthenticated || !user?.organizationId) {
@@ -328,6 +334,25 @@ export default function PaymentsPage() {
       });
   };
 
+  const handleExportPayments = async () => {
+    if (!user?.organizationId) return;
+    
+    setExportLoading(true);
+    try {
+      await PaymentApiService.exportPayments(user.organizationId, {
+        groupId: filters.groupId,
+        status: filters.status,
+        periodFrom: filters.fromDate,
+        periodTo: filters.toDate
+      });
+    } catch (err) {
+      console.error('Error exporting payments:', err);
+      alert('Ошибка экспорта платежей');
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (isAuthenticated && user?.organizationId) {
       loadPaymentStats();
@@ -429,6 +454,37 @@ export default function PaymentsPage() {
           gradientFrom="from-green-400"
           gradientTo="to-emerald-600"
           stats={stats}
+          actionLabel="Создать платеж"
+          onAction={() => {
+            loadGroups();
+            setShowCreatePaymentModal(true);
+          }}
+          extraActions={
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleExportPayments}
+                disabled={exportLoading}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+              >
+                {exportLoading ? (
+                  <>
+                    <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                    Экспорт...
+                  </>
+                ) : (
+                  <>
+                    <ArrowDownTrayIcon className="h-4 w-4" />
+                    Экспорт в Excel
+                  </>
+                )}
+              </button>
+              <ColumnVisibilityControl
+                columns={columns}
+                onColumnToggle={handleColumnToggle}
+                variant="header"
+              />
+            </div>
+          }
         />
 
         {/* Основной контент */}
@@ -498,32 +554,34 @@ export default function PaymentsPage() {
                       Фильтры
                     </h3>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => {
-                        loadGroups();
-                        setShowCreatePaymentModal(true);
-                      }}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
-                    >
-                      <PlusIcon className="h-4 w-4" />
-                      Создать платеж
-                    </button>
-                    <ColumnVisibilityControl
-                      columns={columns}
-                      onColumnToggle={handleColumnToggle}
-                      variant="header"
-                    />
-                    <button
-                      onClick={resetFilters}
-                      className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
-                    >
-                      Сбросить
-                    </button>
-                  </div>
+                  <button
+                    onClick={resetFilters}
+                    className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
+                  >
+                    Сбросить
+                  </button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Фильтр по группе */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Группа
+                    </label>
+                    <select
+                      value={filters.groupId || ''}
+                      onChange={(e) => updateFilter('groupId', e.target.value || undefined)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                    >
+                      <option value="">Все группы</option>
+                      {groups.map((group) => (
+                        <option key={group.id} value={group.id}>
+                          {group.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
                   {/* Фильтр по статусу */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

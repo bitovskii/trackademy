@@ -4,12 +4,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
-import { DocumentTextIcon, ArrowDownTrayIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { DocumentTextIcon, ArrowDownTrayIcon, PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
 import { Material } from '../../types/Material';
 import { Group } from '../../types/Group';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import { DeleteConfirmationModal } from '../../components/ui/DeleteConfirmationModal';
 import { BaseModal } from '../../components/ui/BaseModal';
+import { MaterialPreviewModal } from '../../components/ui/MaterialPreviewModal';
 import { useDebounce } from '../../hooks/useDebounce';
 
 const ALLOWED_EXTENSIONS = [
@@ -40,6 +41,7 @@ export default function MaterialsPage() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
   const [fileInputKey, setFileInputKey] = useState(Date.now()); // Ключ для сброса input файла
   
@@ -245,8 +247,9 @@ export default function MaterialsPage() {
     return null;
   }
 
-  // Проверка прав доступа - только для преподавателей и админов
-  const canUploadMaterial = user && (user.role === 2 || user.role === 3 || user.role === 4);
+  // Проверка прав доступа - все кроме студентов (роль 1 или 'Student')
+  const roleValue = typeof user?.role === 'number' ? user.role : (user?.role === 'Student' ? 1 : 0);
+  const canUploadMaterial = user && roleValue !== 1;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6">
@@ -376,6 +379,16 @@ export default function MaterialsPage() {
                       </td>
                       <td className="px-3 py-3 text-right">
                         <div className="flex justify-end items-center gap-1">
+                        <button
+                          onClick={() => {
+                            setSelectedMaterial(material);
+                            setIsPreviewModalOpen(true);
+                          }}
+                          className="text-purple-600 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-300 p-1.5"
+                          title="Просмотр"
+                        >
+                          <EyeIcon className="w-5 h-5" />
+                        </button>
                         <button
                           onClick={() => handleDownload(material)}
                           className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-1.5"
@@ -626,6 +639,19 @@ export default function MaterialsPage() {
         message={`Вы уверены, что хотите удалить материал "${selectedMaterial?.title}"? Это действие необратимо.`}
         isLoading={deleting}
       />
+
+      {/* Preview Modal */}
+      {selectedMaterial && (
+        <MaterialPreviewModal
+          isOpen={isPreviewModalOpen}
+          onClose={() => {
+            setIsPreviewModalOpen(false);
+            setSelectedMaterial(null);
+          }}
+          material={selectedMaterial}
+          onDownload={() => handleDownload(selectedMaterial)}
+        />
+      )}
     </div>
   );
 }

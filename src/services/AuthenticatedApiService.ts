@@ -616,4 +616,24 @@ export class AuthenticatedApiService {
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
   }
+
+  static async getMaterialBlob(materialId: string): Promise<Blob> {
+    const token = this.getAuthToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const response = await fetch(`https://trackademy.kz/api/Material/${materialId}/download`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to load material');
+    }
+
+    return response.blob();
+  }
 }

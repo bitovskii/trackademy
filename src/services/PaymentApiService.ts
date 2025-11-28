@@ -136,4 +136,57 @@ export class PaymentApiService {
       throw error;
     }
   }
+
+  /**
+   * Экспорт платежей в Excel
+   * POST /api/Export/payments
+   */
+  static async exportPayments(
+    organizationId: string,
+    filters?: {
+      groupId?: string;
+      status?: number;
+      studentId?: string;
+      periodFrom?: string;
+      periodTo?: string;
+    }
+  ): Promise<void> {
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const body = {
+        organizationId,
+        ...filters
+      };
+
+      const response = await fetch('https://trackademy.kz/api/Export/payments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to export payments');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `payments_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error exporting payments:', error);
+      throw error;
+    }
+  }
 }

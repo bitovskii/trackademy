@@ -550,10 +550,8 @@ export default function StudentsPage() {
     if (result.success) {
       await loadStudents(currentPage, true);
       userModal.closeModal();
-    } else {
-      // On error, throw to prevent modal from closing
-      throw new Error(result.error || 'Не удалось создать пользователя');
     }
+    // If not successful, the error was already shown via toast
   };
 
   const handleImportUsers = async (file: File): Promise<ImportResult> => {

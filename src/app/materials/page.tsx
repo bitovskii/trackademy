@@ -41,6 +41,7 @@ export default function MaterialsPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
+  const [fileInputKey, setFileInputKey] = useState(Date.now()); // Ключ для сброса input файла
   
   const [uploadData, setUploadData] = useState({
     title: '',
@@ -244,6 +245,9 @@ export default function MaterialsPage() {
     return null;
   }
 
+  // Проверка прав доступа - только для преподавателей и админов
+  const canUploadMaterial = user && (user.role === 2 || user.role === 3 || user.role === 4);
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6">
       <div className="w-full space-y-6 mt-16">
@@ -253,8 +257,8 @@ export default function MaterialsPage() {
           icon={DocumentTextIcon}
           gradientFrom="purple-500"
           gradientTo="pink-600"
-          actionLabel="Загрузить материал"
-          onAction={() => setIsUploadModalOpen(true)}
+          actionLabel={canUploadMaterial ? "Загрузить материал" : undefined}
+          onAction={canUploadMaterial ? () => setIsUploadModalOpen(true) : undefined}
           stats={[
             { label: "Всего материалов", value: totalCount, color: "purple" },
             { label: "На странице", value: materials.length, color: "pink" },
@@ -312,6 +316,9 @@ export default function MaterialsPage() {
               <table className="w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed">
                 <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
+                    <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider" style={{ width: '50px' }}>
+                      №
+                    </th>
                     <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider" style={{ width: '20%' }}>
                       Название
                     </th>
@@ -333,8 +340,13 @@ export default function MaterialsPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {materials.map((material) => (
+                  {materials.map((material, index) => (
                     <tr key={material.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <td className="px-3 py-3 text-center">
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          {(currentPage - 1) * pageSize + index + 1}
+                        </div>
+                      </td>
                       <td className="px-3 py-3">
                         <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
                           {material.title}
@@ -448,6 +460,7 @@ export default function MaterialsPage() {
         onClose={() => {
           setIsUploadModalOpen(false);
           setUploadData({ title: '', description: '', groupId: '', file: null });
+          setFileInputKey(Date.now()); // Сбрасываем input
         }}
         title="Загрузить материал"
       >
@@ -501,11 +514,29 @@ export default function MaterialsPage() {
               Файл <span className="text-red-500">*</span>
             </label>
             <input
+              key={fileInputKey}
               type="file"
               accept={ALLOWED_EXTENSIONS.join(',')}
               onChange={(e) => setUploadData({ ...uploadData, file: e.target.files?.[0] || null })}
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
+            {uploadData.file && (
+              <div className="mt-2 flex items-center justify-between p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
+                  {uploadData.file.name} ({(uploadData.file.size / 1024 / 1024).toFixed(2)} МБ)
+                </span>
+                <button
+                  onClick={() => {
+                    setUploadData({ ...uploadData, file: null });
+                    setFileInputKey(Date.now()); // Сбрасываем input
+                  }}
+                  className="ml-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                  title="Удалить файл"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Максимальный размер: 150 МБ. Форматы: {ALLOWED_EXTENSIONS.join(', ')}
             </p>

@@ -546,11 +546,14 @@ export default function StudentsPage() {
       'пользователя'
     );
 
-    // Always reload data and close modal regardless of result
+    // Reload data only on success
     if (result.success) {
       await loadStudents(currentPage, true);
+      userModal.closeModal();
+    } else {
+      // On error, throw to prevent modal from closing
+      throw new Error(result.error || 'Не удалось создать пользователя');
     }
-    userModal.closeModal();
   };
 
   const handleImportUsers = async (file: File): Promise<ImportResult> => {
@@ -888,6 +891,22 @@ export default function StudentsPage() {
         }}
         data={userModal.editData || undefined}
         onClose={handleCloseModal}
+        validate={(data) => {
+          const errors: Record<string, string> = {};
+          
+          // Validate birthday is not in the future
+          if (data.birthday && typeof data.birthday === 'string' && data.birthday.trim() !== '') {
+            const selectedDate = new Date(data.birthday);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            if (selectedDate > today) {
+              errors.birthday = 'Дата рождения не может быть в будущем';
+            }
+          }
+          
+          return errors;
+        }}
         onSave={async (data: Record<string, unknown>) => {
           if (userModal.mode === 'create') {
             await handleCreateUser(data as unknown as UserFormData);
@@ -1016,8 +1035,12 @@ export default function StudentsPage() {
                   type="date"
                   value={(formData.birthday as string) || ''}
                   onChange={(e) => setFormData((prev: Record<string, unknown>) => ({ ...prev, birthday: e.target.value }))}
+                  max={new Date().toISOString().split('T')[0]}
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
+                {_errors.birthday && (
+                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">{_errors.birthday}</p>
+                )}
               </div>
 
               {/* Password и Trial Student Toggle для студентов при создании */}

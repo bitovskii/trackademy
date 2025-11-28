@@ -52,6 +52,7 @@ export default function LessonDetailModal({ lesson, isOpen, onClose, onUpdate }:
   // Check if user can edit notes (Administrator, Teacher or Owner)
   const userRole = user?.role;
   const roleStr = String(userRole);
+  const isStudent = userRole === 'Student' || roleStr === '1';
   const isAdministrator = userRole === 'Administrator' || roleStr === '2';
   const isTeacher = userRole === 'Teacher' || roleStr === '3';
   const isOwner = userRole === 'Owner' || roleStr === '4';
@@ -210,26 +211,30 @@ export default function LessonDetailModal({ lesson, isOpen, onClose, onUpdate }:
           >
             Детали
           </button>
-          <button
-            onClick={() => setActiveTab('attendance')}
-            className={`px-6 py-3 font-medium text-sm transition-colors ${
-              activeTab === 'attendance'
-                ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-            }`}
-          >
-            Студенты ({lesson.students.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('quick-attendance')}
-            className={`px-6 py-3 font-medium text-sm transition-colors ${
-              activeTab === 'quick-attendance'
-                ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-            }`}
-          >
-            Отметить посещаемость
-          </button>
+          {!isStudent && (
+            <>
+              <button
+                onClick={() => setActiveTab('attendance')}
+                className={`px-6 py-3 font-medium text-sm transition-colors ${
+                  activeTab === 'attendance'
+                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                }`}
+              >
+                Студенты ({lesson.students.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('quick-attendance')}
+                className={`px-6 py-3 font-medium text-sm transition-colors ${
+                  activeTab === 'quick-attendance'
+                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                }`}
+              >
+                Отметить посещаемость
+              </button>
+            </>
+          )}
         </div>
 
         {/* Content */}

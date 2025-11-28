@@ -48,30 +48,44 @@ function groupOverlappingLessons(lessonsList: Lesson[]): TimeSlot[] {
   for (let i = 0; i < sorted.length; i++) {
     if (used.has(sorted[i].id)) continue;
     
-    const overlapping: Lesson[] = [sorted[i]];
+    // Создаем группу для текущего урока
+    const currentGroup: Lesson[] = [sorted[i]];
     used.add(sorted[i].id);
+    let groupStartTime = sorted[i].startTime;
+    let groupEndTime = sorted[i].endTime;
     
-    for (let j = i + 1; j < sorted.length; j++) {
-      if (used.has(sorted[j].id)) continue;
+    // Ищем уроки, которые НАПРЯМУЮ пересекаются с любым уроком в группе
+    // Используем итеративный подход с проверкой расширения временного окна группы
+    let changed = true;
+    while (changed) {
+      changed = false;
       
-      const hasOverlap = overlapping.some(lesson => 
-        timeRangesOverlap(lesson.startTime, lesson.endTime, sorted[j].startTime, sorted[j].endTime)
-      );
-      
-      if (hasOverlap) {
-        overlapping.push(sorted[j]);
-        used.add(sorted[j].id);
+      for (let j = i + 1; j < sorted.length; j++) {
+        if (used.has(sorted[j].id)) continue;
+        
+        // Проверяем, пересекается ли урок j с временным окном ГРУППЫ
+        // (а не с каждым отдельным уроком в группе)
+        if (timeRangesOverlap(groupStartTime, groupEndTime, sorted[j].startTime, sorted[j].endTime)) {
+          currentGroup.push(sorted[j]);
+          used.add(sorted[j].id);
+          
+          // Расширяем временное окно группы
+          if (sorted[j].startTime < groupStartTime) {
+            groupStartTime = sorted[j].startTime;
+          }
+          if (sorted[j].endTime > groupEndTime) {
+            groupEndTime = sorted[j].endTime;
+          }
+          
+          changed = true;
+        }
       }
     }
     
-    // Находим минимальное время начала и максимальное время окончания
-    const minStartTime = overlapping.reduce((min, l) => l.startTime < min ? l.startTime : min, overlapping[0].startTime);
-    const maxEndTime = overlapping.reduce((max, l) => l.endTime > max ? l.endTime : max, overlapping[0].endTime);
-    
     groups.push({
-      lessons: overlapping,
-      startTime: minStartTime,
-      endTime: maxEndTime
+      lessons: currentGroup,
+      startTime: groupStartTime,
+      endTime: groupEndTime
     });
   }
   
@@ -201,6 +215,17 @@ export default function WeekView({ date, lessons, onLessonClick }: WeekViewProps
           {weekDays.map((day, dayIndex) => {
             const dayLessons = getLessonsForDay(lessons, day);
             const timeSlotGroups = groupOverlappingLessons(dayLessons);
+            
+            // Debug: выводим информацию о группах
+            if (dayLessons.length > 0) {
+              console.log(`День ${dayIndex}, уроков: ${dayLessons.length}, групп: ${timeSlotGroups.length}`);
+              timeSlotGroups.forEach((group, i) => {
+                console.log(`  Группа ${i}: ${group.lessons.length} уроков, ${group.startTime}-${group.endTime}`);
+                group.lessons.forEach(l => {
+                  console.log(`    - ${l.subject.subjectName}: ${l.startTime}-${l.endTime}`);
+                });
+              });
+            }
             
             return (
               <div

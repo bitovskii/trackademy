@@ -53,37 +53,64 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
   const groupOverlappingSchedules = (schedulesList: Schedule[]): TimeSlot[] => {
     if (schedulesList.length === 0) return [];
     
-    const timeSlots: TimeSlot[] = [];
-    const processed = new Set<string>();
+    const sorted = [...schedulesList].sort((a, b) => {
+      const timeA = a.startTime.localeCompare(b.startTime);
+      if (timeA !== 0) return timeA;
+      return a.endTime.localeCompare(b.endTime);
+    });
     
-    schedulesList.forEach((schedule) => {
-      if (processed.has(schedule.id)) return;
+    const timeSlots: TimeSlot[] = [];
+    const used = new Set<string>();
+    
+    for (let i = 0; i < sorted.length; i++) {
+      if (used.has(sorted[i].id)) continue;
       
-      const [startH, startM] = schedule.startTime.split(':').map(Number);
-      const [endH, endM] = schedule.endTime.split(':').map(Number);
+      // Создаем группу для текущего расписания
+      const currentGroup: Schedule[] = [sorted[i]];
+      used.add(sorted[i].id);
+      let groupStartTime = sorted[i].startTime;
+      let groupEndTime = sorted[i].endTime;
+      
+      // Ищем расписания, которые НАПРЯМУЮ пересекаются с временным окном группы
+      let changed = true;
+      while (changed) {
+        changed = false;
+        
+        for (let j = i + 1; j < sorted.length; j++) {
+          if (used.has(sorted[j].id)) continue;
+          
+          // Проверяем, пересекается ли расписание j с временным окном ГРУППЫ
+          if (timeRangesOverlap(groupStartTime, groupEndTime, sorted[j].startTime, sorted[j].endTime)) {
+            currentGroup.push(sorted[j]);
+            used.add(sorted[j].id);
+            
+            // Расширяем временное окно группы
+            if (sorted[j].startTime < groupStartTime) {
+              groupStartTime = sorted[j].startTime;
+            }
+            if (sorted[j].endTime > groupEndTime) {
+              groupEndTime = sorted[j].endTime;
+            }
+            
+            changed = true;
+          }
+        }
+      }
+      
+      // Вычисляем start и end в формате часов (для обратной совместимости)
+      const [startH, startM] = groupStartTime.split(':').map(Number);
+      const [endH, endM] = groupEndTime.split(':').map(Number);
       const start = startH + startM / 60;
       const end = endH + endM / 60;
-      
-      // Find all schedules that overlap with this one
-      const overlapping = schedulesList.filter((other) => 
-        timeRangesOverlap(schedule.startTime, schedule.endTime, other.startTime, other.endTime)
-      );
-      
-      // Mark all as processed
-      overlapping.forEach(s => processed.add(s.id));
-      
-      // Calculate min start and max end times
-      const minStartTime = overlapping.reduce((min, s) => s.startTime < min ? s.startTime : min, overlapping[0].startTime);
-      const maxEndTime = overlapping.reduce((max, s) => s.endTime > max ? s.endTime : max, overlapping[0].endTime);
       
       timeSlots.push({
         start,
         end,
-        schedules: overlapping,
-        startTime: minStartTime,
-        endTime: maxEndTime
+        schedules: currentGroup,
+        startTime: groupStartTime,
+        endTime: groupEndTime
       });
-    });
+    }
     
     return timeSlots;
   };
@@ -115,16 +142,30 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
   };
 
   const getSchedulesForDay = (dayOfWeek: number, targetDate: Date) => {
-    return schedules.filter(schedule => {
+    // Normalize target date to midnight local time for comparison
+    const targetDateOnly = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+    
+    const filtered = schedules.filter(schedule => {
       // Check if this day of week is in the schedule
       if (!schedule.daysOfWeek.includes(dayOfWeek)) return false;
       
       // Check if the schedule is active on this date
-      const effectiveFrom = new Date(schedule.effectiveFrom);
-      const effectiveTo = schedule.effectiveTo ? new Date(schedule.effectiveTo) : null;
+      // Parse dates as local dates (without time zone conversion)
+      const [fromYear, fromMonth, fromDay] = schedule.effectiveFrom.split('-').map(Number);
+      const effectiveFrom = new Date(fromYear, fromMonth - 1, fromDay);
       
-      return targetDate >= effectiveFrom && (!effectiveTo || targetDate <= effectiveTo);
+      let effectiveTo: Date | null = null;
+      if (schedule.effectiveTo) {
+        const [toYear, toMonth, toDay] = schedule.effectiveTo.split('-').map(Number);
+        effectiveTo = new Date(toYear, toMonth - 1, toDay);
+      }
+      
+      const isActive = targetDateOnly >= effectiveFrom && (!effectiveTo || targetDateOnly <= effectiveTo);
+      
+      return isActive;
     });
+    
+    return filtered;
   };
 
   const navigateDate = (direction: 'prev' | 'next') => {
@@ -280,33 +321,78 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
                             return (
                               <div
                                 key={schedule.id}
-                                className="flex-1 bg-white dark:bg-gray-700 rounded-lg border-l-4 border-violet-500 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 overflow-hidden"
+                                className="flex-1 bg-white dark:bg-gray-700 rounded-lg border-l-4 border-violet-500 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 overflow-hidden relative group"
                                 onClick={() => onEventClick?.(schedule)}
                               >
-                                <div className="p-1 h-full flex flex-col justify-center overflow-hidden relative group">
-                                  {/* Tooltip при наведении */}
-                                  <div className="absolute left-0 top-full mt-1 hidden group-hover:block z-50 bg-gray-900 text-white text-xs rounded p-2 shadow-lg min-w-[200px]">
-                                    <div className="font-semibold mb-1">{schedule.subject.subjectName}</div>
-                                    <div>Группа: {schedule.group.name}</div>
-                                    <div>Время: {formatTimeRange(schedule.startTime, schedule.endTime)}</div>
-                                    <div>Кабинет: {schedule.room.name}</div>
-                                    <div>Преподаватель: {schedule.teacher.name}</div>
+                                {/* Tooltip при наведении */}
+                                <div className="absolute left-full ml-2 top-0 hidden group-hover:block z-50 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-xl min-w-[240px] whitespace-nowrap">
+                                  <div className="font-semibold text-sm mb-2 text-violet-300">{schedule.subject.subjectName}</div>
+                                  <div className="space-y-1">
+                                    <div><span className="text-gray-400">Группа:</span> {schedule.group.name}</div>
+                                    <div><span className="text-gray-400">Время:</span> {formatTimeRange(schedule.startTime, schedule.endTime)}</div>
+                                    <div><span className="text-gray-400">Кабинет:</span> {schedule.room.name}</div>
+                                    <div><span className="text-gray-400">Преподаватель:</span> {schedule.teacher.name}</div>
                                   </div>
+                                </div>
 
-                                  {!isShortSchedule && (
+                                <div className="p-2 h-full flex flex-col justify-between overflow-hidden gap-0.5">
+                                  {position.height >= 100 && (
                                     <>
-                                      <h4 className="font-medium text-gray-900 dark:text-white text-xs truncate mb-0.5">
+                                      <h4 className="font-semibold text-gray-900 dark:text-white text-sm truncate">
                                         {schedule.subject.subjectName}
                                       </h4>
+                                      <div className="text-xs text-gray-600 dark:text-gray-300 truncate">
+                                        👥 {schedule.group.name}
+                                      </div>
+                                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                                        🕐 {formatTimeRange(schedule.startTime, schedule.endTime)}
+                                      </div>
+                                      <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                        📍 {schedule.room.name}
+                                      </div>
+                                      <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                        👨‍🏫 {schedule.teacher.name}
+                                      </div>
+                                    </>
+                                  )}
+                                  {position.height >= 70 && position.height < 100 && (
+                                    <>
+                                      <h4 className="font-semibold text-gray-900 dark:text-white text-sm truncate">
+                                        {schedule.subject.subjectName}
+                                      </h4>
+                                      <div className="text-xs text-gray-600 dark:text-gray-300 truncate">
+                                        {schedule.group.name}
+                                      </div>
+                                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                                        {formatTimeRange(schedule.startTime, schedule.endTime)}
+                                      </div>
+                                      <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                        📍 {schedule.room.name}
+                                      </div>
+                                    </>
+                                  )}
+                                  {position.height >= 45 && position.height < 70 && (
+                                    <>
+                                      <h4 className="font-medium text-gray-900 dark:text-white text-xs truncate">
+                                        {schedule.subject.subjectName}
+                                      </h4>
+                                      <div className="text-xs text-gray-600 dark:text-gray-300 truncate">
+                                        {schedule.group.name}
+                                      </div>
                                       <div className="text-[10px] text-gray-500 dark:text-gray-400">
                                         {formatTimeRange(schedule.startTime, schedule.endTime)}
                                       </div>
                                     </>
                                   )}
-                                  {isShortSchedule && (
-                                    <h4 className="font-medium text-gray-900 dark:text-white text-[10px] truncate">
-                                      {schedule.subject.subjectName}
-                                    </h4>
+                                  {position.height < 45 && (
+                                    <>
+                                      <h4 className="font-medium text-gray-900 dark:text-white text-[10px] truncate">
+                                        {schedule.subject.subjectName}
+                                      </h4>
+                                      <div className="text-[9px] text-gray-500 dark:text-gray-400">
+                                        {formatTimeRange(schedule.startTime, schedule.endTime)}
+                                      </div>
+                                    </>
                                   )}
                                 </div>
                               </div>
@@ -329,37 +415,76 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
                             zIndex: 10
                           }}
                           onClick={() => onEventClick?.(schedule)}
-                          title={`${schedule.subject.subjectName}\n${schedule.group.name}\n${formatTimeRange(schedule.startTime, schedule.endTime)}\n${schedule.room.name}\n${schedule.teacher.name}`}
                         >
                           {/* Tooltip при наведении */}
-                          <div className="absolute left-0 top-full mt-1 hidden group-hover:block z-50 bg-gray-900 text-white text-xs rounded p-2 shadow-lg min-w-[200px]">
-                            <div className="font-semibold mb-1">{schedule.subject.subjectName}</div>
-                            <div>Группа: {schedule.group.name}</div>
-                            <div>Время: {formatTimeRange(schedule.startTime, schedule.endTime)}</div>
-                            <div>Кабинет: {schedule.room.name}</div>
-                            <div>Преподаватель: {schedule.teacher.name}</div>
+                          <div className="absolute left-full ml-2 top-0 hidden group-hover:block z-50 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-xl min-w-[240px] whitespace-nowrap">
+                            <div className="font-semibold text-sm mb-2 text-violet-300">{schedule.subject.subjectName}</div>
+                            <div className="space-y-1">
+                              <div><span className="text-gray-400">Группа:</span> {schedule.group.name}</div>
+                              <div><span className="text-gray-400">Время:</span> {formatTimeRange(schedule.startTime, schedule.endTime)}</div>
+                              <div><span className="text-gray-400">Кабинет:</span> {schedule.room.name}</div>
+                              <div><span className="text-gray-400">Преподаватель:</span> {schedule.teacher.name}</div>
+                            </div>
                           </div>
 
-                          <div className="p-1 h-full flex flex-col justify-center overflow-hidden">
-                            {position.height >= 60 && (
+                          <div className="p-2 h-full flex flex-col justify-between overflow-hidden gap-0.5">
+                            {position.height >= 100 && (
                               <>
-                                <h4 className="font-medium text-gray-900 dark:text-white text-xs truncate mb-0.5">
+                                <h4 className="font-semibold text-gray-900 dark:text-white text-sm truncate">
                                   {schedule.subject.subjectName}
                                 </h4>
+                                <div className="text-xs text-gray-600 dark:text-gray-300 truncate">
+                                  👥 {schedule.group.name}
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                  🕐 {formatTimeRange(schedule.startTime, schedule.endTime)}
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                  📍 {schedule.room.name}
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                  👨‍🏫 {schedule.teacher.name}
+                                </div>
+                              </>
+                            )}
+                            {position.height >= 70 && position.height < 100 && (
+                              <>
+                                <h4 className="font-semibold text-gray-900 dark:text-white text-sm truncate">
+                                  {schedule.subject.subjectName}
+                                </h4>
+                                <div className="text-xs text-gray-600 dark:text-gray-300 truncate">
+                                  👥 {schedule.group.name}
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                  🕐 {formatTimeRange(schedule.startTime, schedule.endTime)}
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                  📍 {schedule.room.name}
+                                </div>
+                              </>
+                            )}
+                            {position.height >= 45 && position.height < 70 && (
+                              <>
+                                <h4 className="font-medium text-gray-900 dark:text-white text-xs truncate">
+                                  {schedule.subject.subjectName}
+                                </h4>
+                                <div className="text-xs text-gray-600 dark:text-gray-300 truncate">
+                                  {schedule.group.name}
+                                </div>
                                 <div className="text-[10px] text-gray-500 dark:text-gray-400">
                                   {formatTimeRange(schedule.startTime, schedule.endTime)}
                                 </div>
                               </>
                             )}
-                            {position.height >= 35 && position.height < 60 && (
-                              <h4 className="font-medium text-gray-900 dark:text-white text-xs truncate">
-                                {schedule.subject.subjectName}
-                              </h4>
-                            )}
-                            {position.height < 35 && (
-                              <h4 className="font-medium text-gray-900 dark:text-white text-[10px] truncate">
-                                {schedule.subject.subjectName}
-                              </h4>
+                            {position.height < 45 && (
+                              <>
+                                <h4 className="font-medium text-gray-900 dark:text-white text-[10px] truncate">
+                                  {schedule.subject.subjectName}
+                                </h4>
+                                <div className="text-[9px] text-gray-500 dark:text-gray-400">
+                                  {formatTimeRange(schedule.startTime, schedule.endTime)}
+                                </div>
+                              </>
                             )}
                           </div>
                         </div>

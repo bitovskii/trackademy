@@ -96,7 +96,8 @@ export default function PaymentsPage() {
     { value: 2, label: 'Оплачен' },
     { value: 3, label: 'Просрочен' },
     { value: 4, label: 'Отменен' },
-    { value: 5, label: 'Возврат средств' }
+    { value: 5, label: 'Возврат средств' },
+    { value: 6, label: 'Частичный возврат' }
   ];
 
   const typeOptions = [
@@ -189,6 +190,7 @@ export default function PaymentsPage() {
       case 3: return 'text-red-800 bg-red-100 dark:text-red-400 dark:bg-red-900/30';
       case 4: return 'text-gray-800 bg-gray-100 dark:text-gray-400 dark:bg-gray-900/30';
       case 5: return 'text-purple-800 bg-purple-100 dark:text-purple-400 dark:bg-purple-900/30';
+      case 6: return 'text-indigo-800 bg-indigo-100 dark:text-indigo-400 dark:bg-indigo-900/30';
       default: return 'text-gray-800 bg-gray-100 dark:text-gray-400 dark:bg-gray-900/30';
     }
   };

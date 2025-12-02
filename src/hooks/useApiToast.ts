@@ -71,9 +71,17 @@ export const useApiToast = () => {
         } else if (apiError?.response?.data?.message) {
           // Альтернативный Axios формат
           message = apiError.response.data.message!;
-        } else if (apiError?.message && !apiError.message.startsWith('HTTP error!')) {
-          // Простое сообщение об ошибке (но не техническое HTTP сообщение)
-          message = apiError.message;
+        } else if (apiError?.message) {
+          // Сообщение ошибки от AuthenticatedApiService - извлекаем чистое сообщение
+          const errorMessage = apiError.message;
+          // Проверяем, есть ли в сообщении текст после "HTTP error! status: XXX - "
+          const match = errorMessage.match(/HTTP error! status: \d+ - (.+)$/);
+          if (match && match[1]) {
+            message = match[1];
+          } else if (!errorMessage.startsWith('HTTP error!')) {
+            // Если это не техническое HTTP сообщение, используем как есть
+            message = errorMessage;
+          }
         }
 
         showError(message);

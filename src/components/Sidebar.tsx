@@ -154,8 +154,20 @@ const Sidebar: React.FC = () => {
         {/* Logo Section */}
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 shadow-sm">
-              <AcademicCapIcon className="w-5 h-5 text-white" />
+            <div className="w-8 h-8 rounded-lg bg-white shadow-sm p-1">
+              <img 
+                src="/logo-trackademy.png" 
+                alt="Trackademy" 
+                className="w-full h-full object-contain rounded-md"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  target.nextElementSibling?.classList.remove('hidden');
+                }}
+              />
+              <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-md flex items-center justify-center hidden">
+                <AcademicCapIcon className="w-4 h-4 text-white" />
+              </div>
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               Trackademy

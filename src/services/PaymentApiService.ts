@@ -1,5 +1,5 @@
 import { AuthenticatedApiService } from './AuthenticatedApiService';
-import { PaymentStats, PaymentFilters, PaymentsResponse, Payment, CreatePaymentRequest } from '../types/Payment';
+import { PaymentStats, PaymentFilters, PaymentsResponse, Payment, CreatePaymentRequest, StudentPaymentGroup, Refund } from '../types/Payment';
 
 export class PaymentApiService {
   private static readonly BASE_URL = '/Payment';
@@ -27,6 +27,59 @@ export class PaymentApiService {
     const url = `${this.BASE_URL}/stats?${params.toString()}`;
     
     return AuthenticatedApiService.get<PaymentStats>(url);
+  }
+
+  /**
+   * Обработка платежей с вычислением остатков
+   */
+  static processPaymentWithRefunds(payment: Payment): Payment {
+    if (payment.refunds && payment.refunds.length > 0) {
+      const totalRefundedAmount = payment.refunds.reduce((sum, refund) => sum + refund.refundAmount, 0);
+      return {
+        ...payment,
+        totalRefundedAmount,
+        remainingAmount: payment.amount - totalRefundedAmount
+      };
+    }
+    return {
+      ...payment,
+      totalRefundedAmount: 0,
+      remainingAmount: payment.amount
+    };
+  }
+
+  /**
+   * Обработка группы платежей студента
+   */
+  static processStudentPaymentGroup(group: StudentPaymentGroup): StudentPaymentGroup {
+    if (group.payments) {
+      group.payments = group.payments.map(payment => this.processPaymentWithRefunds(payment));
+    }
+    return group;
+  }
+
+  /**
+   * Вычисление статистики возвратов для платежа
+   */
+  static getPaymentRefundStats(payment: Payment): {
+    totalRefunded: number;
+    refundCount: number;
+    remainingAmount: number;
+  } {
+    if (!payment.refunds || payment.refunds.length === 0) {
+      return {
+        totalRefunded: 0,
+        refundCount: 0,
+        remainingAmount: payment.amount
+      };
+    }
+
+    const totalRefunded = payment.refunds.reduce((sum, refund) => sum + refund.refundAmount, 0);
+    return {
+      totalRefunded,
+      refundCount: payment.refunds.length,
+      remainingAmount: payment.amount - totalRefunded
+    };
   }
 
   /**
@@ -63,7 +116,14 @@ export class PaymentApiService {
 
     const url = `${this.BASE_URL}?${params.toString()}`;
     
-    return AuthenticatedApiService.get<PaymentsResponse>(url);
+    const response = await AuthenticatedApiService.get<PaymentsResponse>(url);
+    
+    // Обрабатываем каждую группу платежей
+    if (response.items) {
+      response.items = response.items.map(group => this.processStudentPaymentGroup(group));
+    }
+    
+    return response;
   }
 
   /**
@@ -122,7 +182,7 @@ export class PaymentApiService {
   }
 
   /**
-   * Сделать возврат платежа
+   * Сделать полный возврат платежа
    * PATCH /api/Payment/{id}/refund
    */
   static async refundPayment(id: string, refundReason: string): Promise<Payment> {
@@ -133,6 +193,22 @@ export class PaymentApiService {
       });
     } catch (error) {
       console.error('Error refunding payment:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Сделать частичный возврат платежа
+   * PATCH /api/Payment/{id}/partial-refund
+   */
+  static async partialRefundPayment(id: string, refundAmount: number, refundReason: string): Promise<Payment> {
+    try {
+      return await AuthenticatedApiService.request<Payment>(`${this.BASE_URL}/${id}/partial-refund`, {
+        method: 'PATCH',
+        body: JSON.stringify({ refundAmount, refundReason })
+      });
+    } catch (error) {
+      console.error('Error making partial refund:', error);
       throw error;
     }
   }

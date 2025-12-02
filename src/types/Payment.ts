@@ -5,7 +5,8 @@ export const PaymentStatusEnum = {
   Paid: 2, 
   Overdue: 3,
   Cancelled: 4,
-  Refunded: 5
+  Refunded: 5,
+  PartiallyRefunded: 6
 } as const;
 
 export enum DiscountType {
@@ -35,6 +36,17 @@ export const formatDiscount = (type: number, value: number): string => {
   }
 };
 
+// Тип для возврата
+export interface Refund {
+  id: string;
+  paymentId: string;
+  refundAmount: number;
+  refundReason: string;
+  refundedAt: string;
+  processedById: string;
+  processedByName: string;
+}
+
 export interface Payment {
   id: string;
   studentId: string;
@@ -58,8 +70,12 @@ export interface Payment {
   createdAt: string;
   cancelledAt: string | null;
   cancelReason: string | null;
+  refunds: Refund[];
   isOverdue: boolean;
   daysUntilEnd: number;
+  // Вычисляемые поля
+  totalRefundedAmount?: number;
+  remainingAmount?: number;
 }
 
 // Новый тип для группировки платежей по студентам

@@ -524,14 +524,19 @@ export default function MyHomeworkPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
+                    <label className="text-xs text-gray-400">Предмет</label>
+                    <p className="text-sm text-white mt-1">{assignmentDetails.subject.name}</p>
+                  </div>
+                  <div>
                     <label className="text-xs text-gray-400">Группа</label>
                     <p className="text-sm text-white mt-1">{assignmentDetails.group.name}</p>
                   </div>
-                  <div>
-                    <label className="text-xs text-gray-400">Статус</label>
-                    <div className="mt-1">
-                      {selectedAssignment && getStatusBadgeForModal(selectedAssignment)}
-                    </div>
+                </div>
+
+                <div>
+                  <label className="text-xs text-gray-400">Статус</label>
+                  <div className="mt-1">
+                    {selectedAssignment && getStatusBadgeForModal(selectedAssignment)}
                   </div>
                 </div>
 
@@ -978,10 +983,10 @@ function AssignmentCard({ assignment, statusColor, onClick }: AssignmentCardProp
         {assignment.description}
       </p>
 
-      {/* Group/Subject */}
+      {/* Subject */}
       <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
         <AcademicCapIcon className="h-4 w-4" />
-        <span className="truncate">{assignment.group.name}</span>
+        <span className="truncate">{assignment.subject.name}</span>
       </div>
 
       {/* Dates */}

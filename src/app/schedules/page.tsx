@@ -44,6 +44,7 @@ export default function SchedulesPage() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [teachers, setTeachers] = useState<User[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
+  const [showArchive, setShowArchive] = useState(false);
   const [filters, setFilters] = useState<ScheduleFilters>({
     pageNumber: 1,
     pageSize: 10,
@@ -51,7 +52,8 @@ export default function SchedulesPage() {
     groupId: '',
     teacherId: '',
     roomId: '',
-    subjectId: ''
+    subjectId: '',
+    includeDeleted: false
   });
 
   // Modal states
@@ -101,7 +103,8 @@ export default function SchedulesPage() {
         ...filters,
         pageNumber: page,
         pageSize: isTableOnly ? actualPageSize : 1000, // Load all for calendar views
-        organizationId: user?.organizationId || ''
+        organizationId: user?.organizationId || '',
+        includeDeleted: showArchive
       };
 
       // Remove empty filter values
@@ -129,7 +132,7 @@ export default function SchedulesPage() {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.organizationId, filters.groupId, filters.subjectId, filters.teacherId, filters.roomId, pageSize]);
+  }, [user?.organizationId, filters.groupId, filters.subjectId, filters.teacherId, filters.roomId, pageSize, showArchive]);
 
   const loadFilterData = useCallback(async () => {
     try {
@@ -194,6 +197,15 @@ export default function SchedulesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentView]);
 
+  // Reload data when archive mode changes
+  useEffect(() => {
+    if (isAuthenticated && user?.organizationId) {
+      loadSchedules(1, true);
+      setCurrentPage(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showArchive]);
+
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     loadSchedules(page, true);
@@ -216,7 +228,8 @@ export default function SchedulesPage() {
       groupId: '',
       teacherId: '',
       roomId: '',
-      subjectId: ''
+      subjectId: '',
+      includeDeleted: showArchive
     };
     setFilters(resetFilters);
     setCurrentPage(1);
@@ -231,7 +244,8 @@ export default function SchedulesPage() {
         ...currentFilters,
         pageNumber: page,
         pageSize: pageSize,
-        organizationId: user?.organizationId || ''
+        organizationId: user?.organizationId || '',
+        includeDeleted: showArchive
       };
 
       // Remove empty filter values
@@ -296,6 +310,18 @@ export default function SchedulesPage() {
     // Validate effective from date
     if (!data.effectiveFrom || (typeof data.effectiveFrom === 'string' && data.effectiveFrom.trim() === '')) {
       errors.effectiveFrom = 'Дата начала действия обязательна для заполнения';
+    }
+    
+    // Validate effective to date (должна быть не раньше effective from)
+    if (data.effectiveFrom && data.effectiveTo && 
+        typeof data.effectiveFrom === 'string' && typeof data.effectiveTo === 'string' &&
+        data.effectiveFrom.trim() !== '' && data.effectiveTo.trim() !== '') {
+      const fromDate = new Date(data.effectiveFrom);
+      const toDate = new Date(data.effectiveTo);
+      
+      if (toDate < fromDate) {
+        errors.effectiveTo = 'Дата окончания не может быть раньше даты начала';
+      }
     }
     
     // Validate group
@@ -630,19 +656,34 @@ export default function SchedulesPage() {
       <div className="w-full space-y-6">
         {/* Modern Header Card */}
         <PageHeaderWithStats
-          title="Шаблоны расписаний"
-          subtitle="Управление расписанием занятий организации"
+          title={showArchive ? "Архив расписаний" : "Шаблоны расписаний"}
+          subtitle={showArchive ? "Просмотр удаленных шаблонов расписания" : "Управление расписанием занятий организации"}
           icon={CalendarDaysIcon}
           gradientFrom="violet-500"
           gradientTo="purple-600"
           actionLabel="Создать шаблон"
           onAction={handleCreate}
           extraActions={
-            <ColumnVisibilityControl
-              columns={columns}
-              onColumnToggle={toggleColumn}
-              variant="header"
-            />
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  setShowArchive(!showArchive);
+                  setFilters(prev => ({ ...prev, includeDeleted: !showArchive, pageNumber: 1 }));
+                }}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  showArchive
+                    ? 'bg-red-500 hover:bg-red-600 text-white shadow-lg'
+                    : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                {showArchive ? 'Показать активные' : 'Архив'}
+              </button>
+              <ColumnVisibilityControl
+                columns={columns}
+                onColumnToggle={toggleColumn}
+                variant="header"
+              />
+            </div>
           }
           stats={[
             { label: "Всего шаблонов", value: totalCount, color: "violet" },
@@ -772,7 +813,9 @@ export default function SchedulesPage() {
                   {schedules.map((schedule, index) => (
                     <div
                       key={schedule.id}
-                      className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-shadow duration-200"
+                      className={`bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-shadow duration-200 ${
+                        showArchive ? 'opacity-75 bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-700/50' : ''
+                      }`}
                     >
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center space-x-3">
@@ -783,9 +826,16 @@ export default function SchedulesPage() {
                             <CalendarDaysIcon className="h-6 w-6 text-violet-600 dark:text-violet-400" />
                           </div>
                           <div>
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                              {schedule.group.name}
-                            </h3>
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                {schedule.group.name}
+                              </h3>
+                              {showArchive && (
+                                <span className="px-2 py-1 text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full">
+                                  Архив
+                                </span>
+                              )}
+                            </div>
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                               {schedule.subject.subjectName}
                             </p>
@@ -923,7 +973,9 @@ export default function SchedulesPage() {
                     </thead>
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                       {schedules.map((schedule, index) => (
-                        <tr key={schedule.id} className={`hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 ${index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50/50 dark:bg-gray-700/30'}`}>
+                        <tr key={schedule.id} className={`hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 ${index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50/50 dark:bg-gray-700/30'} ${
+                          showArchive ? 'opacity-75 bg-red-50 dark:bg-red-900/10' : ''
+                        }`}>
                           {isColumnVisible('number') && (
                             <td className="px-2 py-3 text-center">
                               <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-violet-500 to-purple-600 text-white text-sm font-medium rounded-lg shadow-sm mx-auto">
@@ -932,8 +984,15 @@ export default function SchedulesPage() {
                             </td>
                           )}
                           {isColumnVisible('group') && (
-                            <td className="px-3 py-3 text-sm font-medium text-gray-900 dark:text-white truncate">
-                              {schedule.group.name}
+                            <td className="px-3 py-3 text-sm font-medium text-gray-900 dark:text-white">
+                              <div className="flex items-center gap-2">
+                                <span className="truncate">{schedule.group.name}</span>
+                                {showArchive && (
+                                  <span className="px-2 py-1 text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full whitespace-nowrap">
+                                    Архив
+                                  </span>
+                                )}
+                              </div>
                             </td>
                           )}
                           {isColumnVisible('subject') && (
@@ -1127,7 +1186,12 @@ export default function SchedulesPage() {
                   type="date"
                   value={formData.effectiveTo || ''}
                   onChange={(e) => setFormData({ ...formData, effectiveTo: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  min={formData.effectiveFrom || ''}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent dark:bg-gray-700 dark:text-white ${
+                    errors.effectiveTo 
+                      ? 'border-red-500 dark:border-red-400' 
+                      : 'border-gray-300 dark:border-gray-600'
+                  }`}
                   data-field="effectiveTo"
                 />
                 {errors.effectiveTo && (

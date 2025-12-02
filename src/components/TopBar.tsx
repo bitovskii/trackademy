@@ -5,12 +5,14 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
 import { getRoleName } from '../types/Role';
-import { ChevronDownIcon, UserIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
+import { ChevronDownIcon, UserIcon, ArrowRightOnRectangleIcon, PhoneIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 import ThemeToggle from './ThemeToggle';
+import { BaseModal } from './ui/BaseModal';
 
 const TopBar: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [showSupportModal, setShowSupportModal] = useState(false);
   const pathname = usePathname();
 
   // Don't show TopBar on login page
@@ -34,10 +36,10 @@ const TopBar: React.FC = () => {
 
             {/* Right side - User menu */}
             <div className="relative">
-              <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center space-x-3 px-2 py-1 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 rounded-md"
-              >
+                <button
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="flex items-center space-x-3 px-2 py-1 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 rounded-md"
+                >
                 {/* User Avatar */}
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                   <span className="text-white text-sm font-medium">
@@ -99,6 +101,20 @@ const TopBar: React.FC = () => {
                         <UserIcon className="w-4 h-4 text-gray-500 dark:text-gray-400 mr-3" />
                         <span>Профиль</span>
                       </Link>
+
+                      {/* Техническая поддержка - только для админов и владельцев */}
+                      {(user.role === 'Admin' || user.role === 'Owner') && (
+                        <button
+                          onClick={() => {
+                            setIsDropdownOpen(false);
+                            setShowSupportModal(true);
+                          }}
+                          className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
+                        >
+                          <QuestionMarkCircleIcon className="w-4 h-4 text-gray-500 dark:text-gray-400 mr-3" />
+                          <span>Тех. поддержка</span>
+                        </button>
+                      )}
                       
                       <button
                         onClick={(e) => {
@@ -143,9 +159,21 @@ const TopBar: React.FC = () => {
               </div>
             </Link>
 
-            {/* Right side - Theme toggle and Logout button for mobile */}
+            {/* Right side - Theme toggle, Support and Logout button for mobile */}
             <div className="flex items-center space-x-2">
               <ThemeToggle />
+              
+              {/* Кнопка поддержки для мобильных - только для админов */}
+              {(user.role === 'Admin' || user.role === 'Owner') && (
+                <button
+                  onClick={() => setShowSupportModal(true)}
+                  className="p-3 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-all duration-200 hover:scale-110"
+                  title="Техническая поддержка"
+                >
+                  <QuestionMarkCircleIcon className="w-5 h-5" />
+                </button>
+              )}
+              
               <button
                 onClick={() => {
                   logout();
@@ -159,6 +187,72 @@ const TopBar: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Модальное окно технической поддержки */}
+      <BaseModal
+        isOpen={showSupportModal}
+        onClose={() => setShowSupportModal(false)}
+        title="Техническая поддержка"
+        subtitle="Помощь администраторам"
+        icon={<QuestionMarkCircleIcon className="w-5 h-5" />}
+        gradientFrom="from-blue-500"
+        gradientTo="to-indigo-600"
+        maxWidth="lg"
+      >
+        <div className="space-y-6">
+          {/* Контактная информация */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <PhoneIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Связаться с нами</h3>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Телефон:</span>
+                <div className="flex items-center gap-2">
+                  <a href="tel:+77020663888" className="text-lg font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors">
+                    +7 702 066 3888
+                  </a>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText('+77020663888');
+                    }}
+                    className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                    title="Скопировать номер"
+                  >
+                    Копировать
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600 dark:text-gray-400">WhatsApp:</span>
+                <a href="https://wa.me/77020663888" target="_blank" rel="noopener noreferrer" className="text-sm text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 transition-colors">
+                  Написать в WhatsApp
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Часто задаваемые вопросы */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Быстрая помощь</h3>
+            <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+              <div className="flex items-start gap-2">
+                <span className="text-blue-600 dark:text-blue-400 font-bold">•</span>
+                <span>Перезагрузите страницу (Ctrl+F5) при проблемах с загрузкой</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-blue-600 dark:text-blue-400 font-bold">•</span>
+                <span>Очистите кэш браузера если данные не обновляются</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-blue-600 dark:text-blue-400 font-bold">•</span>
+                <span>Проверьте интернет-соединение при ошибках API</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </BaseModal>
     </>
   );
 };

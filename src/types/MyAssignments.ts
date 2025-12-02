@@ -8,6 +8,10 @@ export interface MyAssignment {
     id: string;
     name: string;
   };
+  subject: {
+    id: string;
+    name: string;
+  };
   submissionId: string | null;
   status: string | null;
   score: number | null;

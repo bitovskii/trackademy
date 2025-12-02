@@ -5,6 +5,7 @@ import { XMarkIcon, CurrencyDollarIcon, UserIcon, CheckCircleIcon, XCircleIcon, 
 import { Payment } from '../types/Payment';
 import { PaymentApiService } from '../services/PaymentApiService';
 import { useApiToast } from '../hooks/useApiToast';
+import { RefundModal } from './RefundModal';
 
 interface StudentPaymentsModalProps {
   isOpen: boolean;
@@ -28,12 +29,16 @@ export const StudentPaymentsModal: React.FC<StudentPaymentsModalProps> = ({
   // Состояния для диалогов
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [confirmAction, setConfirmAction] = useState<{
-    type: 'paid' | 'cancel' | 'refund';
+    type: 'paid' | 'cancel';
     paymentId: string;
     paymentPeriod: string;
   } | null>(null);
   const [reason, setReason] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Состояния для новой модальной системы возврата
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [selectedPaymentForRefund, setSelectedPaymentForRefund] = useState<Payment | null>(null);
 
   // Пагинация
   const { paginatedPayments, totalPages } = useMemo(() => {
@@ -55,6 +60,7 @@ export const StudentPaymentsModal: React.FC<StudentPaymentsModalProps> = ({
     const overdue = safePayments.filter(p => p.status === 3).length;
     const cancelled = safePayments.filter(p => p.status === 4).length;
     const refunded = safePayments.filter(p => p.status === 5).length;
+    const partiallyRefunded = safePayments.filter(p => p.status === 6).length;
     
     const totalAmount = safePayments.reduce((sum, p) => sum + p.amount, 0);
     const paidAmount = safePayments.filter(p => p.status === 2).reduce((sum, p) => sum + p.amount, 0);
@@ -67,7 +73,8 @@ export const StudentPaymentsModal: React.FC<StudentPaymentsModalProps> = ({
       pending, 
       overdue, 
       cancelled, 
-      refunded, 
+      refunded,
+      partiallyRefunded, 
       totalAmount, 
       paidAmount, 
       pendingAmount, 
@@ -82,6 +89,7 @@ export const StudentPaymentsModal: React.FC<StudentPaymentsModalProps> = ({
       case 3: return 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/30';
       case 4: return 'text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-900/30';
       case 5: return 'text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-900/30';
+      case 6: return 'text-indigo-600 bg-indigo-100 dark:text-indigo-400 dark:bg-indigo-900/30';
       default: return 'text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-900/30';
     }
   };
@@ -114,9 +122,9 @@ export const StudentPaymentsModal: React.FC<StudentPaymentsModalProps> = ({
     setShowConfirmDialog(true);
   };
 
-  const handleRefund = (paymentId: string, paymentPeriod: string) => {
-    setConfirmAction({ type: 'refund', paymentId, paymentPeriod });
-    setShowConfirmDialog(true);
+  const handleRefund = (payment: Payment) => {
+    setSelectedPaymentForRefund(payment);
+    setShowRefundModal(true);
   };
 
   const executeAction = async () => {
@@ -147,17 +155,7 @@ export const StudentPaymentsModal: React.FC<StudentPaymentsModalProps> = ({
           );
           break;
         
-        case 'refund':
-          if (!reason.trim()) {
-            alert('Укажите причину возврата');
-            return;
-          }
-          console.log('Refunding payment with reason:', reason);
-          await handleApiOperation(
-            () => PaymentApiService.refundPayment(confirmAction.paymentId, reason),
-            { successMessage: 'Возврат платежа выполнен' }
-          );
-          break;
+
       }
 
       // Если мы дошли до этой точки, значит операция прошла успешно
@@ -193,13 +191,23 @@ export const StudentPaymentsModal: React.FC<StudentPaymentsModalProps> = ({
   // Проверяем можно ли выполнить действие для платежа
   const canMarkAsPaid = (status: number) => status === 1 || status === 3; // Ожидает оплаты или просрочен
   const canCancel = (status: number) => status === 1 || status === 3; // Ожидает оплаты или просрочен  
-  const canRefund = (status: number) => status === 2; // Оплачен
+  const canRefund = (payment: Payment) => {
+    // Можно вернуть если оплачен или частично возвращен
+    if (payment.status !== 2 && payment.status !== 6) return false;
+    
+    // Для частично возвращенных проверяем остаток
+    if (payment.status === 6) {
+      return (payment.remainingAmount || 0) > 0;
+    }
+    
+    return true;
+  };
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-2xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 w-full max-w-6xl max-h-[90vh] overflow-hidden">
+      <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-2xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 w-full max-w-6xl max-h-[95vh] flex flex-col">
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30">
           <div className="flex items-center justify-between">
@@ -251,8 +259,8 @@ export const StudentPaymentsModal: React.FC<StudentPaymentsModalProps> = ({
           </div>
           
           {/* Дополнительная статистика */}
-          {(stats.cancelled > 0 || stats.refunded > 0) && (
-            <div className="grid grid-cols-2 gap-4 mt-4">
+          {(stats.cancelled > 0 || stats.refunded > 0 || stats.partiallyRefunded > 0) && (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
               {stats.cancelled > 0 && (
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200/50 dark:border-gray-700/50">
                   <div className="text-xl font-bold text-gray-600">{stats.cancelled}</div>
@@ -262,7 +270,13 @@ export const StudentPaymentsModal: React.FC<StudentPaymentsModalProps> = ({
               {stats.refunded > 0 && (
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200/50 dark:border-gray-700/50">
                   <div className="text-xl font-bold text-purple-600">{stats.refunded}</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">Возврат</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Полный возврат</div>
+                </div>
+              )}
+              {stats.partiallyRefunded > 0 && (
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200/50 dark:border-gray-700/50">
+                  <div className="text-xl font-bold text-indigo-600">{stats.partiallyRefunded}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Частичный возврат</div>
                 </div>
               )}
             </div>
@@ -270,37 +284,29 @@ export const StudentPaymentsModal: React.FC<StudentPaymentsModalProps> = ({
         </div>
 
         {/* Payments Table */}
-        <div className="flex-1 overflow-hidden">
-          <div className="px-6 py-4">
+        <div className="flex-1 flex flex-col min-h-0">
+          <div className="px-6 py-4 flex-shrink-0">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <CurrencyDollarIcon className="w-5 h-5" />
               История платежей
             </h3>
           </div>
           
-          <div className="overflow-auto max-h-96">
-            <table className="w-full">
+          <div className="flex-1 overflow-auto px-6">
+            <div className="min-w-full">
+            <table className="w-full table-auto min-w-[600px]">
               <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Период / Группа
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-1/3">
+                    Платеж
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Тип
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-1/4">
+                    Сумма / Статус
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Сумма
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-1/4">
+                    Даты
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Статус
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Создано
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Оплачено
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-1/6">
                     Действия
                   </th>
                 </tr>
@@ -308,64 +314,86 @@ export const StudentPaymentsModal: React.FC<StudentPaymentsModalProps> = ({
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {paginatedPayments.map((payment) => (
                   <tr key={payment.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
+                    {/* Колонка: Платеж (период, группа, тип) */}
+                    <td className="px-3 py-4">
+                      <div className="space-y-1">
                         <div className="text-sm font-medium text-gray-900 dark:text-white">
                           {payment.paymentPeriod}
+                        </div>
+                        <div className="text-xs text-blue-600 dark:text-blue-400">
+                          {payment.groupName}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          {payment.typeName}
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">
                           {formatDate(payment.periodStart)} - {formatDate(payment.periodEnd)}
                         </div>
-                        <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                          {payment.groupName}
-                        </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-gray-900 dark:text-white">
-                        {payment.typeName}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
+                    
+                    {/* Колонка: Сумма и Статус */}
+                    <td className="px-3 py-4">
+                      <div className="space-y-2">
                         <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {formatAmount(payment.amount)}
+                          {payment.status === 6 && payment.remainingAmount !== undefined 
+                            ? formatAmount(payment.remainingAmount)
+                            : formatAmount(payment.amount)
+                          }
                         </div>
+                        
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(payment.status)}`}>
+                          {payment.statusName}
+                        </span>
+                        
                         {payment.discountValue > 0 && (
                           <div className="text-xs text-gray-500 dark:text-gray-400">
                             Скидка: {payment.discountType === 1 
                               ? `${payment.discountValue}%` 
-                              : formatAmount(payment.discountValue)} 
-                            (было {formatAmount(payment.originalAmount)})
+                              : formatAmount(payment.discountValue)}
                           </div>
                         )}
-                        {payment.discountReason && (
-                          <div className="text-xs text-orange-600 dark:text-orange-400 mt-1 italic">
-                            &quot;{payment.discountReason}&quot;
+                        
+                        {payment.status === 6 && payment.refunds && payment.refunds.length > 0 && (
+                          <div className="text-xs text-purple-600 dark:text-purple-400">
+                            Возвращено: {formatAmount(payment.totalRefundedAmount || 0)}
+                          </div>
+                        )}
+                        
+                        {payment.status === 5 && payment.refunds && payment.refunds.length > 0 && (
+                          <div className="text-xs text-purple-600 dark:text-purple-400">
+                            Возвращено: {formatAmount(payment.totalRefundedAmount || 0)}
                           </div>
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(payment.status)}`}>
-                        {payment.statusName}
-                      </span>
+                    
+                    {/* Колонка: Даты */}
+                    <td className="px-3 py-4">
+                      <div className="space-y-1">
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          <div className="font-medium">Создано:</div>
+                          <div>{formatDate(payment.createdAt)}</div>
+                        </div>
+                        {payment.paidAt && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            <div className="font-medium">Оплачено:</div>
+                            <div>{formatDate(payment.paidAt)}</div>
+                          </div>
+                        )}
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {formatDate(payment.createdAt)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {formatDate(payment.paidAt)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
+                    
+                    {/* Колонка: Действия */}
+                    <td className="px-3 py-4">
+                      <div className="flex items-center justify-end gap-1">
                         {canMarkAsPaid(payment.status) && (
                           <button
                             onClick={() => handleMarkAsPaid(payment.id, payment.paymentPeriod)}
                             className="p-2 text-green-600 hover:text-green-800 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-md transition-colors"
                             title="Отметить как оплаченный"
                           >
-                            <CheckCircleIcon className="h-5 w-5" />
+                            <CheckCircleIcon className="h-4 w-4" />
                           </button>
                         )}
                         
@@ -375,17 +403,17 @@ export const StudentPaymentsModal: React.FC<StudentPaymentsModalProps> = ({
                             className="p-2 text-red-600 hover:text-red-800 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-md transition-colors"
                             title="Отменить платеж"
                           >
-                            <XCircleIcon className="h-5 w-5" />
+                            <XCircleIcon className="h-4 w-4" />
                           </button>
                         )}
                         
-                        {canRefund(payment.status) && (
+                        {canRefund(payment) && (
                           <button
-                            onClick={() => handleRefund(payment.id, payment.paymentPeriod)}
+                            onClick={() => handleRefund(payment)}
                             className="p-2 text-purple-600 hover:text-purple-800 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-md transition-colors"
                             title="Сделать возврат"
                           >
-                            <ArrowPathIcon className="h-5 w-5" />
+                            <ArrowPathIcon className="h-4 w-4" />
                           </button>
                         )}
                       </div>
@@ -394,11 +422,12 @@ export const StudentPaymentsModal: React.FC<StudentPaymentsModalProps> = ({
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
-
+          
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/20">
+            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/20 flex-shrink-0">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-500 dark:text-gray-400">
                   Показано {(currentPage - 1) * paymentsPerPage + 1}-{Math.min(currentPage * paymentsPerPage, (payments || []).length)} из {(payments || []).length} платежей
@@ -435,26 +464,24 @@ export const StudentPaymentsModal: React.FC<StudentPaymentsModalProps> = ({
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               {confirmAction.type === 'paid' && 'Подтвердить оплату'}
               {confirmAction.type === 'cancel' && 'Отменить платеж'}
-              {confirmAction.type === 'refund' && 'Вернуть платеж'}
             </h3>
             
             <p className="text-gray-600 dark:text-gray-400 mb-4">
               {confirmAction.type === 'paid' && `Отметить платеж "${confirmAction.paymentPeriod}" как оплаченный?`}
               {confirmAction.type === 'cancel' && `Отменить платеж "${confirmAction.paymentPeriod}"?`}
-              {confirmAction.type === 'refund' && `Сделать возврат для платежа "${confirmAction.paymentPeriod}"?`}
             </p>
 
-            {(confirmAction.type === 'cancel' || confirmAction.type === 'refund') && (
+            {(confirmAction.type === 'cancel') && (
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {confirmAction.type === 'cancel' ? 'Причина отмены:' : 'Причина возврата:'}
+                  {confirmAction.type === 'cancel' ? 'Причина отмены:' : 'Причина:'}
                 </label>
                 <textarea
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   rows={3}
-                  placeholder={confirmAction.type === 'cancel' ? 'Укажите причину отмены...' : 'Укажите причину возврата...'}
+                  placeholder={confirmAction.type === 'cancel' ? 'Укажите причину отмены...' : 'Укажите причину...'}
                 />
               </div>
             )}
@@ -469,7 +496,7 @@ export const StudentPaymentsModal: React.FC<StudentPaymentsModalProps> = ({
               </button>
               <button
                 onClick={executeAction}
-                disabled={isLoading || ((confirmAction.type === 'cancel' || confirmAction.type === 'refund') && !reason.trim())}
+                disabled={isLoading || (confirmAction.type === 'cancel' && !reason.trim())}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? 'Выполняется...' : 'Подтвердить'}
@@ -478,6 +505,26 @@ export const StudentPaymentsModal: React.FC<StudentPaymentsModalProps> = ({
           </div>
         </div>
       )}
+
+      {/* Новая модальная система возврата */}
+      <RefundModal
+        isOpen={showRefundModal}
+        onClose={() => {
+          setShowRefundModal(false);
+          setSelectedPaymentForRefund(null);
+        }}
+        payment={selectedPaymentForRefund ? {
+          id: selectedPaymentForRefund.id,
+          paymentPeriod: selectedPaymentForRefund.paymentPeriod,
+          amount: selectedPaymentForRefund.amount,
+          remainingAmount: selectedPaymentForRefund.remainingAmount
+        } : undefined}
+        onSuccess={() => {
+          if (onPaymentUpdate) {
+            onPaymentUpdate();
+          }
+        }}
+      />
     </div>
   );
 };

@@ -42,7 +42,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className={`rounded-2xl shadow-2xl w-full ${maxWidthClasses[maxWidth]} max-h-[70vh] overflow-hidden border-0 ${customBackground || 'bg-white dark:bg-gray-800'}`}>
+      <div className={`rounded-2xl shadow-2xl w-full ${maxWidthClasses[maxWidth]} max-h-[85vh] sm:max-h-[90vh] overflow-hidden border-0 ${customBackground || 'bg-white dark:bg-gray-800'}`}>
         {/* Header with gradient */}
         <div className={`relative bg-gradient-to-r ${gradientFrom} ${gradientTo} p-4 text-white`}>
           <div className="flex items-center justify-between">
@@ -70,7 +70,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className={`p-6 max-h-[calc(70vh-80px)] overflow-y-auto ${customBackground || 'bg-white dark:bg-gray-800'}`}>
+        <div className={`p-4 sm:p-6 max-h-[calc(85vh-80px)] sm:max-h-[calc(90vh-80px)] overflow-y-auto ${customBackground || 'bg-white dark:bg-gray-800'}`}>
           {children}
         </div>
       </div>

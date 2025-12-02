@@ -24,6 +24,10 @@ export interface Assignment {
     name: string;
     code?: string;
   };
+  subject: {
+    id: string;
+    name: string;
+  };
   studentSubmissions?: StudentSubmission[];
 }
 

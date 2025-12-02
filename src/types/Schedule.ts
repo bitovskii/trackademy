@@ -68,6 +68,7 @@ export interface ScheduleFilters {
   teacherId?: string;
   roomId?: string;
   subjectId?: string;
+  includeDeleted?: boolean;
 }
 
 // Helper functions for days of week

@@ -136,8 +136,20 @@ export default function LoginPage() {
       <div className={`max-w-md w-full space-y-8 relative z-10 transition-all duration-1000 ${isVisible ? 'animate-slide-in-up' : 'opacity-0'}`}>
         {/* Header */}
         <div className="text-center animate-fade-in mb-8">
-          <div className="mx-auto h-20 w-20 flex items-center justify-center rounded-3xl mb-6 bg-gradient-to-br from-blue-500 to-purple-600 shadow-2xl">
-            <AcademicCapIcon className="w-10 h-10 text-white" />
+          <div className="mx-auto h-24 w-24 flex items-center justify-center rounded-3xl mb-6 bg-white shadow-2xl p-3">
+            <img 
+              src="/logo-trackademy.png" 
+              alt="Trackademy" 
+              className="w-full h-full object-contain rounded-2xl"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                target.nextElementSibling?.classList.remove('hidden');
+              }}
+            />
+            <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center hidden">
+              <AcademicCapIcon className="w-10 h-10 text-white" />
+            </div>
           </div>
           <h2 className="text-4xl font-bold mb-3 text-gray-900 dark:text-white">
             Добро пожаловать

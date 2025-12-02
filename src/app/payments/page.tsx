@@ -13,7 +13,8 @@ import {
   XMarkIcon,
   PlusIcon,
   MagnifyingGlassIcon,
-  ArrowDownTrayIcon
+  ArrowDownTrayIcon,
+  DocumentArrowDownIcon
 } from '@heroicons/react/24/outline';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import { PaymentStats, StudentPaymentGroup, PaymentFilters } from '../../types/Payment';

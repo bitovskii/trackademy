@@ -1,0 +1,816 @@
+'use client';
+
+import { useState } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
+import { ExportApiService } from '../../services/ExportApiService';
+import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
+import { Group, GroupsResponse } from '../../types/Group';
+import { DateRangePicker } from '../../components/ui/DateRangePicker';
+import { attendanceApi } from '../../services/AttendanceApiService';
+import { ExportAttendanceRequest, AttendanceStatus } from '../../types/Attendance';
+import { 
+  ChartBarIcon, 
+  DocumentArrowDownIcon, 
+  UsersIcon, 
+  UserGroupIcon, 
+  CurrencyDollarIcon,
+  ClipboardDocumentCheckIcon,
+  CalendarDaysIcon
+} from '@heroicons/react/24/outline';
+import { canManageUsers } from '../../types/Role';
+
+interface ExportCard {
+  title: string;
+  description: string;
+  icon: React.ComponentType<{ className?: string }>;
+  exportType: string;
+  color: string;
+}
+
+export default function ReportsPage() {
+  const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
+  const [isExporting, setIsExporting] = useState<string | null>(null);
+  
+  // Состояние для экспорта групп
+  const [isGroupExportModalOpen, setIsGroupExportModalOpen] = useState(false);
+  const [exportGroupId, setExportGroupId] = useState<string>('');
+  const [includePayments, setIncludePayments] = useState(true);
+  const [groups, setGroups] = useState<Group[]>([]);
+
+  // Состояние для экспорта платежей
+  const [isPaymentExportModalOpen, setIsPaymentExportModalOpen] = useState(false);
+  const [paymentFilters, setPaymentFilters] = useState({
+    groupId: '',
+    status: undefined as number | undefined,
+    type: undefined as number | undefined,
+    fromDate: '',
+    toDate: ''
+  });
+
+  // Состояние для экспорта посещаемости
+  const [isAttendanceExportModalOpen, setIsAttendanceExportModalOpen] = useState(false);
+  const [attendanceFilters, setAttendanceFilters] = useState<ExportAttendanceRequest>({
+    organizationId: user?.organizationId || '',
+    fromDate: '',
+    toDate: '',
+    status: undefined
+  });
+
+  // Проверяем права доступа
+  if (!user || !canManageUsers(user.role)) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Доступ запрещен</h1>
+          <p className="text-gray-600 dark:text-gray-400">У вас нет прав для просмотра отчетов</p>
+        </div>
+      </div>
+    );
+  }
+
+  const exportCards: ExportCard[] = [
+    {
+      title: 'Пользователи',
+      description: 'Экспорт всех пользователей системы с подробной информацией',
+      icon: UsersIcon,
+      exportType: 'users',
+      color: 'blue'
+    },
+    {
+      title: 'Группы',
+      description: 'Список всех групп с составом студентов и расписанием',
+      icon: UserGroupIcon,
+      exportType: 'groups',
+      color: 'green'
+    },
+    {
+      title: 'Платежи',
+      description: 'Отчет по всем платежам, включая статусы и суммы',
+      icon: CurrencyDollarIcon,
+      exportType: 'payments',
+      color: 'yellow'
+    },
+    {
+      title: 'Посещаемость',
+      description: 'Статистика посещаемости по студентам и группам',
+      icon: ClipboardDocumentCheckIcon,
+      exportType: 'attendance',
+      color: 'purple'
+    },
+    {
+      title: 'Расписание',
+      description: 'Полное расписание занятий всех групп',
+      icon: CalendarDaysIcon,
+      exportType: 'schedules',
+      color: 'indigo'
+    }
+  ];
+
+  const getColorClasses = (color: string) => {
+    const colors = {
+      blue: 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30',
+      green: 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30',
+      yellow: 'border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900/30',
+      purple: 'border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30',
+      indigo: 'border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30',
+      red: 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30',
+      orange: 'border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/30',
+      teal: 'border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-900/30'
+    };
+    return colors[color as keyof typeof colors] || colors.blue;
+  };
+
+  const handleExport = async (exportType: string, title: string) => {
+    setIsExporting(exportType);
+    try {
+      let blob: Blob;
+      const filename = ExportApiService.getExportFilename(exportType);
+
+      switch (exportType) {
+        case 'groups':
+          // Открываем модальное окно для настройки экспорта групп
+          await loadGroups();
+          setIsGroupExportModalOpen(true);
+          return;
+        
+        case 'users':
+          await handleExportUsers();
+          return;
+        case 'payments':
+          // Открываем модальное окно для настройки экспорта платежей
+          await loadGroups();
+          setIsPaymentExportModalOpen(true);
+          return;
+        case 'attendance':
+          // Открываем модальное окно для настройки экспорта посещаемости
+          const today = new Date();
+          const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+          setAttendanceFilters({
+            organizationId: user?.organizationId || '',
+            fromDate: firstDayOfMonth.toISOString().split('T')[0],
+            toDate: today.toISOString().split('T')[0],
+            status: undefined
+          });
+          setIsAttendanceExportModalOpen(true);
+          return;
+        case 'schedules':
+          blob = await ExportApiService.exportSchedules();
+          ExportApiService.downloadFile(blob, filename);
+          showSuccess(`Файл ${filename} успешно загружен`);
+          break;
+        default:
+          showError('Неизвестный тип экспорта');
+      }
+    } catch (error) {
+      console.error(`Error exporting ${exportType}:`, error);
+      showError(`Ошибка при экспорте: ${title}`);
+    } finally {
+      setIsExporting(null);
+    }
+  };
+
+  const handleExportUsers = async () => {
+    if (!user?.organizationId) {
+      showError('Организация не найдена');
+      return;
+    }
+
+    setIsExporting('users');
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('Токен авторизации не найден');
+      }
+
+      const response = await fetch('https://trackademy.kz/api/Export/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ organizationId: user.organizationId }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Ошибка экспорта пользователей');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `users_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      showSuccess('Файл пользователей успешно загружен');
+    } catch (error) {
+      console.error('Ошибка при экспорте пользователей:', error);
+      showError('Ошибка при экспорте пользователей');
+    } finally {
+      setIsExporting(null);
+    }
+  };
+
+  const loadGroups = async () => {
+    if (!user?.organizationId) return;
+    
+    try {
+      const response = await AuthenticatedApiService.post<GroupsResponse>('/Group/get-groups', {
+        pageNumber: 1,
+        pageSize: 100,
+        organizationId: user.organizationId
+      });
+      
+      setGroups(response.items || []);
+    } catch (error) {
+      console.error('Ошибка при загрузке групп:', error);
+      showError('Ошибка при загрузке групп');
+    }
+  };
+
+  const handleExportGroups = async () => {
+    if (!user?.organizationId) {
+      showError('Организация не найдена');
+      return;
+    }
+
+    setIsExporting('groups');
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('Токен авторизации не найден');
+      }
+
+      const body: { organizationId: string; includePayments: boolean; groupId?: string } = {
+        organizationId: user.organizationId,
+        includePayments
+      };
+
+      if (exportGroupId) {
+        body.groupId = exportGroupId;
+      }
+
+      const response = await fetch('https://trackademy.kz/api/Export/groups', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        throw new Error('Ошибка экспорта групп');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `groups_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      setIsGroupExportModalOpen(false);
+      setExportGroupId('');
+      setIncludePayments(true);
+      showSuccess('Файл групп успешно загружен');
+    } catch (error) {
+      console.error('Ошибка при экспорте групп:', error);
+      showError('Ошибка при экспорте групп');
+    } finally {
+      setIsExporting(null);
+    }
+  };
+
+  const handleExportPayments = async () => {
+    if (!user?.organizationId) {
+      showError('Организация не найдена');
+      return;
+    }
+
+    setIsExporting('payments');
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('Токен авторизации не найден');
+      }
+
+      const body: { 
+        organizationId: string; 
+        groupId?: string;
+        status?: number;
+        type?: number;
+        periodFrom?: string;
+        periodTo?: string;
+      } = {
+        organizationId: user.organizationId
+      };
+
+      if (paymentFilters.groupId) {
+        body.groupId = paymentFilters.groupId;
+      }
+      if (paymentFilters.status !== undefined) {
+        body.status = paymentFilters.status;
+      }
+      if (paymentFilters.type !== undefined) {
+        body.type = paymentFilters.type;
+      }
+      if (paymentFilters.fromDate) {
+        body.periodFrom = paymentFilters.fromDate;
+      }
+      if (paymentFilters.toDate) {
+        body.periodTo = paymentFilters.toDate;
+      }
+
+      const response = await fetch('https://trackademy.kz/api/Export/payments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        throw new Error('Ошибка экспорта платежей');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `payments_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      showSuccess('Файл платежей успешно загружен');
+      setIsPaymentExportModalOpen(false);
+      setPaymentFilters({
+        groupId: '',
+        status: undefined,
+        type: undefined,
+        fromDate: '',
+        toDate: ''
+      });
+    } catch (error) {
+      console.error('Error exporting payments:', error);
+      showError('Ошибка при экспорте платежей');
+    } finally {
+      setIsExporting(null);
+    }
+  };
+
+  const handlePaymentDateRangeChange = (startDate?: string, endDate?: string) => {
+    setPaymentFilters(prev => ({
+      ...prev,
+      fromDate: startDate || '',
+      toDate: endDate || ''
+    }));
+  };
+
+  const handleExportAttendance = async () => {
+    if (!user?.organizationId) {
+      showError('Организация не найдена');
+      return;
+    }
+
+    if (!attendanceFilters.fromDate || !attendanceFilters.toDate) {
+      showError('Пожалуйста, выберите период для экспорта');
+      return;
+    }
+
+    if (new Date(attendanceFilters.fromDate) > new Date(attendanceFilters.toDate)) {
+      showError('Дата начала не может быть больше даты окончания');
+      return;
+    }
+
+    setIsExporting('attendance');
+    try {
+      const blob = await attendanceApi.exportAttendance({
+        ...attendanceFilters,
+        organizationId: user.organizationId
+      });
+      
+      // Создаем ссылку для скачивания
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Формируем имя файла с датами
+      const fromDate = new Date(attendanceFilters.fromDate).toLocaleDateString('ru-RU').replace(/\./g, '-');
+      const toDate = new Date(attendanceFilters.toDate).toLocaleDateString('ru-RU').replace(/\./g, '-');
+      link.download = `посещаемость_${fromDate}_${toDate}.xlsx`;
+      
+      // Скачиваем файл
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Освобождаем память
+      URL.revokeObjectURL(url);
+      
+      showSuccess('Файл посещаемости успешно загружен');
+      setIsAttendanceExportModalOpen(false);
+      setAttendanceFilters({
+        organizationId: user.organizationId,
+        fromDate: '',
+        toDate: '',
+        status: undefined
+      });
+    } catch (error) {
+      console.error('Error exporting attendance:', error);
+      showError('Ошибка при экспорте посещаемости');
+    } finally {
+      setIsExporting(null);
+    }
+  };
+
+  return (
+    <>
+      <div className="pt-16 space-y-6">
+        {/* Заголовок страницы */}
+        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+          <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center">
+              <ChartBarIcon className="h-8 w-8 text-blue-600 dark:text-blue-400 mr-3" />
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Отчеты</h1>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Экспорт данных системы в различных форматах
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Описание */}
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+          <h2 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">
+            Экспорт данных
+          </h2>
+          <p className="text-blue-800 dark:text-blue-200 text-sm">
+            Выберите тип данных для экспорта. Все отчеты будут сформированы в формате Excel (.xlsx) и 
+            содержат актуальную информацию на момент создания отчета.
+          </p>
+        </div>
+
+        {/* Карточки экспорта */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {exportCards.map((card) => {
+            const Icon = card.icon;
+            return (
+              <div
+                key={card.exportType}
+                className={`relative p-6 rounded-xl border-2 transition-all duration-200 cursor-pointer ${getColorClasses(card.color)}`}
+                onClick={() => handleExport(card.exportType, card.title)}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <Icon className="h-8 w-8" />
+                  <DocumentArrowDownIcon 
+                    className={`h-6 w-6 ${isExporting === card.exportType ? 'animate-bounce' : ''}`} 
+                  />
+                </div>
+                
+                <h3 className="text-lg font-semibold mb-2">
+                  {card.title}
+                </h3>
+                
+                <p className="text-sm opacity-80 mb-4">
+                  {card.description}
+                </p>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium px-2 py-1 rounded-full bg-white/50 dark:bg-black/20">
+                    Excel
+                  </span>
+                  
+                  {isExporting === card.exportType && (
+                    <div className="flex items-center space-x-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                      <span className="text-xs">Экспорт...</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Информация о форматах */}
+        <div className="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            Информация об экспорте
+          </h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 className="font-medium text-gray-900 dark:text-white mb-2">Форматы файлов:</h4>
+              <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                <li>• Excel (.xlsx) - основной формат для всех отчетов</li>
+                <li>• Включает фильтры и форматирование</li>
+                <li>• Совместим с Microsoft Excel и LibreOffice</li>
+              </ul>
+            </div>
+            
+            <div>
+              <h4 className="font-medium text-gray-900 dark:text-white mb-2">Содержимое отчетов:</h4>
+              <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                <li>• Актуальные данные на момент создания</li>
+                <li>• Подробная информация по каждой записи</li>
+                <li>• Возможность фильтрации и сортировки</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Модальное окно экспорта групп */}
+      {isGroupExportModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Экспорт групп
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Выберите параметры экспорта
+              </p>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Группа (опционально)
+                </label>
+                <select
+                  value={exportGroupId}
+                  onChange={(e) => setExportGroupId(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Все группы</option>
+                  {groups.map((group) => (
+                    <option key={group.id} value={group.id}>
+                      {group.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="includePayments"
+                  checked={includePayments}
+                  onChange={(e) => setIncludePayments(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                />
+                <label htmlFor="includePayments" className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Включить платежи
+                </label>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => {
+                  setIsGroupExportModalOpen(false);
+                  setExportGroupId('');
+                  setIncludePayments(true);
+                }}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleExportGroups}
+                disabled={isExporting === 'groups'}
+                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-all flex items-center gap-2"
+              >
+                {isExporting === 'groups' && (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                )}
+                Экспортировать
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Модальное окно экспорта платежей */}
+      {isPaymentExportModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Экспорт платежей
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Настройте фильтры для экспорта
+              </p>
+            </div>
+            <div className="p-6 space-y-4">
+              {/* Группа */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Группа (опционально)
+                </label>
+                <select
+                  value={paymentFilters.groupId}
+                  onChange={(e) => setPaymentFilters(prev => ({ ...prev, groupId: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Все группы</option>
+                  {groups.map((group) => (
+                    <option key={group.id} value={group.id}>
+                      {group.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Статус */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Статус (опционально)
+                </label>
+                <select
+                  value={paymentFilters.status || ''}
+                  onChange={(e) => setPaymentFilters(prev => ({ 
+                    ...prev, 
+                    status: e.target.value ? Number(e.target.value) : undefined 
+                  }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Все статусы</option>
+                  <option value="1">Ожидает оплаты</option>
+                  <option value="2">Оплачен</option>
+                  <option value="3">Просрочен</option>
+                  <option value="4">Отменен</option>
+                  <option value="5">Возврат средств</option>
+                  <option value="6">Частичный возврат</option>
+                </select>
+              </div>
+
+              {/* Тип */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Тип (опционально)
+                </label>
+                <select
+                  value={paymentFilters.type || ''}
+                  onChange={(e) => setPaymentFilters(prev => ({ 
+                    ...prev, 
+                    type: e.target.value ? Number(e.target.value) : undefined 
+                  }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Все типы</option>
+                  <option value="1">Ежемесячный</option>
+                  <option value="2">Разовый</option>
+                </select>
+              </div>
+
+              {/* Период */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Период
+                </label>
+                <DateRangePicker
+                  startDate={paymentFilters.fromDate}
+                  endDate={paymentFilters.toDate}
+                  onDateChange={handlePaymentDateRangeChange}
+                  placeholder="Выберите период"
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => {
+                  setIsPaymentExportModalOpen(false);
+                  setPaymentFilters({
+                    groupId: '',
+                    status: undefined,
+                    type: undefined,
+                    fromDate: '',
+                    toDate: ''
+                  });
+                }}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleExportPayments}
+                disabled={isExporting === 'payments'}
+                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-all flex items-center gap-2"
+              >
+                {isExporting === 'payments' && (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                )}
+                Экспортировать
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Модальное окно экспорта посещаемости */}
+      {isAttendanceExportModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Экспорт посещаемости
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Выгрузите данные посещаемости в Excel
+              </p>
+            </div>
+            <div className="p-6 space-y-4">
+              {/* Период дат - обязательное поле */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Период <span className="text-red-500">*</span>
+                </label>
+                <DateRangePicker
+                  startDate={attendanceFilters.fromDate}
+                  endDate={attendanceFilters.toDate}
+                  onDateChange={(startDate, endDate) => 
+                    setAttendanceFilters(prev => ({
+                      ...prev,
+                      fromDate: startDate || '',
+                      toDate: endDate || ''
+                    }))
+                  }
+                  placeholder="Выберите период"
+                />
+              </div>
+
+              {/* Статус посещения - опциональное поле */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Статус посещения
+                </label>
+                <select
+                  value={attendanceFilters.status || ''}
+                  onChange={(e) => setAttendanceFilters(prev => ({
+                    ...prev,
+                    status: e.target.value ? Number(e.target.value) as AttendanceStatus : undefined
+                  }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Все статусы</option>
+                  <option value="1">Присутствовал</option>
+                  <option value="2">Отсутствовал</option>
+                  <option value="3">Опоздал</option>
+                  <option value="4">Уважительная причина</option>
+                </select>
+              </div>
+
+              {/* Информация */}
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3">
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  💡 Экспорт включит данные всех студентов вашей организации за выбранный период
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => {
+                  setIsAttendanceExportModalOpen(false);
+                  setAttendanceFilters({
+                    organizationId: user?.organizationId || '',
+                    fromDate: '',
+                    toDate: '',
+                    status: undefined
+                  });
+                }}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleExportAttendance}
+                disabled={isExporting === 'attendance' || !attendanceFilters.fromDate || !attendanceFilters.toDate}
+                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-all flex items-center gap-2"
+              >
+                {isExporting === 'attendance' && (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                )}
+                Экспортировать
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

@@ -124,7 +124,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900 transition-all duration-500">
+    <div className="min-h-screen flex items-center justify-center py-16 px-4 sm:px-6 lg:px-8 relative overflow-hidden bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900 transition-all duration-500">
       
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -219,7 +219,7 @@ export default function LoginPage() {
             </div>
 
             {/* Organization Selection */}
-            <div className="animate-fade-in animate-delay-500" ref={organizationDropdownRef}>
+            <div className="animate-fade-in animate-delay-500 relative" ref={organizationDropdownRef}>
               <label htmlFor="organizationId" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Организация
               </label>
@@ -236,7 +236,7 @@ export default function LoginPage() {
                 </button>
 
                 {isOrganizationDropdownOpen && (
-                  <div className="absolute z-50 w-full mt-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-xl max-h-80 overflow-hidden">
+                  <div className="absolute z-[100] w-full bottom-full mb-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-xl max-h-80 overflow-hidden">
                     {/* Search Input */}
                     <div className="p-3 border-b border-gray-200 dark:border-gray-600">
                       <div className="relative">

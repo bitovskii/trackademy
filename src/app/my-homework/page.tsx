@@ -80,30 +80,35 @@ export default function MyHomeworkPage() {
       }
 
       // Загрузка деталей submission, если он существует
-      if (assignment.submissionId) {
-        const submissionData = await loadOperation(
-          () => AuthenticatedApiService.get(`/Submission/${assignment.submissionId}`),
-          'детали работы'
-        ) as Submission;
+      if (assignment.submissionId && assignment.submissionId.trim() !== '') {
+        try {
+          const submissionData = await loadOperation(
+            () => AuthenticatedApiService.getSubmissionById(assignment.submissionId!),
+            'детали работы'
+          ) as Submission;
 
-        if (submissionData) {
-          setSubmissionDetails(submissionData);
-          setSubmissionText(submissionData.textContent || '');
-          
-          // Обновляем статус в selectedAssignment на основе данных submission
-          const statusMap: { [key: number]: 'Pending' | 'Submitted' | 'Graded' | 'Returned' | 'Overdue' } = {
-            0: 'Pending',
-            1: 'Submitted',
-            2: 'Graded',
-            3: 'Returned',
-            4: 'Overdue'
-          };
-          
-          setSelectedAssignment({
-            ...assignment,
-            status: statusMap[submissionData.status] || assignment.status,
-            score: submissionData.score
-          });
+          if (submissionData) {
+            setSubmissionDetails(submissionData);
+            setSubmissionText(submissionData.textContent || '');
+            
+            // Обновляем статус в selectedAssignment на основе данных submission
+            const statusMap: { [key: number]: 'Pending' | 'Submitted' | 'Graded' | 'Returned' | 'Overdue' } = {
+              0: 'Pending',
+              1: 'Submitted',
+              2: 'Graded',
+              3: 'Returned',
+              4: 'Overdue'
+            };
+            
+            setSelectedAssignment({
+              ...assignment,
+              status: statusMap[submissionData.status] || assignment.status,
+              score: submissionData.score
+            });
+          }
+        } catch (submissionError) {
+          console.error('Error loading submission details:', submissionError);
+          // Продолжаем работу даже если не удалось загрузить детали submission
         }
       }
     } catch (error) {
@@ -525,11 +530,11 @@ export default function MyHomeworkPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs text-gray-400">Предмет</label>
-                    <p className="text-sm text-white mt-1">{assignmentDetails.subject.name}</p>
+                    <p className="text-sm text-white mt-1">{assignmentDetails.subject?.name || 'Не указан'}</p>
                   </div>
                   <div>
                     <label className="text-xs text-gray-400">Группа</label>
-                    <p className="text-sm text-white mt-1">{assignmentDetails.group.name}</p>
+                    <p className="text-sm text-white mt-1">{assignmentDetails.group?.name || 'Не указана'}</p>
                   </div>
                 </div>
 

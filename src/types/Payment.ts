@@ -97,6 +97,9 @@ export interface StudentPaymentGroup {
   lastPaymentOriginalAmount: number;
   lastPaymentDiscountType: number;
   lastPaymentDiscountValue: number;
+  // Поля для возвратов
+  lastPaymentTotalRefunded?: number;
+  lastPaymentRemainingAmount?: number;
   payments?: Payment[];
 }
 
@@ -124,10 +127,14 @@ export interface PaymentStats {
   overduePayments: number;
   cancelledPayments: number;
   refundedPayments: number;
+  partiallyRefundedPayments?: number; // Количество платежей с частичным возвратом
   totalAmount: number;
   paidAmount: number;
   pendingAmount: number;
   overdueAmount: number;
+  refundedAmount?: number; // Общая сумма возвратов (полных)
+  partiallyRefundedAmount?: number; // Общая сумма частичных возвратов
+  totalRefundedAmount?: number; // Общая сумма всех возвратов (полных + частичных)
 }
 
 // Для фильтрации платежей (соответствует API параметрам)

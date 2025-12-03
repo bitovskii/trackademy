@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
-import { CalendarDaysIcon, PencilIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { CalendarDaysIcon, PencilIcon, TrashIcon, PlusIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import { useColumnVisibility, ColumnVisibilityControl } from '../../components/ui/ColumnVisibilityControl';
 import { 
@@ -28,6 +28,7 @@ import UniversalModal from '../../components/ui/UniversalModal';
 import { useUniversalModal } from '../../hooks/useUniversalModal';
 import { TimeInput } from '../../components/ui/TimeInput';
 import { DaysOfWeekSelector } from '../../components/ui/DaysOfWeekSelector';
+import { DateRangePicker } from '../../components/ui/DateRangePicker';
 import Link from 'next/link';
 
 export default function SchedulesPage() {
@@ -78,6 +79,20 @@ export default function SchedulesPage() {
   const { createOperation, updateOperation, deleteOperation, loadOperation } = useApiToast();
 
   const [pageSize, setPageSize] = useState(10);
+  
+  // Состояние для экспорта расписания
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportFilters, setExportFilters] = useState({
+    organizationId: user?.organizationId || '',
+    groupId: '',
+    teacherId: '',
+    roomId: '',
+    subjectId: '',
+    startDate: '',
+    endDate: '',
+    exportType: 1 // Template по умолчанию для страницы расписания
+  });
 
   // Управление видимостью колонок
   const { columns, toggleColumn, isColumnVisible } = useColumnVisibility([
@@ -271,6 +286,98 @@ export default function SchedulesPage() {
 
   const handleCreate = () => {
     handleCreateUniversal();
+  };
+
+  const handleExportDateRangeChange = (startDate?: string, endDate?: string) => {
+    setExportFilters(prev => ({
+      ...prev,
+      startDate: startDate || '',
+      endDate: endDate || ''
+    }));
+  };
+
+  const handleExport = async () => {
+    if (!user?.organizationId) {
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('Токен авторизации не найден');
+      }
+
+      const body: { 
+        organizationId: string; 
+        exportType: number;
+        groupId?: string;
+        teacherId?: string;
+        roomId?: string;
+        subjectId?: string;
+        startDate?: string;
+        endDate?: string;
+      } = {
+        organizationId: user.organizationId,
+        exportType: exportFilters.exportType
+      };
+
+      if (exportFilters.groupId) body.groupId = exportFilters.groupId;
+      if (exportFilters.teacherId) body.teacherId = exportFilters.teacherId;
+      if (exportFilters.roomId) body.roomId = exportFilters.roomId;
+      if (exportFilters.subjectId) body.subjectId = exportFilters.subjectId;
+      if (exportFilters.startDate) body.startDate = exportFilters.startDate;
+      if (exportFilters.endDate) body.endDate = exportFilters.endDate;
+
+      const response = await fetch('https://trackademy.kz/api/Export/schedule', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        throw new Error('Ошибка экспорта расписания');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      
+      const exportTypeNames = {
+        1: 'шаблон',
+        2: 'фактическое', 
+        3: 'календарное'
+      };
+      const typeName = exportTypeNames[exportFilters.exportType as keyof typeof exportTypeNames] || 'расписание';
+      a.download = `расписание_${typeName}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      // showSuccess('Файл расписания успешно загружен');
+      setIsExportModalOpen(false);
+      setExportFilters({
+        organizationId: user.organizationId,
+        groupId: '',
+        teacherId: '',
+        roomId: '',
+        subjectId: '',
+        startDate: '',
+        endDate: '',
+        exportType: 1
+      });
+    } catch (error) {
+      console.error('Error exporting schedule:', error);
+      // showError('Ошибка при экспорте расписания');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   // Validation function for schedule forms
@@ -665,6 +772,13 @@ export default function SchedulesPage() {
           onAction={handleCreate}
           extraActions={
             <div className="flex items-center gap-3">
+              <button
+                onClick={() => setIsExportModalOpen(true)}
+                className="px-4 py-2 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
+              >
+                <DocumentArrowDownIcon className="w-4 h-4" />
+                Экспорт
+              </button>
               <button
                 onClick={() => {
                   setShowArchive(!showArchive);
@@ -1285,6 +1399,158 @@ export default function SchedulesPage() {
             </div>
           )}
         </UniversalModal>
+
+        {/* Модальное окно экспорта */}
+        {isExportModalOpen && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4">
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Экспорт расписания
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  Настройте параметры экспорта
+                </p>
+              </div>
+              <div className="p-6 space-y-4">
+                {/* Тип экспорта */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Тип экспорта <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={exportFilters.exportType}
+                    onChange={(e) => setExportFilters(prev => ({ ...prev, exportType: Number(e.target.value) }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value={1}>Шаблон расписания</option>
+                    <option value={2}>Фактическое расписание</option>
+                    <option value={3}>Календарное представление</option>
+                  </select>
+                </div>
+
+                {/* Группа */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Группа (опционально)
+                  </label>
+                  <select
+                    value={exportFilters.groupId}
+                    onChange={(e) => setExportFilters(prev => ({ ...prev, groupId: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Все группы</option>
+                    {groups.map((group) => (
+                      <option key={group.id} value={group.id}>
+                        {group.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Преподаватель */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Преподаватель (опционально)
+                  </label>
+                  <select
+                    value={exportFilters.teacherId}
+                    onChange={(e) => setExportFilters(prev => ({ ...prev, teacherId: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Все преподаватели</option>
+                    {teachers.map((teacher) => (
+                      <option key={teacher.id} value={teacher.id}>
+                        {teacher.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Аудитория */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Аудитория (опционально)
+                  </label>
+                  <select
+                    value={exportFilters.roomId}
+                    onChange={(e) => setExportFilters(prev => ({ ...prev, roomId: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Все аудитории</option>
+                    {rooms.map((room) => (
+                      <option key={room.id} value={room.id}>
+                        {room.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Предмет */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Предмет (опционально)
+                  </label>
+                  <select
+                    value={exportFilters.subjectId}
+                    onChange={(e) => setExportFilters(prev => ({ ...prev, subjectId: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Все предметы</option>
+                    {subjects.map((subject) => (
+                      <option key={subject.id} value={subject.id}>
+                        {subject.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Период */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Период (опционально)
+                  </label>
+                  <DateRangePicker
+                    startDate={exportFilters.startDate}
+                    endDate={exportFilters.endDate}
+                    onDateChange={handleExportDateRangeChange}
+                    placeholder="Выберите период"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => {
+                    setIsExportModalOpen(false);
+                    setExportFilters({
+                      organizationId: user?.organizationId || '',
+                      groupId: '',
+                      teacherId: '',
+                      roomId: '',
+                      subjectId: '',
+                      startDate: '',
+                      endDate: '',
+                      exportType: 1
+                    });
+                  }}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  Отмена
+                </button>
+                <button
+                  onClick={handleExport}
+                  disabled={isExporting}
+                  className="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-all flex items-center gap-2"
+                >
+                  {isExporting && (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  )}
+                  Экспортировать
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

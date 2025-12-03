@@ -103,7 +103,7 @@ const TopBar: React.FC = () => {
                       </Link>
 
                       {/* Техническая поддержка - только для админов и владельцев */}
-                      {(user.role === 'Admin' || user.role === 'Owner') && (
+                      {(user.roleId === 2 || user.roleId === 4 || user.role === 'Administrator' || user.role === 'Owner') && (
                         <button
                           onClick={() => {
                             setIsDropdownOpen(false);

@@ -58,6 +58,22 @@ export default function ReportsPage() {
     status: undefined
   });
 
+  // Состояние для экспорта расписания
+  const [isScheduleExportModalOpen, setIsScheduleExportModalOpen] = useState(false);
+  const [scheduleFilters, setScheduleFilters] = useState({
+    organizationId: user?.organizationId || '',
+    groupId: '',
+    teacherId: '',
+    roomId: '',
+    subjectId: '',
+    startDate: '',
+    endDate: '',
+    exportType: 3 // Calendar по умолчанию для отчетов
+  });
+  const [teachers, setTeachers] = useState<{id: string; fullName?: string; name?: string}[]>([]);
+  const [rooms, setRooms] = useState<{id: string; name: string}[]>([]);
+  const [subjects, setSubjects] = useState<{id: string; name: string}[]>([]);
+
   // Проверяем права доступа
   if (!user || !canManageUsers(user.role)) {
     return (
@@ -125,8 +141,6 @@ export default function ReportsPage() {
   const handleExport = async (exportType: string, title: string) => {
     setIsExporting(exportType);
     try {
-      let blob: Blob;
-      const filename = ExportApiService.getExportFilename(exportType);
 
       switch (exportType) {
         case 'groups':
@@ -156,10 +170,10 @@ export default function ReportsPage() {
           setIsAttendanceExportModalOpen(true);
           return;
         case 'schedules':
-          blob = await ExportApiService.exportSchedules();
-          ExportApiService.downloadFile(blob, filename);
-          showSuccess(`Файл ${filename} успешно загружен`);
-          break;
+          // Открываем модальное окно для настройки экспорта расписания
+          await loadScheduleData();
+          setIsScheduleExportModalOpen(true);
+          return;
         default:
           showError('Неизвестный тип экспорта');
       }
@@ -430,6 +444,137 @@ export default function ReportsPage() {
     } catch (error) {
       console.error('Error exporting attendance:', error);
       showError('Ошибка при экспорте посещаемости');
+    } finally {
+      setIsExporting(null);
+    }
+  };
+
+  const loadScheduleData = async () => {
+    if (!user?.organizationId) return;
+    
+    try {
+      // Загружаем группы (уже есть функция)
+      await loadGroups();
+      
+      // Загружаем преподавателей
+      const teachersResponse = await AuthenticatedApiService.getUsers({
+        organizationId: user.organizationId,
+        pageNumber: 1,
+        pageSize: 1000,
+        roleIds: [3] // Teachers only
+      });
+      setTeachers(teachersResponse.items || []);
+      
+      // Загружаем аудитории
+      const roomsResponse = await AuthenticatedApiService.post<{items: {id: string; name: string}[]}>('/Room/GetAllRooms', {
+        organizationId: user.organizationId,
+        pageNumber: 1,
+        pageSize: 1000
+      });
+      setRooms(roomsResponse.items || []);
+      
+      // Загружаем предметы
+      const subjectsResponse = await AuthenticatedApiService.post<{items: {id: string; name: string}[]}>('/Subject/GetAllSubjects', {
+        organizationId: user.organizationId,
+        pageNumber: 1,
+        pageSize: 1000
+      });
+      setSubjects(subjectsResponse.items || []);
+      
+    } catch (error) {
+      console.error('Error loading schedule data:', error);
+      showError('Ошибка при загрузке данных для фильтров');
+    }
+  };
+
+  const handleScheduleDateRangeChange = (startDate?: string, endDate?: string) => {
+    setScheduleFilters(prev => ({
+      ...prev,
+      startDate: startDate || '',
+      endDate: endDate || ''
+    }));
+  };
+
+  const handleExportSchedule = async () => {
+    if (!user?.organizationId) {
+      showError('Организация не найдена');
+      return;
+    }
+
+    setIsExporting('schedules');
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('Токен авторизации не найден');
+      }
+
+      const body: { 
+        organizationId: string; 
+        exportType: number;
+        groupId?: string;
+        teacherId?: string;
+        roomId?: string;
+        subjectId?: string;
+        startDate?: string;
+        endDate?: string;
+      } = {
+        organizationId: user.organizationId,
+        exportType: scheduleFilters.exportType
+      };
+
+      if (scheduleFilters.groupId) body.groupId = scheduleFilters.groupId;
+      if (scheduleFilters.teacherId) body.teacherId = scheduleFilters.teacherId;
+      if (scheduleFilters.roomId) body.roomId = scheduleFilters.roomId;
+      if (scheduleFilters.subjectId) body.subjectId = scheduleFilters.subjectId;
+      if (scheduleFilters.startDate) body.startDate = scheduleFilters.startDate;
+      if (scheduleFilters.endDate) body.endDate = scheduleFilters.endDate;
+
+      const response = await fetch('https://trackademy.kz/api/Export/schedule', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        throw new Error('Ошибка экспорта расписания');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      
+      const exportTypeNames = {
+        1: 'шаблон',
+        2: 'фактическое', 
+        3: 'календарное'
+      };
+      const typeName = exportTypeNames[scheduleFilters.exportType as keyof typeof exportTypeNames] || 'расписание';
+      a.download = `расписание_${typeName}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      showSuccess('Файл расписания успешно загружен');
+      setIsScheduleExportModalOpen(false);
+      setScheduleFilters({
+        organizationId: user.organizationId,
+        groupId: '',
+        teacherId: '',
+        roomId: '',
+        subjectId: '',
+        startDate: '',
+        endDate: '',
+        exportType: 3
+      });
+    } catch (error) {
+      console.error('Error exporting schedule:', error);
+      showError('Ошибка при экспорте расписания');
     } finally {
       setIsExporting(null);
     }
@@ -803,6 +948,158 @@ export default function ReportsPage() {
                 className="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-all flex items-center gap-2"
               >
                 {isExporting === 'attendance' && (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                )}
+                Экспортировать
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Модальное окно экспорта расписания */}
+      {isScheduleExportModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Экспорт расписания
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Настройте параметры экспорта
+              </p>
+            </div>
+            <div className="p-6 space-y-4">
+              {/* Тип экспорта */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Тип экспорта <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={scheduleFilters.exportType}
+                  onChange={(e) => setScheduleFilters(prev => ({ ...prev, exportType: Number(e.target.value) }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value={1}>Шаблон расписания</option>
+                  <option value={2}>Фактическое расписание</option>
+                  <option value={3}>Календарное представление</option>
+                </select>
+              </div>
+
+              {/* Группа */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Группа (опционально)
+                </label>
+                <select
+                  value={scheduleFilters.groupId}
+                  onChange={(e) => setScheduleFilters(prev => ({ ...prev, groupId: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Все группы</option>
+                  {groups.map((group) => (
+                    <option key={group.id} value={group.id}>
+                      {group.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Преподаватель */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Преподаватель (опционально)
+                </label>
+                <select
+                  value={scheduleFilters.teacherId}
+                  onChange={(e) => setScheduleFilters(prev => ({ ...prev, teacherId: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Все преподаватели</option>
+                  {teachers.map((teacher) => (
+                    <option key={teacher.id} value={teacher.id}>
+                      {teacher.fullName || teacher.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Аудитория */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Аудитория (опционально)
+                </label>
+                <select
+                  value={scheduleFilters.roomId}
+                  onChange={(e) => setScheduleFilters(prev => ({ ...prev, roomId: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Все аудитории</option>
+                  {rooms.map((room) => (
+                    <option key={room.id} value={room.id}>
+                      {room.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Предмет */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Предмет (опционально)
+                </label>
+                <select
+                  value={scheduleFilters.subjectId}
+                  onChange={(e) => setScheduleFilters(prev => ({ ...prev, subjectId: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Все предметы</option>
+                  {subjects.map((subject) => (
+                    <option key={subject.id} value={subject.id}>
+                      {subject.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Период */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Период (опционально)
+                </label>
+                <DateRangePicker
+                  startDate={scheduleFilters.startDate}
+                  endDate={scheduleFilters.endDate}
+                  onDateChange={handleScheduleDateRangeChange}
+                  placeholder="Выберите период"
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => {
+                  setIsScheduleExportModalOpen(false);
+                  setScheduleFilters({
+                    organizationId: user?.organizationId || '',
+                    groupId: '',
+                    teacherId: '',
+                    roomId: '',
+                    subjectId: '',
+                    startDate: '',
+                    endDate: '',
+                    exportType: 3
+                  });
+                }}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleExportSchedule}
+                disabled={isExporting === 'schedules'}
+                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-all flex items-center gap-2"
+              >
+                {isExporting === 'schedules' && (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                 )}
                 Экспортировать

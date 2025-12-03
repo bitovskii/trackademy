@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
   CurrencyDollarIcon, 
@@ -170,7 +170,13 @@ export default function PaymentsPage() {
       };
       
       const result = await PaymentApiService.getPayments(paymentFilters);
-      setStudentPayments(result.items);
+      
+      // Обрабатываем группы платежей для корректного расчета возвратов
+      const processedItems = result.items.map(item => 
+        PaymentApiService.processStudentPaymentGroup(item)
+      );
+      
+      setStudentPayments(processedItems);
       setTotalPages(result.totalPages);
       setTotalCount(result.totalCount);
       setCurrentPage(result.pageNumber);
@@ -182,6 +188,43 @@ export default function PaymentsPage() {
       setLoadingPayments(false);
     }
   }, [isAuthenticated, user?.organizationId, currentPage, pageSize]); // Убрал filters из зависимостей
+
+  // Состояние для статистики возвратов
+  const [refundStatistics, setRefundStatistics] = useState({
+    refundedAmount: 0,
+    partiallyRefundedAmount: 0,
+    refundedPayments: 0,
+    partiallyRefundedPayments: 0
+  });
+
+  // Расчет статистики возвратов из данных платежей
+  useEffect(() => {
+    if (!studentPayments || studentPayments.length === 0) {
+      setRefundStatistics({ refundedAmount: 0, partiallyRefundedAmount: 0, refundedPayments: 0, partiallyRefundedPayments: 0 });
+      return;
+    }
+
+    let refundedAmount = 0;
+    let partiallyRefundedAmount = 0;
+    let refundedPayments = 0;
+    let partiallyRefundedPayments = 0;
+
+    studentPayments.forEach(student => {
+      if (student.payments) {
+        student.payments.forEach(payment => {
+          if (payment.status === 5) { // Полный возврат
+            refundedAmount += payment.amount; // Для полного возврата берем полную сумму платежа
+            refundedPayments++;
+          } else if (payment.status === 6 && payment.totalRefundedAmount) { // Частичный возврат
+            partiallyRefundedAmount += payment.totalRefundedAmount;
+            partiallyRefundedPayments++;
+          }
+        });
+      }
+    });
+
+    setRefundStatistics({ refundedAmount, partiallyRefundedAmount, refundedPayments, partiallyRefundedPayments });
+  }, [studentPayments]);
 
   // Функции для стилизации
   const getPaymentStatusStyle = (status: number) => {
@@ -386,16 +429,13 @@ export default function PaymentsPage() {
       color: 'red' as const,
     },
     {
-      label: 'Отменено',
-      value: paymentStats.cancelledPayments,
-      color: 'red' as const,
-    },
-    {
-      label: 'Возвращено',
-      value: paymentStats.refundedPayments,
+      label: 'Возвраты',
+      value: refundStatistics.refundedPayments + refundStatistics.partiallyRefundedPayments,
       color: 'purple' as const,
     }
   ] : [];
+
+
 
   // Детальные карточки со статистикой
   const detailedStats = paymentStats ? [
@@ -428,6 +468,8 @@ export default function PaymentsPage() {
       description: 'Сумма просроченных платежей'
     }
   ] : [];
+
+
 
   if (!isAuthenticated) {
     return (
@@ -522,7 +564,7 @@ export default function PaymentsPage() {
           {paymentStats && !loading && (
             <>
               {/* Детальная статистика по суммам */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
                 {detailedStats.map((stat, index) => (
                   <div
                     key={index}
@@ -546,7 +588,34 @@ export default function PaymentsPage() {
                     </p>
                   </div>
                 ))}
+                
+                {/* Карточка возвратов */}
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
+                  <div className="flex items-center">
+                    <div className="bg-purple-500 p-3 rounded-lg">
+                      <ArrowPathIcon className="h-6 w-6 text-white" />
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Возвраты
+                      </p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                        {(refundStatistics.refundedAmount + refundStatistics.partiallyRefundedAmount).toLocaleString()}₸
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-4 space-y-1">
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      Полные: {refundStatistics.refundedAmount.toLocaleString()}₸ ({refundStatistics.refundedPayments})
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      Частичные: {refundStatistics.partiallyRefundedAmount.toLocaleString()}₸ ({refundStatistics.partiallyRefundedPayments})
+                    </div>
+                  </div>
+                </div>
               </div>
+
+
 
               {/* Панель фильтров */}
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8">
@@ -697,51 +766,51 @@ export default function PaymentsPage() {
                       <thead className="bg-gradient-to-r from-gray-50 to-green-50 dark:from-gray-700 dark:to-gray-600">
                         <tr>
                           {columnVisibility.number && (
-                            <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '50px' }}>
+                            <th className="px-2 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '40px' }}>
                               №
                             </th>
                           )}
                           {columnVisibility.student && (
-                            <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '15%' }}>
+                            <th className="px-2 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '140px' }}>
                               Студент
                             </th>
                           )}
                           {columnVisibility.lastPeriod && (
-                            <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '18%' }}>
+                            <th className="px-2 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '160px' }}>
                               Последний период
                             </th>
                           )}
                           {columnVisibility.lastType && (
-                            <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '12%' }}>
+                            <th className="px-2 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '110px' }}>
                               Тип
                             </th>
                           )}
                           {columnVisibility.lastAmount && (
-                            <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '15%' }}>
+                            <th className="px-2 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '120px' }}>
                               Сумма
                             </th>
                           )}
                           {columnVisibility.status && (
-                            <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '10%' }}>
+                            <th className="px-2 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '130px' }}>
                               Статус
                             </th>
                           )}
                           {columnVisibility.paymentsCount && (
-                            <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '10%' }}>
+                            <th className="px-2 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '80px' }}>
                               Всего платежей
                             </th>
                           )}
                           {columnVisibility.lastCreated && (
-                            <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '10%' }}>
+                            <th className="px-2 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '100px' }}>
                               Создано
                             </th>
                           )}
                           {columnVisibility.lastPaid && (
-                            <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '10%' }}>
+                            <th className="px-2 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '100px' }}>
                               Оплачено
                             </th>
                           )}
-                          <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '100px' }}>
+                          <th className="px-2 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider" style={{ width: '120px' }}>
                             Действия
                           </th>
                         </tr>
@@ -754,21 +823,21 @@ export default function PaymentsPage() {
                             className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                           >
                             {columnVisibility.number && (
-                              <td className="px-3 py-3 whitespace-nowrap text-center">
+                              <td className="px-2 py-3 whitespace-nowrap text-center">
                                 <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-sm font-medium rounded-lg shadow-sm mx-auto">
                                   {(currentPage - 1) * pageSize + index + 1}
                                 </div>
                               </td>
                             )}
                             {columnVisibility.student && (
-                              <td className="px-3 py-3 truncate">
+                              <td className="px-2 py-3 truncate">
                                 <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
                                   {studentPayment.studentName}
                                 </div>
                               </td>
                             )}
                             {columnVisibility.lastPeriod && (
-                              <td className="px-3 py-3">
+                              <td className="px-2 py-3">
                                 <div>
                                   <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
                                     {studentPayment.lastPaymentPeriod}
@@ -783,19 +852,37 @@ export default function PaymentsPage() {
                               </td>
                             )}
                             {columnVisibility.lastType && (
-                              <td className="px-3 py-3 truncate">
+                              <td className="px-2 py-3 truncate">
                                 <span className="text-sm text-gray-900 dark:text-white truncate">
                                   {studentPayment.lastPaymentTypeName}
                                 </span>
                               </td>
                             )}
                             {columnVisibility.lastAmount && (
-                              <td className="px-3 py-3">
+                              <td className="px-2 py-3">
                                 <div>
                                   <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                    {studentPayment.lastPaymentAmount.toLocaleString('ru-RU')}₸
+                                    {/* Показываем оставшуюся сумму для частичных возвратов */}
+                                    {studentPayment.lastPaymentStatus === 6 && studentPayment.lastPaymentRemainingAmount !== undefined
+                                      ? studentPayment.lastPaymentRemainingAmount.toLocaleString('ru-RU')
+                                      : studentPayment.lastPaymentAmount.toLocaleString('ru-RU')
+                                    }₸
                                   </div>
-                                  {studentPayment.lastPaymentDiscountValue > 0 && (
+                                  
+                                  {/* Информация о частичном возврате */}
+                                  {studentPayment.lastPaymentStatus === 6 && studentPayment.lastPaymentTotalRefunded && (
+                                    <div className="text-xs text-purple-600 dark:text-purple-400 truncate">
+                                      Изначально: {studentPayment.lastPaymentAmount.toLocaleString('ru-RU')}₸
+                                    </div>
+                                  )}
+                                  {studentPayment.lastPaymentStatus === 6 && studentPayment.lastPaymentTotalRefunded && (
+                                    <div className="text-xs text-purple-600 dark:text-purple-400 truncate">
+                                      Возвращено: {studentPayment.lastPaymentTotalRefunded.toLocaleString('ru-RU')}₸
+                                    </div>
+                                  )}
+                                  
+                                  {/* Информация о скидке */}
+                                  {studentPayment.lastPaymentDiscountValue > 0 && studentPayment.lastPaymentStatus !== 6 && (
                                     <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
                                       Скидка: {studentPayment.lastPaymentDiscountType === 1 
                                         ? `${studentPayment.lastPaymentDiscountValue}%` 
@@ -807,30 +894,30 @@ export default function PaymentsPage() {
                               </td>
                             )}
                             {columnVisibility.status && (
-                              <td className="px-3 py-3 whitespace-nowrap">
+                              <td className="px-2 py-3 whitespace-nowrap">
                                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPaymentStatusStyle(studentPayment.lastPaymentStatus)}`}>
                                   {studentPayment.lastPaymentStatusName}
                                 </span>
                               </td>
                             )}
                             {columnVisibility.paymentsCount && (
-                              <td className="px-3 py-3 whitespace-nowrap">
+                              <td className="px-2 py-3 whitespace-nowrap text-center">
                                 <span className="text-sm text-gray-900 dark:text-white">
                                   {studentPayment.payments?.length || 0}
                                 </span>
                               </td>
                             )}
                             {columnVisibility.lastCreated && (
-                              <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 truncate">
+                              <td className="px-2 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 truncate">
                                 {studentPayment.lastPaymentCreatedAt ? new Date(studentPayment.lastPaymentCreatedAt).toLocaleDateString('ru-RU') : 'Не указано'}
                               </td>
                             )}
                             {columnVisibility.lastPaid && (
-                              <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 truncate">
+                              <td className="px-2 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 truncate">
                                 {studentPayment.lastPaymentPaidAt ? new Date(studentPayment.lastPaymentPaidAt).toLocaleDateString('ru-RU') : 'Не оплачено'}
                               </td>
                             )}
-                            <td className="px-3 py-3 whitespace-nowrap text-center">
+                            <td className="px-2 py-3 whitespace-nowrap text-center">
                               {/* Показываем кнопку только для статусов: Ожидает оплаты (1) и Просрочен (3) */}
                               {(studentPayment.lastPaymentStatus === 1 || studentPayment.lastPaymentStatus === 3) && (
                                 <button

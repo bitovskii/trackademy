@@ -26,6 +26,11 @@ export const StudentPaymentsModal: React.FC<StudentPaymentsModalProps> = ({
   const paymentsPerPage = 5;
   const { handleApiOperation } = useApiToast();
   
+  // Обработанные платежи с вычисленными остатками
+  const processedPayments = useMemo(() => {
+    return payments?.map(payment => PaymentApiService.processPaymentWithRefunds(payment)) || [];
+  }, [payments]);
+  
   // Состояния для диалогов
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [confirmAction, setConfirmAction] = useState<{
@@ -42,18 +47,18 @@ export const StudentPaymentsModal: React.FC<StudentPaymentsModalProps> = ({
 
   // Пагинация
   const { paginatedPayments, totalPages } = useMemo(() => {
-    const safePayments = payments || [];
+    const safePayments = processedPayments || [];
     const startIndex = (currentPage - 1) * paymentsPerPage;
     const endIndex = startIndex + paymentsPerPage;
     const paginatedPayments = safePayments.slice(startIndex, endIndex);
     const totalPages = Math.ceil(safePayments.length / paymentsPerPage);
     
     return { paginatedPayments, totalPages };
-  }, [payments, currentPage, paymentsPerPage]);
+  }, [processedPayments, currentPage, paymentsPerPage]);
 
   // Статистика платежей
   const stats = useMemo(() => {
-    const safePayments = payments || [];
+    const safePayments = processedPayments || [];
     const total = safePayments.length;
     const paid = safePayments.filter(p => p.status === 2).length;
     const pending = safePayments.filter(p => p.status === 1).length;
@@ -62,10 +67,39 @@ export const StudentPaymentsModal: React.FC<StudentPaymentsModalProps> = ({
     const refunded = safePayments.filter(p => p.status === 5).length;
     const partiallyRefunded = safePayments.filter(p => p.status === 6).length;
     
-    const totalAmount = safePayments.reduce((sum, p) => sum + p.amount, 0);
-    const paidAmount = safePayments.filter(p => p.status === 2).reduce((sum, p) => sum + p.amount, 0);
-    const pendingAmount = safePayments.filter(p => p.status === 1).reduce((sum, p) => sum + p.amount, 0);
-    const overdueAmount = safePayments.filter(p => p.status === 3).reduce((sum, p) => sum + p.amount, 0);
+    // Исправленный расчет сумм с учетом частичных возвратов
+    const totalAmount = safePayments.reduce((sum, p) => {
+      // Для частичных возвратов используем оставшуюся сумму, иначе полную сумму
+      const effectiveAmount = p.status === 6 && p.remainingAmount !== undefined 
+        ? p.remainingAmount 
+        : p.amount;
+      return sum + effectiveAmount;
+    }, 0);
+    
+    const paidAmount = safePayments.filter(p => p.status === 2).reduce((sum, p) => {
+      const effectiveAmount = p.status === 6 && p.remainingAmount !== undefined 
+        ? p.remainingAmount 
+        : p.amount;
+      return sum + effectiveAmount;
+    }, 0);
+    
+    const pendingAmount = safePayments.filter(p => p.status === 1).reduce((sum, p) => {
+      const effectiveAmount = p.status === 6 && p.remainingAmount !== undefined 
+        ? p.remainingAmount 
+        : p.amount;
+      return sum + effectiveAmount;
+    }, 0);
+    
+    const overdueAmount = safePayments.filter(p => p.status === 3).reduce((sum, p) => {
+      const effectiveAmount = p.status === 6 && p.remainingAmount !== undefined 
+        ? p.remainingAmount 
+        : p.amount;
+      return sum + effectiveAmount;
+    }, 0);
+
+    // Расчет сумм возвратов
+    const refundedAmount = safePayments.filter(p => p.status === 5).reduce((sum, p) => sum + p.amount, 0);
+    const partiallyRefundedAmount = safePayments.filter(p => p.status === 6).reduce((sum, p) => sum + (p.totalRefundedAmount || 0), 0);
 
     return { 
       total, 
@@ -78,9 +112,11 @@ export const StudentPaymentsModal: React.FC<StudentPaymentsModalProps> = ({
       totalAmount, 
       paidAmount, 
       pendingAmount, 
-      overdueAmount 
+      overdueAmount,
+      refundedAmount,
+      partiallyRefundedAmount
     };
-  }, [payments]);
+  }, [processedPayments]);
 
   const getStatusColor = (status: number) => {
     switch (status) {
@@ -271,12 +307,18 @@ export const StudentPaymentsModal: React.FC<StudentPaymentsModalProps> = ({
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200/50 dark:border-gray-700/50">
                   <div className="text-xl font-bold text-purple-600">{stats.refunded}</div>
                   <div className="text-sm text-gray-600 dark:text-gray-400">Полный возврат</div>
+                  <div className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+                    {formatAmount(stats.refundedAmount || 0)}
+                  </div>
                 </div>
               )}
               {stats.partiallyRefunded > 0 && (
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200/50 dark:border-gray-700/50">
                   <div className="text-xl font-bold text-indigo-600">{stats.partiallyRefunded}</div>
                   <div className="text-sm text-gray-600 dark:text-gray-400">Частичный возврат</div>
+                  <div className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">
+                    {formatAmount(stats.partiallyRefundedAmount || 0)}
+                  </div>
                 </div>
               )}
             </div>
@@ -335,6 +377,7 @@ export const StudentPaymentsModal: React.FC<StudentPaymentsModalProps> = ({
                     {/* Колонка: Сумма и Статус */}
                     <td className="px-3 py-4">
                       <div className="space-y-2">
+                        {/* Основная сумма - для частичного возврата показываем оставшуюся сумму */}
                         <div className="text-sm font-medium text-gray-900 dark:text-white">
                           {payment.status === 6 && payment.remainingAmount !== undefined 
                             ? formatAmount(payment.remainingAmount)
@@ -346,23 +389,39 @@ export const StudentPaymentsModal: React.FC<StudentPaymentsModalProps> = ({
                           {payment.statusName}
                         </span>
                         
+                        {/* Информация о частичном возврате */}
+                        {payment.status === 6 && payment.refunds && payment.refunds.length > 0 && (
+                          <div className="text-xs space-y-1 bg-purple-50 dark:bg-purple-900/20 p-2 rounded border-l-2 border-purple-300 dark:border-purple-600">
+                            <div className="text-gray-700 dark:text-gray-300 font-medium">
+                              Изначально: {formatAmount(payment.amount)}
+                            </div>
+                            <div className="text-purple-600 dark:text-purple-400">
+                              Возвращено: {formatAmount(payment.totalRefundedAmount || 0)}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Информация о полном возврате */}
+                        {payment.status === 5 && payment.refunds && payment.refunds.length > 0 && (
+                          <div className="text-xs space-y-1 bg-purple-50 dark:bg-purple-900/20 p-2 rounded border-l-2 border-purple-300 dark:border-purple-600">
+                            <div className="text-purple-600 dark:text-purple-400 font-medium">
+                              Полный возврат:
+                            </div>
+                            <div className="text-purple-600 dark:text-purple-400">
+                              Возвращено: {formatAmount(payment.totalRefundedAmount || 0)}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Информация о скидке */}
                         {payment.discountValue > 0 && (
                           <div className="text-xs text-gray-500 dark:text-gray-400">
                             Скидка: {payment.discountType === 1 
                               ? `${payment.discountValue}%` 
                               : formatAmount(payment.discountValue)}
-                          </div>
-                        )}
-                        
-                        {payment.status === 6 && payment.refunds && payment.refunds.length > 0 && (
-                          <div className="text-xs text-purple-600 dark:text-purple-400">
-                            Возвращено: {formatAmount(payment.totalRefundedAmount || 0)}
-                          </div>
-                        )}
-                        
-                        {payment.status === 5 && payment.refunds && payment.refunds.length > 0 && (
-                          <div className="text-xs text-purple-600 dark:text-purple-400">
-                            Возвращено: {formatAmount(payment.totalRefundedAmount || 0)}
+                            {payment.originalAmount && payment.originalAmount !== payment.amount && (
+                              <span> (было {formatAmount(payment.originalAmount)})</span>
+                            )}
                           </div>
                         )}
                       </div>

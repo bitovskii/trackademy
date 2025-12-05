@@ -1,0 +1,19 @@
+User-agent: *
+Allow: /
+
+# Основная карта сайта
+Sitemap: https://trackademy.kz/sitemap.xml
+
+# Специальные правила для поисковых систем
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Yandex
+Allow: /
+Crawl-delay: 1
+
+# Запрещаем индексацию служебных страниц
+Disallow: /api/
+Disallow: /_next/
+Disallow: /admin/

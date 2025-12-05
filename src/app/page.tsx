@@ -15,7 +15,6 @@ import {
   HeartIcon,
   GlobeAltIcon,
   PhoneIcon,
-  EnvelopeIcon,
   MapPinIcon,
   Bars3Icon,
   XMarkIcon
@@ -45,12 +44,12 @@ function LandingPage() {
     {
       icon: ChartBarIcon,
       title: "Полный контроль над процессами",
-      description: "Панель аналитики показывает, что происходит в центре прямо сейчас: занятость групп, заполняемость преподавателей, финансовые показатели, гибкое расписание — всё в одном месте."
+      description: "Аналитическая панель отражает состояние центра в реальном времени: наполняемость групп, загрузку преподавателей, ключевые финансовые метрики и гибкое расписание. Вся важная информация доступна в одном месте."
     },
     {
       icon: ShieldCheckIcon,
       title: "Прозрачность и безопасность",
-      description: "Каждый сотрудник работает в своём доступе, все действия фиксируются, а администраторы и преподаватели видят только то, что им нужно. Это уменьшает ошибки и защищает данные."
+      description: "Каждый пользователь работает в рамках своей роли и уровня доступа. Все действия фиксируются, а администраторы, преподаватели и студенты видят только релевантную для них информацию. Это снижает риск ошибок и обеспечивает защиту данных."
     },
     {
       icon: HeartIcon,
@@ -60,7 +59,7 @@ function LandingPage() {
     {
       icon: GlobeAltIcon,
       title: "Управление из любой точки",
-      description: "Весь центр у вас под рукой: расписание, финансы, заявки, сотрудники — всё работает онлайн. Можно контролировать бизнес хоть из другой страны."
+      description: "Весь центр доступен в одном месте: расписание, финансы, заявки и пользователи — всё работает в онлайн-режиме. Управление возможно дистанционно, независимо от вашего местоположения."
     }
   ];
 
@@ -193,38 +192,126 @@ function LandingPage() {
               Контакты
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-300">
-              Свяжитесь с нами для консультации или поддержки
+              Нужна консультация или помощь? Свяжитесь с нами
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            <div>
-              <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
-                Связаться с нами
-              </h3>
-              <div className="space-y-4">
-                <div className="flex items-center">
-                  <PhoneIcon className="h-6 w-6 text-indigo-600 dark:text-indigo-400 mr-4" />
-                  <span className="text-gray-900 dark:text-white">+7 (702) 066-38-88</span>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {/* Карточка связи */}
+            <div className="bg-white/10 dark:bg-gray-800/30 backdrop-blur-lg rounded-2xl p-8 border border-white/20 dark:border-gray-700/30 hover:border-indigo-300/50 dark:hover:border-indigo-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/10">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                  <PhoneIcon className="h-8 w-8 text-white" />
                 </div>
-                <div className="flex items-center">
-                  <MapPinIcon className="h-6 w-6 text-indigo-600 dark:text-indigo-400 mr-4" />
-                  <span className="text-gray-900 dark:text-white">Астана, Казахстан</span>
+                <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
+                  Связаться с нами
+                </h3>
+                
+                <div className="space-y-4">
+                  <a 
+                    href="https://wa.me/77020663888" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="group flex items-center justify-center p-4 bg-green-50 dark:bg-green-900/20 rounded-xl hover:bg-green-100 dark:hover:bg-green-900/30 transition-all duration-200 border border-green-200 dark:border-green-700/50"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                        <PhoneIcon className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="text-left">
+                        <div className="text-sm text-gray-600 dark:text-gray-400">WhatsApp</div>
+                        <div className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-green-600 dark:group-hover:text-green-400">
+                          +7 (702) 066-38-88
+                        </div>
+                      </div>
+                    </div>
+                  </a>
+                  
+                  <div className="flex items-center justify-center p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700/50">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center">
+                        <MapPinIcon className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="text-left">
+                        <div className="text-sm text-gray-600 dark:text-gray-400">Адрес</div>
+                        <div className="text-lg font-semibold text-gray-900 dark:text-white">Астана, Казахстан</div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div>
-              <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
-                Техническая поддержка
-              </h3>
-              <p className="text-gray-600 dark:text-gray-300">
-                Круглосуточная поддержка для клиентов
-              </p>
+            {/* Карточка поддержки */}
+            <div className="bg-white/10 dark:bg-gray-800/30 backdrop-blur-lg rounded-2xl p-8 border border-white/20 dark:border-gray-700/30 hover:border-purple-300/50 dark:hover:border-purple-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/10">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192L5.636 18.364M12 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
+                  Техническая поддержка
+                </h3>
+                
+                <div className="space-y-4">
+                  <div className="p-6 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl border border-purple-200 dark:border-purple-700/50">
+                    <div className="flex items-center justify-center mb-3">
+                      <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                      <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">Онлайн</span>
+                    </div>
+                    <p className="text-gray-700 dark:text-gray-300 font-medium">
+                      Круглосуточная поддержка для клиентов
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                      Быстрое решение вопросов в любое время
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
+
+      {/* Структурированные данные для главной страницы */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebPage",
+            "name": "Trackademy - Система управления учебными центрами",
+            "description": "Современная система управления учебными центрами. Полная автоматизация образовательного процесса: учет студентов, расписание, платежи, аналитика.",
+            "url": "https://trackademy.kz",
+            "mainEntity": {
+              "@type": "SoftwareApplication",
+              "name": "Trackademy",
+              "applicationCategory": "BusinessApplication",
+              "description": "CRM система для управления учебными центрами",
+              "operatingSystem": "Web Browser",
+              "applicationSubCategory": "Education Management",
+              "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "KZT",
+                "availability": "https://schema.org/InStock"
+              }
+            },
+            "breadcrumb": {
+              "@type": "BreadcrumbList",
+              "itemListElement": [
+                {
+                  "@type": "ListItem",
+                  "position": 1,
+                  "name": "Главная",
+                  "item": "https://trackademy.kz"
+                }
+              ]
+            }
+          })
+        }}
+      />
 
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12">

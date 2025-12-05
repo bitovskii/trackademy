@@ -9,7 +9,16 @@ import {
   ExclamationTriangleIcon,
   CurrencyDollarIcon,
   ClockIcon,
-  ClipboardDocumentListIcon
+  ClipboardDocumentListIcon,
+  CheckCircleIcon,
+  ShieldCheckIcon,
+  HeartIcon,
+  GlobeAltIcon,
+  PhoneIcon,
+  EnvelopeIcon,
+  MapPinIcon,
+  Bars3Icon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import { useApiToast } from '../hooks/useApiToast';
@@ -18,6 +27,225 @@ import { DashboardSummary, DashboardStats, TeacherDashboardSummary, StudentDashb
 import { StatsCard } from '../components/dashboard/StatsCard';
 import { PageHeaderWithStats } from '../components/ui/PageHeaderWithStats';
 import Link from 'next/link';
+
+// Компонент сайта-визитки для неавторизованных пользователей
+function LandingPage() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const features = [
+    { text: "Управление студентами и преподавателями", icon: UserGroupIcon },
+    { text: "Мониторинг оплат", icon: CurrencyDollarIcon },
+    { text: "Система поощрения", icon: CheckCircleIcon },
+    { text: "Бесплатная поддержка", icon: HeartIcon },
+    { text: "Удобный интерфейс", icon: AcademicCapIcon },
+    { text: "Система оповещения", icon: ClipboardDocumentListIcon }
+  ];
+
+  const benefits = [
+    {
+      icon: ChartBarIcon,
+      title: "Полный контроль над процессами",
+      description: "Панель аналитики показывает, что происходит в центре прямо сейчас: занятость групп, заполняемость преподавателей, финансовые показатели, гибкое расписание — всё в одном месте."
+    },
+    {
+      icon: ShieldCheckIcon,
+      title: "Прозрачность и безопасность",
+      description: "Каждый сотрудник работает в своём доступе, все действия фиксируются, а администраторы и преподаватели видят только то, что им нужно. Это уменьшает ошибки и защищает данные."
+    },
+    {
+      icon: HeartIcon,
+      title: "Рост лояльности клиентов",
+      description: "Личный кабинет, уведомления, расписание в телефоне, напоминания об уроках и оплатах — родителям и ученикам удобно, а довольные клиенты охотнее остаются и приводят друзей."
+    },
+    {
+      icon: GlobeAltIcon,
+      title: "Управление из любой точки",
+      description: "Весь центр у вас под рукой: расписание, финансы, заявки, сотрудники — всё работает онлайн. Можно контролировать бизнес хоть из другой страны."
+    }
+  ];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-blue-900/20 dark:to-indigo-900/20">
+      {/* Навигация */}
+      <nav className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200/20 dark:border-gray-700/20 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex items-center">
+              <div className="flex-shrink-0 flex items-center">
+                <AcademicCapIcon className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
+                <span className="ml-2 text-xl font-bold text-gray-900 dark:text-white">Trackademy</span>
+              </div>
+            </div>
+            
+            {/* Desktop Menu */}
+            <div className="hidden md:flex items-center space-x-8">
+              <a href="#home" className="text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 px-3 py-2 text-sm font-medium transition-colors">
+                Главная
+              </a>
+              <a href="#contacts" className="text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 px-3 py-2 text-sm font-medium transition-colors">
+                Контакты
+              </a>
+              <Link href="/login" className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                Войти
+              </Link>
+            </div>
+
+            {/* Mobile menu button */}
+            <div className="md:hidden flex items-center">
+              <button
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 p-2"
+              >
+                {isMenuOpen ? <XMarkIcon className="h-6 w-6" /> : <Bars3Icon className="h-6 w-6" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Mobile Menu */}
+          {isMenuOpen && (
+            <div className="md:hidden border-t border-gray-200 dark:border-gray-700 py-4">
+              <div className="flex flex-col space-y-2">
+                <a href="#home" className="text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 px-3 py-2 text-sm font-medium">
+                  Главная
+                </a>
+                <a href="#contacts" className="text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 px-3 py-2 text-sm font-medium">
+                  Контакты
+                </a>
+                <Link href="/login" className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg text-sm font-medium mx-3 mt-2 text-center">
+                  Войти
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <section id="home" className="py-20 lg:py-32">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h1 className="text-4xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-6">
+              Современная <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">система управления</span> учебными центрами
+            </h1>
+            <p className="text-xl lg:text-2xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto">
+              Полная автоматизация образовательного процесса: учет студентов, расписание, платежи, аналитика и многое другое
+            </p>
+            <div className="flex justify-center">
+              <a href="#contacts" className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-4 rounded-lg text-lg font-medium transition-colors">
+                Связаться с нами
+              </a>
+            </div>
+          </div>
+
+          {/* Features Grid */}
+          <div className="mt-20 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {features.map((feature, index) => (
+              <div key={index} className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-200/20 dark:border-gray-700/20 hover:border-indigo-300 dark:hover:border-indigo-500 transition-all">
+                <feature.icon className="h-8 w-8 text-indigo-600 dark:text-indigo-400 mb-4" />
+                <p className="text-gray-900 dark:text-white font-medium">{feature.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Benefits Section */}
+      <section className="py-20 bg-white/30 dark:bg-gray-900/30 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              Почему выбирают Trackademy?
+            </h2>
+            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+              Комплексное решение для эффективного управления образовательными процессами
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            {benefits.map((benefit, index) => (
+              <div key={index} className="flex items-start space-x-4">
+                <div className="flex-shrink-0">
+                  <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-indigo-100 dark:bg-indigo-900/30">
+                    <benefit.icon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                    📊 {benefit.title}
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                    {benefit.description}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+
+
+      {/* Contacts Section */}
+      <section id="contacts" className="py-20 bg-white/30 dark:bg-gray-900/30 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              Контакты
+            </h2>
+            <p className="text-xl text-gray-600 dark:text-gray-300">
+              Свяжитесь с нами для консультации или поддержки
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <div>
+              <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
+                Связаться с нами
+              </h3>
+              <div className="space-y-4">
+                <div className="flex items-center">
+                  <PhoneIcon className="h-6 w-6 text-indigo-600 dark:text-indigo-400 mr-4" />
+                  <span className="text-gray-900 dark:text-white">+7 (702) 066-38-88</span>
+                </div>
+                <div className="flex items-center">
+                  <MapPinIcon className="h-6 w-6 text-indigo-600 dark:text-indigo-400 mr-4" />
+                  <span className="text-gray-900 dark:text-white">Астана, Казахстан</span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
+                Техническая поддержка
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300">
+                Круглосуточная поддержка для клиентов
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-gray-900 text-white py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <div className="flex items-center justify-center mb-4">
+              <AcademicCapIcon className="h-8 w-8 text-indigo-400 mr-2" />
+              <span className="text-xl font-bold">Trackademy</span>
+            </div>
+            <p className="text-gray-400 mb-4">
+              Система управления учебными центрами
+            </p>
+            <p className="text-gray-500 text-sm">
+              © 2025 Trackademy. Все права защищены.
+            </p>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const { isAuthenticated, user } = useAuth();
@@ -78,6 +306,11 @@ export default function Dashboard() {
       loadDashboardData();
     }
   }, [isAuthenticated, user, loadDashboardData]);
+
+  // Показываем сайт-визитку для неавторизованных пользователей
+  if (!isAuthenticated) {
+    return <LandingPage />;
+  }
 
   // Подготовка статистики
   const stats: DashboardStats[] = summary ? [

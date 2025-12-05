@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { AuthenticatedApiService } from '../../services/AuthenticatedApiService';
-import { CalendarDaysIcon, PencilIcon, TrashIcon, PlusIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
+import { CalendarDaysIcon, PencilIcon, TrashIcon, PlusIcon, DocumentArrowDownIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
 import { PageHeaderWithStats } from '../../components/ui/PageHeaderWithStats';
 import { useColumnVisibility, ColumnVisibilityControl } from '../../components/ui/ColumnVisibilityControl';
 import { 
@@ -590,6 +590,18 @@ export default function SchedulesPage() {
     setDeletingSchedule(null);
   };
 
+  const handleRestore = async (id: string) => {
+    const schedule = schedules.find(s => s.id === id);
+    if (!schedule) return;
+
+    await createOperation(
+      () => AuthenticatedApiService.post(`/Schedule/restore/${id}`, {}),
+      'Расписание восстановлено'
+    );
+
+    await loadSchedules(currentPage, true);
+  };
+
   // Check authentication and permissions
   if (!isAuthenticated) {
     return (
@@ -956,20 +968,41 @@ export default function SchedulesPage() {
                           </div>
                         </div>
                         <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleEditUniversal(schedule.id)}
-                            className="text-violet-600 hover:text-violet-900 dark:text-violet-400 dark:hover:text-violet-300 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
-                            title="Редактировать"
-                          >
-                            <PencilIcon className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(schedule.id)}
-                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
-                            title="Удалить"
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </button>
+                          {showArchive ? (
+                            <>
+                              <button
+                                onClick={() => handleRestore(schedule.id)}
+                                className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                                title="Восстановить"
+                              >
+                                <ArrowUturnLeftIcon className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(schedule.id)}
+                                className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                                title="Удалить окончательно"
+                              >
+                                <TrashIcon className="h-4 w-4" />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => handleEditUniversal(schedule.id)}
+                                className="text-violet-600 hover:text-violet-900 dark:text-violet-400 dark:hover:text-violet-300 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                                title="Редактировать"
+                              >
+                                <PencilIcon className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(schedule.id)}
+                                className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                                title="Удалить"
+                              >
+                                <TrashIcon className="h-4 w-4" />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
                       
@@ -1148,20 +1181,41 @@ export default function SchedulesPage() {
                           {isColumnVisible('actions') && (
                             <td className="px-3 py-3 text-center">
                               <div className="flex items-center justify-center gap-1">
-                                <button
-                                  onClick={() => handleEditUniversal(schedule.id)}
-                                  className="p-1.5 text-violet-600 hover:text-violet-800 dark:text-violet-400 dark:hover:text-violet-300 bg-violet-50 hover:bg-violet-100 dark:bg-violet-900/30 dark:hover:bg-violet-900/50 rounded-md transition-all duration-200"
-                                  title="Редактировать"
-                                >
-                                  <PencilIcon className="h-4 w-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleDelete(schedule.id)}
-                                  className="p-1.5 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 rounded-md transition-all duration-200"
-                                  title="Удалить"
-                                >
-                                  <TrashIcon className="h-4 w-4" />
-                                </button>
+                                {showArchive ? (
+                                  <>
+                                    <button
+                                      onClick={() => handleRestore(schedule.id)}
+                                      className="p-1.5 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 bg-green-50 hover:bg-green-100 dark:bg-green-900/30 dark:hover:bg-green-900/50 rounded-md transition-all duration-200"
+                                      title="Восстановить"
+                                    >
+                                      <ArrowUturnLeftIcon className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDelete(schedule.id)}
+                                      className="p-1.5 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 rounded-md transition-all duration-200"
+                                      title="Удалить окончательно"
+                                    >
+                                      <TrashIcon className="h-4 w-4" />
+                                    </button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <button
+                                      onClick={() => handleEditUniversal(schedule.id)}
+                                      className="p-1.5 text-violet-600 hover:text-violet-800 dark:text-violet-400 dark:hover:text-violet-300 bg-violet-50 hover:bg-violet-100 dark:bg-violet-900/30 dark:hover:bg-violet-900/50 rounded-md transition-all duration-200"
+                                      title="Редактировать"
+                                    >
+                                      <PencilIcon className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDelete(schedule.id)}
+                                      className="p-1.5 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 rounded-md transition-all duration-200"
+                                      title="Удалить"
+                                    >
+                                      <TrashIcon className="h-4 w-4" />
+                                    </button>
+                                  </>
+                                )}
                               </div>
                             </td>
                           )}

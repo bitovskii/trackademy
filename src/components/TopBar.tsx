@@ -13,6 +13,7 @@ const TopBar: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showSupportModal, setShowSupportModal] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
   const pathname = usePathname();
 
   // Don't show TopBar on login page
@@ -214,13 +215,26 @@ const TopBar: React.FC = () => {
                     +7 702 066 3888
                   </a>
                   <button
-                    onClick={() => {
-                      navigator.clipboard.writeText('+77020663888');
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText('+77020663888');
+                        setIsCopied(true);
+                        // Сброс состояния через 2 секунды
+                        setTimeout(() => {
+                          setIsCopied(false);
+                        }, 2000);
+                      } catch (err) {
+                        console.error('Ошибка копирования:', err);
+                      }
                     }}
-                    className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
-                    title="Скопировать номер"
+                    className={`text-xs px-3 py-1.5 rounded-md font-medium transition-all duration-200 transform active:scale-95 ${
+                      isCopied 
+                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 scale-105' 
+                        : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 hover:scale-105'
+                    }`}
+                    title={isCopied ? "Номер скопирован!" : "Скопировать номер"}
                   >
-                    Копировать
+                    {isCopied ? '✓ Скопировано' : 'Копировать'}
                   </button>
                 </div>
               </div>
